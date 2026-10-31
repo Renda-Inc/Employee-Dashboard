@@ -10,6 +10,8 @@ export const getRouter = () => {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
+    // Internal tool backed by a browser-persisted demo dataset: render on the client.
+    defaultSsr: false,
   });
 
   return router;
