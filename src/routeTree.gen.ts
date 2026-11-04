@@ -10,6 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AlfieRouteImport } from './routes/alfie'
+import { Route as AuditRouteImport } from './routes/audit'
+import { Route as EmployeesRouteImport } from './routes/employees'
+import { Route as SavingsRouteImport } from './routes/savings'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SubscriptionsRouteImport } from './routes/subscriptions'
 import { Route as TransfersRouteImport } from './routes/transfers'
 import { Route as AccountsIndexRouteImport } from './routes/accounts.index'
@@ -20,6 +25,8 @@ import { Route as CustomersIndexRouteImport } from './routes/customers.index'
 import { Route as CustomersCustomerIdRouteImport } from './routes/customers.$customerId'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
 import { Route as OnboardingCustomerIdRouteImport } from './routes/onboarding.$customerId'
+import { Route as SupportIndexRouteImport } from './routes/support.index'
+import { Route as SupportCaseIdRouteImport } from './routes/support.$caseId'
 import { Route as TransactionsIndexRouteImport } from './routes/transactions.index'
 import { Route as TransactionsTransactionIdRouteImport } from './routes/transactions.$transactionId'
 import { Route as CardsManufacturingIndexRouteImport } from './routes/cards.manufacturing.index'
@@ -28,6 +35,31 @@ import { Route as CardsManufacturingBatchIdRouteImport } from './routes/cards.ma
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlfieRoute = AlfieRouteImport.update({
+  id: '/alfie',
+  path: '/alfie',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditRoute = AuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmployeesRoute = EmployeesRouteImport.update({
+  id: '/employees',
+  path: '/employees',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SavingsRoute = SavingsRouteImport.update({
+  id: '/savings',
+  path: '/savings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SubscriptionsRoute = SubscriptionsRouteImport.update({
@@ -80,6 +112,16 @@ const OnboardingCustomerIdRoute = OnboardingCustomerIdRouteImport.update({
   path: '/onboarding/$customerId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SupportIndexRoute = SupportIndexRouteImport.update({
+  id: '/support/',
+  path: '/support/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportCaseIdRoute = SupportCaseIdRouteImport.update({
+  id: '/support/$caseId',
+  path: '/support/$caseId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TransactionsIndexRoute = TransactionsIndexRouteImport.update({
   id: '/transactions/',
   path: '/transactions/',
@@ -105,34 +147,48 @@ const CardsManufacturingBatchIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/alfie': typeof AlfieRoute
+  '/audit': typeof AuditRoute
+  '/employees': typeof EmployeesRoute
+  '/savings': typeof SavingsRoute
+  '/settings': typeof SettingsRoute
   '/subscriptions': typeof SubscriptionsRoute
   '/transfers': typeof TransfersRoute
   '/accounts/$accountId': typeof AccountsAccountIdRoute
   '/cards/$cardId': typeof CardsCardIdRoute
   '/customers/$customerId': typeof CustomersCustomerIdRoute
   '/onboarding/$customerId': typeof OnboardingCustomerIdRoute
+  '/support/$caseId': typeof SupportCaseIdRoute
   '/transactions/$transactionId': typeof TransactionsTransactionIdRoute
   '/accounts/': typeof AccountsIndexRoute
   '/cards/': typeof CardsIndexRoute
   '/customers/': typeof CustomersIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
+  '/support/': typeof SupportIndexRoute
   '/transactions/': typeof TransactionsIndexRoute
   '/cards/manufacturing/$batchId': typeof CardsManufacturingBatchIdRoute
   '/cards/manufacturing/': typeof CardsManufacturingIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/alfie': typeof AlfieRoute
+  '/audit': typeof AuditRoute
+  '/employees': typeof EmployeesRoute
+  '/savings': typeof SavingsRoute
+  '/settings': typeof SettingsRoute
   '/subscriptions': typeof SubscriptionsRoute
   '/transfers': typeof TransfersRoute
   '/accounts/$accountId': typeof AccountsAccountIdRoute
   '/cards/$cardId': typeof CardsCardIdRoute
   '/customers/$customerId': typeof CustomersCustomerIdRoute
   '/onboarding/$customerId': typeof OnboardingCustomerIdRoute
+  '/support/$caseId': typeof SupportCaseIdRoute
   '/transactions/$transactionId': typeof TransactionsTransactionIdRoute
   '/accounts': typeof AccountsIndexRoute
   '/cards': typeof CardsIndexRoute
   '/customers': typeof CustomersIndexRoute
   '/onboarding': typeof OnboardingIndexRoute
+  '/support': typeof SupportIndexRoute
   '/transactions': typeof TransactionsIndexRoute
   '/cards/manufacturing/$batchId': typeof CardsManufacturingBatchIdRoute
   '/cards/manufacturing': typeof CardsManufacturingIndexRoute
@@ -140,17 +196,24 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/alfie': typeof AlfieRoute
+  '/audit': typeof AuditRoute
+  '/employees': typeof EmployeesRoute
+  '/savings': typeof SavingsRoute
+  '/settings': typeof SettingsRoute
   '/subscriptions': typeof SubscriptionsRoute
   '/transfers': typeof TransfersRoute
   '/accounts/$accountId': typeof AccountsAccountIdRoute
   '/cards/$cardId': typeof CardsCardIdRoute
   '/customers/$customerId': typeof CustomersCustomerIdRoute
   '/onboarding/$customerId': typeof OnboardingCustomerIdRoute
+  '/support/$caseId': typeof SupportCaseIdRoute
   '/transactions/$transactionId': typeof TransactionsTransactionIdRoute
   '/accounts/': typeof AccountsIndexRoute
   '/cards/': typeof CardsIndexRoute
   '/customers/': typeof CustomersIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
+  '/support/': typeof SupportIndexRoute
   '/transactions/': typeof TransactionsIndexRoute
   '/cards/manufacturing/$batchId': typeof CardsManufacturingBatchIdRoute
   '/cards/manufacturing/': typeof CardsManufacturingIndexRoute
@@ -159,51 +222,72 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/alfie'
+    | '/audit'
+    | '/employees'
+    | '/savings'
+    | '/settings'
     | '/subscriptions'
     | '/transfers'
     | '/accounts/$accountId'
     | '/cards/$cardId'
     | '/customers/$customerId'
     | '/onboarding/$customerId'
+    | '/support/$caseId'
     | '/transactions/$transactionId'
     | '/accounts/'
     | '/cards/'
     | '/customers/'
     | '/onboarding/'
+    | '/support/'
     | '/transactions/'
     | '/cards/manufacturing/$batchId'
     | '/cards/manufacturing/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/alfie'
+    | '/audit'
+    | '/employees'
+    | '/savings'
+    | '/settings'
     | '/subscriptions'
     | '/transfers'
     | '/accounts/$accountId'
     | '/cards/$cardId'
     | '/customers/$customerId'
     | '/onboarding/$customerId'
+    | '/support/$caseId'
     | '/transactions/$transactionId'
     | '/accounts'
     | '/cards'
     | '/customers'
     | '/onboarding'
+    | '/support'
     | '/transactions'
     | '/cards/manufacturing/$batchId'
     | '/cards/manufacturing'
   id:
     | '__root__'
     | '/'
+    | '/alfie'
+    | '/audit'
+    | '/employees'
+    | '/savings'
+    | '/settings'
     | '/subscriptions'
     | '/transfers'
     | '/accounts/$accountId'
     | '/cards/$cardId'
     | '/customers/$customerId'
     | '/onboarding/$customerId'
+    | '/support/$caseId'
     | '/transactions/$transactionId'
     | '/accounts/'
     | '/cards/'
     | '/customers/'
     | '/onboarding/'
+    | '/support/'
     | '/transactions/'
     | '/cards/manufacturing/$batchId'
     | '/cards/manufacturing/'
@@ -211,17 +295,24 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AlfieRoute: typeof AlfieRoute
+  AuditRoute: typeof AuditRoute
+  EmployeesRoute: typeof EmployeesRoute
+  SavingsRoute: typeof SavingsRoute
+  SettingsRoute: typeof SettingsRoute
   SubscriptionsRoute: typeof SubscriptionsRoute
   TransfersRoute: typeof TransfersRoute
   AccountsAccountIdRoute: typeof AccountsAccountIdRoute
   CardsCardIdRoute: typeof CardsCardIdRoute
   CustomersCustomerIdRoute: typeof CustomersCustomerIdRoute
   OnboardingCustomerIdRoute: typeof OnboardingCustomerIdRoute
+  SupportCaseIdRoute: typeof SupportCaseIdRoute
   TransactionsTransactionIdRoute: typeof TransactionsTransactionIdRoute
   AccountsIndexRoute: typeof AccountsIndexRoute
   CardsIndexRoute: typeof CardsIndexRoute
   CustomersIndexRoute: typeof CustomersIndexRoute
   OnboardingIndexRoute: typeof OnboardingIndexRoute
+  SupportIndexRoute: typeof SupportIndexRoute
   TransactionsIndexRoute: typeof TransactionsIndexRoute
   CardsManufacturingBatchIdRoute: typeof CardsManufacturingBatchIdRoute
   CardsManufacturingIndexRoute: typeof CardsManufacturingIndexRoute
@@ -234,6 +325,41 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/alfie': {
+      id: '/alfie'
+      path: '/alfie'
+      fullPath: '/alfie'
+      preLoaderRoute: typeof AlfieRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/audit': {
+      id: '/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/employees': {
+      id: '/employees'
+      path: '/employees'
+      fullPath: '/employees'
+      preLoaderRoute: typeof EmployeesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/savings': {
+      id: '/savings'
+      path: '/savings'
+      fullPath: '/savings'
+      preLoaderRoute: typeof SavingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/subscriptions': {
@@ -306,6 +432,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingCustomerIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/support/': {
+      id: '/support/'
+      path: '/support'
+      fullPath: '/support/'
+      preLoaderRoute: typeof SupportIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support/$caseId': {
+      id: '/support/$caseId'
+      path: '/support/$caseId'
+      fullPath: '/support/$caseId'
+      preLoaderRoute: typeof SupportCaseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/transactions/': {
       id: '/transactions/'
       path: '/transactions'
@@ -339,17 +479,24 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AlfieRoute: AlfieRoute,
+  AuditRoute: AuditRoute,
+  EmployeesRoute: EmployeesRoute,
+  SavingsRoute: SavingsRoute,
+  SettingsRoute: SettingsRoute,
   SubscriptionsRoute: SubscriptionsRoute,
   TransfersRoute: TransfersRoute,
   AccountsAccountIdRoute: AccountsAccountIdRoute,
   CardsCardIdRoute: CardsCardIdRoute,
   CustomersCustomerIdRoute: CustomersCustomerIdRoute,
   OnboardingCustomerIdRoute: OnboardingCustomerIdRoute,
+  SupportCaseIdRoute: SupportCaseIdRoute,
   TransactionsTransactionIdRoute: TransactionsTransactionIdRoute,
   AccountsIndexRoute: AccountsIndexRoute,
   CardsIndexRoute: CardsIndexRoute,
   CustomersIndexRoute: CustomersIndexRoute,
   OnboardingIndexRoute: OnboardingIndexRoute,
+  SupportIndexRoute: SupportIndexRoute,
   TransactionsIndexRoute: TransactionsIndexRoute,
   CardsManufacturingBatchIdRoute: CardsManufacturingBatchIdRoute,
   CardsManufacturingIndexRoute: CardsManufacturingIndexRoute,
