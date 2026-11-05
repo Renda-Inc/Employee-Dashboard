@@ -55,12 +55,12 @@ function CustomerProfile() {
 
   return (
     <>
-      <div className="panel mb-4 px-5 py-4">
+      <div className="mb-6 border-b pb-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <Avatar name={fullName(c)} size="lg" />
             <div>
-              <h1 className="text-[18px] font-semibold tracking-normal">{fullName(c)}</h1>
+              <h1 className="text-[28px] font-semibold tracking-normal">{fullName(c)}</h1>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
                 <Mono>{c.userId}</Mono>
                 <span>·</span>
@@ -71,7 +71,7 @@ function CustomerProfile() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {c.customerStatus === "Setup In Progress" && canLifecycle && (
               <ActionDialog
                 trigger={<Button size="sm">Complete setup</Button>}
@@ -139,7 +139,7 @@ function OverviewTab({ c }: { c: Customer }) {
         </ol>
         <p className="mt-3 text-[13px] text-muted-foreground">Current status: <StatusBadge status={c.customerStatus} />{" "}{activationBlocker(c, db.accounts) && c.customerStatus !== "Active" && c.customerStatus !== "Restricted" && c.customerStatus !== "Closed" ? <span className="ml-1">— {activationBlocker(c, db.accounts)}</span> : null}</p>
       </Panel>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="customer-summary grid divide-y overflow-hidden rounded-lg border bg-card md:grid-cols-2 xl:grid-cols-3">
         <Panel title="Registration & verification"><KV cols={1} items={[["Email", <StatusBadge status={c.emailVerified ? "Verified" : "Unverified"} />], ["Phone", <StatusBadge status={c.phoneVerified ? "Verified" : "Unverified"} />], ["Onboarding", <StatusBadge status={c.onboardingStatus} />]]} /></Panel>
         <Panel title="KYC" actions={<Link to="/onboarding/$customerId" params={{ customerId: c.id }} className="text-[13px] text-primary">Case →</Link>}><KV cols={1} items={[["Status", <StatusBadge status={c.kycStatus} />], ["Provider ref", kyc ? <Mono>{kyc.providerReference}</Mono> : "—"], ["Last update", fmtDateTime(kyc?.lastUpdated)]]} /></Panel>
         <Panel title="Smart Spend">{ss ? <KV cols={1} items={[["Status", <StatusBadge status={ss.accountStatus} />], ["Account", ss.maskedAccountIdentifier ?? "Pending"], ["Available", fmtMoney(ss.availableBalance)]]} /> : <p className="text-muted-foreground">Not issued</p>}</Panel>

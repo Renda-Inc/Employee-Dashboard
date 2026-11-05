@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Users, UserCheck, ShieldCheck, BadgeCheck, LifeBuoy, Clock3 } from "lucide-react";
 import { useDB } from "@/services/store";
 import { attentionQueue } from "@/services/selectors";
 import { PageHeader, Panel, EmptyState } from "@/components/common";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { fullName, relTime } from "@/lib/format";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -77,24 +78,24 @@ function Overview() {
           </>
         }
       />
-      <div className="mb-5 grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border md:grid-cols-3 xl:grid-cols-6">
-        {kpis.map((k) => (
-          <div key={k.label} className="bg-card px-4 py-3.5">
-            <div className="text-[13px] text-muted-foreground">{k.label}</div>
-            <div className="mt-1 text-[24px] font-semibold tabular tracking-normal">{k.value}</div>
-            <div className="mt-0.5 truncate text-[12px] text-muted-foreground">{k.note}</div>
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        {kpis.map((k, i) => (
+          <div key={k.label} className="panel min-w-0 px-5 py-5">
+            <div className="flex items-center justify-between gap-2 text-[14px] text-muted-foreground"><span>{k.label}</span>{(() => { const Icon = [Users, UserCheck, Clock3, ShieldCheck, BadgeCheck, LifeBuoy][i]; return Icon ? <Icon className="size-4 shrink-0" /> : null; })()}</div>
+            <div className="mt-1 text-[32px] font-semibold tabular tracking-normal">{k.value}</div>
+            <div className="mt-2 text-[13px] text-muted-foreground">{k.note}</div>
           </div>
         ))}
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1.6fr_1fr]">
+      <div className="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
         <Panel title={<>Requires attention <span className="ml-1 rounded bg-secondary px-1.5 text-[12px] tabular text-muted-foreground">{queue.length}</span></>} bodyClass="p-0">
           {queue.length === 0 ? <EmptyState title="Nothing requires attention" /> : (
-            <div className="max-h-[440px] overflow-y-auto">
+            <div className="max-h-[460px] overflow-auto">
               <table className="w-full text-[14px]">
                 <tbody>
                   {queue.map((q) => (
-                    <tr key={q.id} className="cursor-pointer border-b last:border-0 hover:bg-secondary/60" onClick={() => navigate({ to: q.to, params: q.params })}>
+                    <tr key={q.id} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter") navigate({ to: q.to, params: q.params }); }} className="cursor-pointer border-b last:border-0 hover:bg-secondary/60" onClick={() => navigate({ to: q.to, params: q.params })}>
                       <td className="py-2 pl-4 pr-2">
                         <span className={cn("inline-block size-1.5 rounded-full", q.tone === "danger" ? "bg-danger" : q.tone === "warning" ? "bg-warning" : "bg-info")} />
                       </td>
@@ -115,14 +116,14 @@ function Overview() {
 
         <Panel title="Recent activity" bodyClass="p-0">
           {feed.length === 0 ? <EmptyState title="No activity in this period" /> : (
-            <ol className="max-h-[440px] overflow-y-auto">
+            <ol className="max-h-[460px] overflow-auto">
               {feed.map((a) => {
                 const c = db.customers.find((x) => x.id === a.customerId);
                 return (
-                  <li key={a.id} className="flex gap-3 border-b px-4 py-2.5 last:border-0">
+                  <li key={a.id} className="flex gap-3 border-b px-6 py-4 last:border-0">
                     <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-foreground/30" />
                     <div className="min-w-0 flex-1">
-                      {a.link ? <Link to={a.link.to} params={a.link.params} className="block truncate text-[14px] hover:underline">{a.description}</Link> : <div className="truncate text-[14px]">{a.description}</div>}
+                      {a.link ? <Link to={a.link.to} params={a.link.params} className="block text-[14px] hover:underline">{a.description}</Link> : <div className="text-[14px]">{a.description}</div>}
                       {c && <Link to="/customers/$customerId" params={{ customerId: c.id }} className="text-[13px] text-muted-foreground hover:text-foreground">{fullName(c)} · {c.userId}</Link>}
                     </div>
                     <span className="shrink-0 text-[12px] text-muted-foreground">{relTime(a.timestamp)}</span>
@@ -134,25 +135,25 @@ function Overview() {
         </Panel>
       </div>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+      <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <Panel title="Customers by lifecycle stage">
-          <div className="h-48">
+          <div className="h-60">
             <ResponsiveContainer>
               <BarChart data={stageData} margin={{ left: -24, right: 8 }}>
-                <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} />
-                <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={11} />
-                <Tooltip cursor={{ fill: "var(--color-secondary)" }} contentStyle={{ fontSize: 12, borderRadius: 6, border: "1px solid var(--color-border)" }} />
+                <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={13} />
+                <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={13} />
+                <Tooltip cursor={{ fill: "var(--color-secondary)" }} contentStyle={{ fontSize: 14, background: "var(--card)", color: "var(--foreground)", borderRadius: 6, border: "1px solid var(--color-border)" }} />
                 <Bar dataKey="count" name="Customers" fill="var(--color-chart-2)" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </Panel>
         <Panel title="Physical card orders by fulfillment stage" actions={<Link to="/cards/manufacturing" className="text-[13px] font-medium text-primary">Manufacturing →</Link>}>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
             {cardStages.map((s) => (
-              <div key={s.label} className="rounded-md border px-3 py-3">
+              <div key={s.label} className="border-l px-4 py-3">
                 <StatusBadge status={s.label} />
-                <div className="mt-2 text-[22px] font-semibold tabular">{s.count}</div>
+                <div className="mt-2 text-[30px] font-semibold tabular">{s.count}</div>
               </div>
             ))}
           </div>
