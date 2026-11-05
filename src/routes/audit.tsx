@@ -9,7 +9,7 @@ import { fmtDateTime, lookup } from "@/lib/format";
 import type { AuditEvent } from "@/types/models";
 
 export const Route = createFileRoute("/audit")({
-  head: () => ({ meta: [{ title: "Audit Logs — Renda Operations" }, { name: "description", content: "Traceability for sensitive operations." }, { property: "og:title", content: "Audit Logs — Renda Operations" }, { property: "og:description", content: "Audit trail." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Audit Logs — Renda Admin" }, { name: "description", content: "Traceability for sensitive operations." }, { property: "og:title", content: "Audit Logs — Renda Admin" }, { property: "og:description", content: "Audit trail." }] }),
   component: Audit,
 });
 
@@ -51,21 +51,21 @@ function Audit() {
           <FilterSelect label="Action" value={act} onChange={setAct} options={actions} />
           <FilterSelect label="Module" value={mod} onChange={setMod} options={modules} />
           <FilterSelect label="Outcome" value={out} onChange={setOut} options={["Success", "Simulated", "Denied", "Failed"]} />
-          <select aria-label="Date range" value={days} onChange={(e) => setDays(e.target.value)} className="h-8 rounded-md border bg-card px-2 text-[12.5px]"><option value="all">Any date</option><option value="1">Last 24h</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select>
+          <select aria-label="Date range" value={days} onChange={(e) => setDays(e.target.value)} className="h-8 rounded-md border bg-card px-2 text-[13px]"><option value="all">Any date</option><option value="1">Last 24h</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select>
         </>
       } />
-      <p className="mt-3 text-[12px] text-muted-foreground">In production, audit records must be written by trusted backend services and protected from modification.</p>
+      <p className="mt-3 text-[13px] text-muted-foreground">In production, audit records must be written by trusted backend services and protected from modification.</p>
       <Sheet open={!!open} onOpenChange={(o) => !o && setOpen(null)}>
         <SheetContent className="sm:max-w-md">
           {open && (
             <>
               <SheetHeader><SheetTitle>{open.action}</SheetTitle></SheetHeader>
-              <div className="space-y-4 px-4">
+              <div className="space-y-6 px-4">
                 <KV cols={1} items={[["Timestamp", fmtDateTime(open.timestamp)], ["Employee", `${L.empName(open.employeeId)} (${L.employee(open.employeeId)?.role ?? ""})`], ["Module", open.module], ["Record", `${open.entityType} · ${open.entityLabel}`], ["Outcome", <StatusBadge status={open.outcome} />], ["Details", open.details || "—"], ["Event ID", <Mono>{open.id}</Mono>]]} />
                 {(open.before || open.after) && (
                   <div className="grid grid-cols-2 gap-3">
-                    <div><div className="eyebrow mb-1">Before</div><pre className="whitespace-pre-wrap rounded bg-secondary p-2 font-mono text-[11.5px]">{fmt(open.before)}</pre></div>
-                    <div><div className="eyebrow mb-1">After</div><pre className="whitespace-pre-wrap rounded bg-secondary p-2 font-mono text-[11.5px]">{fmt(open.after)}</pre></div>
+                    <div><div className="eyebrow mb-1">Before</div><pre className="whitespace-pre-wrap rounded bg-secondary p-2 font-mono text-[12px]">{fmt(open.before)}</pre></div>
+                    <div><div className="eyebrow mb-1">After</div><pre className="whitespace-pre-wrap rounded bg-secondary p-2 font-mono text-[12px]">{fmt(open.after)}</pre></div>
                   </div>
                 )}
               </div>

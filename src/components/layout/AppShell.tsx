@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
@@ -52,18 +53,18 @@ function ProfileMenu({ children, align = "end" }: { children: ReactNode; align?:
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent align={align} className="w-64">
         <DropdownMenuLabel className="font-normal">
-          <div className="text-[13px] font-medium">{me.name}</div>
-          <div className="text-[11.5px] text-muted-foreground">{me.email}</div>
+          <div className="text-[14px] font-medium">{me.name}</div>
+          <div className="text-[12px] text-muted-foreground">{me.email}</div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}><UserRound /> Profile & preferences</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuLabel className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground"><FlaskConical className="size-3" /> Demo: sign in as</DropdownMenuLabel>
+        <DropdownMenuLabel className="flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground"><FlaskConical className="size-3" /> Demo: sign in as</DropdownMenuLabel>
         {db.employees.filter((e) => e.status === "Active").map((e) => (
           <DropdownMenuItem key={e.id} onClick={() => { switchEmployee(e.id); toast.success(`Signed in as ${e.name} (${e.role}) — demo`); }}>
             <span className="flex-1">
-              <span className="block text-[12.5px]">{e.name}</span>
-              <span className="block text-[11px] text-muted-foreground">{e.role}</span>
+              <span className="block text-[13px]">{e.name}</span>
+              <span className="block text-[12px] text-muted-foreground">{e.role}</span>
             </span>
             {e.id === me.id && <Check className="text-primary" />}
           </DropdownMenuItem>
@@ -88,7 +89,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
         to={n.to}
         title={collapsed ? n.title : undefined}
         className={cn(
-          "relative flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] transition-colors",
+          "relative flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[14px] transition-colors",
           isActive ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
           !allowed && "opacity-50",
           collapsed && "justify-center px-0",
@@ -105,13 +106,13 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
       <div className={cn("flex h-12 items-center border-b", collapsed ? "justify-center" : "justify-between px-4")}>
         {!collapsed && (
           <Link to="/" className="flex items-baseline gap-1.5">
-            <span className="text-[15px] font-bold tracking-[0.18em]">RENDA</span>
+            <span className="text-[15px] font-bold tracking-normal">RENDA</span>
             <span className="size-1.5 rounded-full bg-primary" aria-hidden />
           </Link>
         )}
-        <button onClick={onToggle} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground">
+        <Button variant="ghost" onClick={onToggle} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground">
           {collapsed ? <PanelLeft className="size-4" /> : <PanelLeftClose className="size-4" />}
-        </button>
+        </Button>
       </div>
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-3">
         {!collapsed && <div className="eyebrow px-2.5 pb-2">Operations</div>}
@@ -121,15 +122,15 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
         {MGMT.map(item)}
       </nav>
       <ProfileMenu align="start">
-        <button className={cn("flex items-center gap-2.5 border-t px-3 py-3 text-left hover:bg-secondary", collapsed && "justify-center px-0")}>
+        <Button variant="ghost" className={cn("flex items-center gap-2.5 border-t px-3 py-3 text-left hover:bg-secondary", collapsed && "justify-center px-0")}>
           <Avatar name={me.name} size="md" />
           {!collapsed && (
             <span className="min-w-0">
-              <span className="block truncate text-[13px] font-medium">{me.name}</span>
-              <span className="block truncate text-[11.5px] text-muted-foreground">{me.role}</span>
+              <span className="block truncate text-[14px] font-medium">{me.name}</span>
+              <span className="block truncate text-[12px] text-muted-foreground">{me.role}</span>
             </span>
           )}
-        </button>
+        </Button>
       </ProfileMenu>
     </aside>
   );
@@ -156,7 +157,7 @@ function Breadcrumbs() {
     crumbs.push({ label });
   }
   return (
-    <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-[13px]">
+    <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-[14px]">
       {crumbs.map((c, i) => (
         <span key={i} className="flex min-w-0 items-center gap-1">
           {i > 0 && <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />}
@@ -193,16 +194,16 @@ function GlobalSearch() {
   const groups = Array.from(new Set(results.map((r) => r.group)));
   return (
     <>
-      <button onClick={() => setOpen(true)} className="flex h-8 w-full max-w-sm items-center gap-2 rounded-md border bg-background px-2.5 text-[13px] text-muted-foreground hover:border-foreground/20">
+      <Button variant="ghost" onClick={() => setOpen(true)} className="flex h-8 w-full max-w-sm items-center gap-2 rounded-md border bg-background px-2.5 text-[14px] text-muted-foreground hover:border-foreground/20">
         <Search className="size-3.5" />
         <span className="flex-1 truncate text-left">Search customers, IDs, transactions, cards, cases…</span>
-        <kbd className="hidden rounded border bg-card px-1 font-mono text-[10.5px] sm:inline">⌘K</kbd>
-      </button>
+        <kbd className="hidden rounded border bg-card px-1 font-mono text-[12px] sm:inline">⌘K</kbd>
+      </Button>
       <CommandDialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQ(""); }}>
         <CommandInput placeholder="Search by name, Renda user ID, reference, card last 4…" value={q} onValueChange={setQ} />
         <CommandList>
           {q.trim().length < 2 ? (
-            <div className="px-4 py-6 text-center text-[12.5px] text-muted-foreground">Type at least 2 characters. Results respect your role's permissions.</div>
+            <div className="px-4 py-6 text-center text-[13px] text-muted-foreground">Type at least 2 characters. Results respect your role's permissions.</div>
           ) : (
             <CommandEmpty>No results for “{q}”.</CommandEmpty>
           )}
@@ -211,8 +212,8 @@ function GlobalSearch() {
               {results.filter((r) => r.group === g).map((r) => (
                 <CommandItem key={r.group + r.id} value={`${r.group} ${r.title} ${r.subtitle} ${r.id}`} onSelect={() => { setOpen(false); setQ(""); navigate({ to: r.to, params: r.params }); }}>
                   <div className="min-w-0">
-                    <div className="truncate text-[13px]">{r.title}</div>
-                    <div className="truncate text-[11.5px] text-muted-foreground">{r.subtitle}</div>
+                    <div className="truncate text-[14px]">{r.title}</div>
+                    <div className="truncate text-[12px] text-muted-foreground">{r.subtitle}</div>
                   </div>
                 </CommandItem>
               ))}
@@ -232,29 +233,29 @@ function Notifications() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button aria-label={`Notifications (${unread.length} unread)`} className="relative rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground">
+        <Button variant="ghost" aria-label={`Notifications (${unread.length} unread)`} className="relative rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground">
           <Bell className="size-4" />
-          {unread.length > 0 && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-primary px-1 text-center text-[10px] font-semibold leading-4 text-primary-foreground">{unread.length}</span>}
-        </button>
+          {unread.length > 0 && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-primary px-1 text-center text-[12px] font-semibold leading-4 text-primary-foreground">{unread.length}</span>}
+        </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-96 p-0">
         <div className="flex items-center justify-between border-b px-3 py-2">
-          <span className="text-[13px] font-semibold">Notifications</span>
-          {unread.length > 0 && <button className="text-[12px] text-muted-foreground hover:text-foreground" onClick={() => markNotificationsRead(list.map((n) => n.id))}>Mark all read</button>}
+          <span className="text-[14px] font-semibold">Notifications</span>
+          {unread.length > 0 && <Button variant="ghost" className="text-[13px] text-muted-foreground hover:text-foreground" onClick={() => markNotificationsRead(list.map((n) => n.id))}>Mark all read</Button>}
         </div>
         <div className="max-h-96 overflow-y-auto">
-          {list.length === 0 && <div className="p-6 text-center text-[12.5px] text-muted-foreground">You're all caught up.</div>}
+          {list.length === 0 && <div className="p-6 text-center text-[13px] text-muted-foreground">You're all caught up.</div>}
           {list.map((n) => {
             const isUnread = !db.readNotificationIds.includes(n.id);
             return (
-              <button key={n.id} onClick={() => { markNotificationsRead([n.id]); navigate({ to: n.to, params: n.params }); }} className="flex w-full gap-2.5 border-b px-3 py-2.5 text-left last:border-0 hover:bg-secondary">
+              <Button variant="ghost" key={n.id} onClick={() => { markNotificationsRead([n.id]); navigate({ to: n.to, params: n.params }); }} className="flex w-full gap-2.5 border-b px-3 py-2.5 text-left last:border-0 hover:bg-secondary">
                 <span className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", isUnread ? "bg-primary" : "bg-transparent")} />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[12.5px] font-medium">{n.type}</span>
-                  <span className="block truncate text-[12px] text-muted-foreground">{n.record} — {n.detail}</span>
+                  <span className="block text-[13px] font-medium">{n.type}</span>
+                  <span className="block truncate text-[13px] text-muted-foreground">{n.record} — {n.detail}</span>
                 </span>
-                <span className="shrink-0 text-[11px] text-muted-foreground">{relTime(n.at)}</span>
-              </button>
+                <span className="shrink-0 text-[12px] text-muted-foreground">{relTime(n.at)}</span>
+              </Button>
             );
           })}
         </div>
@@ -267,7 +268,7 @@ function MobileNav() {
   const { path } = useActiveNav();
   const navigate = useNavigate();
   return (
-    <select aria-label="Navigate" className="h-8 rounded-md border bg-card px-2 text-[13px] md:hidden" value={ALL_NAV.find((n) => (n.to === "/" ? path === "/" : path.startsWith(n.to)))?.to ?? "/"} onChange={(e) => navigate({ to: e.target.value })}>
+    <select aria-label="Navigate" className="h-8 rounded-md border bg-card px-2 text-[14px] md:hidden" value={ALL_NAV.find((n) => (n.to === "/" ? path === "/" : path.startsWith(n.to)))?.to ?? "/"} onChange={(e) => navigate({ to: e.target.value })}>
       {ALL_NAV.map((n) => <option key={n.to} value={n.to}>{n.title}</option>)}
     </select>
   );
@@ -285,13 +286,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           <MobileNav />
           <div className="hidden min-w-0 flex-1 md:block"><Breadcrumbs /></div>
           <div className="flex flex-1 justify-end md:flex-none md:basis-96"><GlobalSearch /></div>
-          <span className="hidden items-center gap-1 rounded border border-dashed border-info/40 bg-info-soft px-1.5 py-0.5 text-[11px] font-medium text-info lg:inline-flex" title="Simulated data and integrations">
+          <span className="hidden items-center gap-1 rounded border border-dashed border-info/40 bg-info-soft px-1.5 py-0.5 text-[12px] font-medium text-info lg:inline-flex" title="Simulated data and integrations">
             <FlaskConical className="size-3" /> Demo environment
           </span>
           <Notifications />
           <a href="#help" onClick={(e) => { e.preventDefault(); toast.info("Operations handbook: internal documentation is not connected in this demo."); }} aria-label="Help" className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"><CircleHelp className="size-4" /></a>
           <ProfileMenu>
-            <button aria-label="Profile menu" className="rounded-full"><Avatar name={me.name} size="md" /></button>
+            <Button variant="ghost" aria-label="Profile menu" className="rounded-full"><Avatar name={me.name} size="md" /></Button>
           </ProfileMenu>
         </header>
         <main className="mx-auto w-full max-w-[1680px] flex-1 px-4 py-5 md:px-6">{children}</main>

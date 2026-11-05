@@ -8,7 +8,7 @@ import { fmtDateTime, lookup } from "@/lib/format";
 import type { Transfer } from "@/types/models";
 
 export const Route = createFileRoute("/transfers")({
-  head: () => ({ meta: [{ title: "Payments & Transfers — Renda Operations" }, { name: "description", content: "P2P, Interac and account-to-account transfers." }, { property: "og:title", content: "Payments & Transfers — Renda Operations" }, { property: "og:description", content: "P2P, Interac and account-to-account transfers." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Payments & Transfers — Renda Admin" }, { name: "description", content: "P2P, Interac and account-to-account transfers." }, { property: "og:title", content: "Payments & Transfers — Renda Admin" }, { property: "og:description", content: "P2P, Interac and account-to-account transfers." }] }),
   component: Transfers,
 });
 
@@ -66,7 +66,7 @@ function Transfers() {
       <PageHeader title="Payments & Transfers" subtitle="View transfer records. Employees cannot initiate transfers from this dashboard." />
       <TabBar tabs={TABS} value={tab} onChange={(t) => setTab(t)} counts={counts} />
       <DataTable key={tab} rows={rows} columns={cols} rowKey={(t) => t.id} defaultSort={{ key: "ts", dir: "desc" }} onRowClick={open} toolbar={<FilterSelect label="Status" value={status} onChange={setStatus} options={["Pending", "Completed", "Failed", "Reversed"]} />} />
-      {tab === "Interac" && <p className="mt-3 text-[12px] text-muted-foreground">Interac fields are limited to what the integration provides. Recipient contact details are not displayed.</p>}
+      {tab === "Interac" && <p className="mt-3 text-[13px] text-muted-foreground">Interac fields are limited to what the integration provides. Recipient contact details are not displayed.</p>}
     </>
   );
 }

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { fmtDate, fmtDateTime, lookup } from "@/lib/format";
 
 export const Route = createFileRoute("/cards/manufacturing/$batchId")({
-  head: () => ({ meta: [{ title: "Manufacturing batch — Renda Operations" }, { name: "description", content: "Review, export and record submission of a manufacturing batch." }, { property: "og:title", content: "Manufacturing batch — Renda Operations" }, { property: "og:description", content: "Manufacturing batch review." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Manufacturing batch — Renda Admin" }, { name: "description", content: "Review, export and record submission of a manufacturing batch." }, { property: "og:title", content: "Manufacturing batch — Renda Admin" }, { property: "og:description", content: "Manufacturing batch review." }] }),
   component: BatchDetail,
 });
 
@@ -43,14 +43,14 @@ function BatchDetail() {
           <>
             {b.status === "Draft" && <Button size="sm" variant="outline" onClick={generate}><FileText /> {b.pdfReference ? "Regenerate PDF" : "Generate PDF"}</Button>}
             {b.pdfReference && <Button size="sm" variant="outline" onClick={download}><Download /> Download PDF</Button>}
-            {b.status === "Draft" && <ActionDialog trigger={<Button size="sm" disabled={!b.pdfReference}>Mark ready for submission</Button>} disabled={!b.pdfReference} title="Mark batch ready" description="Confirms the batch and PDF have been reviewed. This does not submit anything to the manufacturer." onConfirm={() => markBatchReady(b.id)} success="Batch marked ready for submission" />}
-            {b.status === "Ready for Submission" && <ActionDialog trigger={<Button size="sm">Record submission</Button>} title="Record submission to manufacturer" description="Only confirm once the PDF has actually been sent. Orders will move to Submitted and cannot be batched again." reasonLabel="How was it sent? (e.g. emailed to production desk)" confirmLabel="Record submission" onConfirm={(r) => recordBatchSubmission(b.id, r)} success="Submission recorded — audit event created" />}
+            {b.status === "Draft" && <ActionDialog trigger={<Button variant="ghost" size="sm" disabled={!b.pdfReference}>Mark ready for submission</Button>} disabled={!b.pdfReference} title="Mark batch ready" description="Confirms the batch and PDF have been reviewed. This does not submit anything to the manufacturer." onConfirm={() => markBatchReady(b.id)} success="Batch marked ready for submission" />}
+            {b.status === "Ready for Submission" && <ActionDialog trigger={<Button variant="ghost" size="sm">Record submission</Button>} title="Record submission to manufacturer" description="Only confirm once the PDF has actually been sent. Orders will move to Submitted and cannot be batched again." reasonLabel="How was it sent? (e.g. emailed to production desk)" confirmLabel="Record submission" onConfirm={(r) => recordBatchSubmission(b.id, r)} success="Submission recorded — audit event created" />}
           </>
         ) : b.pdfReference ? <Button size="sm" variant="outline" onClick={download}><Download /> Download PDF</Button> : null}
       />
-      {b.status === "Draft" && !b.pdfReference && <p className="mb-4 rounded-md bg-warning-soft px-3 py-2 text-[12.5px] text-warning">Generate the manufacturing PDF to continue. Downloading a PDF does not mark the batch as submitted.</p>}
-      <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-        <div className="space-y-4">
+      {b.status === "Draft" && !b.pdfReference && <p className="mb-4 rounded-md bg-warning-soft px-3 py-2 text-[13px] text-warning">Generate the manufacturing PDF to continue. Downloading a PDF does not mark the batch as submitted.</p>}
+      <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+        <div className="space-y-6">
           <Panel title="Batch review">
             <KV cols={3} items={[
               ["Batch reference", <Mono>{b.batchReference}</Mono>], ["Created", fmtDateTime(b.createdAt)], ["Order count", b.orderCount],
@@ -58,22 +58,22 @@ function BatchDetail() {
               ["Submission", b.submittedAt ? <span><StatusBadge status="Submitted" /> <span className="text-muted-foreground">{fmtDateTime(b.submittedAt)}</span></span> : <StatusBadge status="Pending" />],
               ["Created by", L.empName(b.createdBy)], ["Reviewed by", L.empName(b.reviewedBy)], ["Submitted by", L.empName(b.submittedBy)], ["Submission note", b.submissionNote ?? "—"],
             ]} />
-            <div className="mt-4 flex flex-wrap gap-2">{Object.entries(breakdown).map(([d, n]) => <span key={d} className="rounded border px-2 py-1 text-[12px]">{d} <strong className="tabular">×{n}</strong></span>)}</div>
+            <div className="mt-4 flex flex-wrap gap-2">{Object.entries(breakdown).map(([d, n]) => <span key={d} className="rounded border px-2 py-1 text-[13px]">{d} <strong className="tabular">×{n}</strong></span>)}</div>
           </Panel>
           <div className="panel overflow-hidden">
-            <div className="border-b px-4 py-2.5 text-[13px] font-semibold">Orders</div>
-            <table className="w-full text-[13px]">
-              <thead><tr className="border-b bg-secondary/60 text-left text-[11.5px] text-muted-foreground"><th className="px-3 py-2 font-medium">Order</th><th className="px-3 py-2 font-medium">Customer</th><th className="px-3 py-2 font-medium">Design</th><th className="px-3 py-2 font-medium">Type</th><th className="px-3 py-2 font-medium">Requested</th><th className="px-3 py-2 font-medium">Status</th><th /></tr></thead>
+            <div className="border-b px-4 py-2.5 text-[14px] font-semibold">Orders</div>
+            <table className="w-full text-[14px]">
+              <thead><tr className="border-b bg-secondary/60 text-left text-[12px] text-muted-foreground"><th className="px-3 py-2 font-medium">Order</th><th className="px-3 py-2 font-medium">Customer</th><th className="px-3 py-2 font-medium">Design</th><th className="px-3 py-2 font-medium">Type</th><th className="px-3 py-2 font-medium">Requested</th><th className="px-3 py-2 font-medium">Status</th><th /></tr></thead>
               <tbody>
                 {orders.map((o) => (
                   <tr key={o.id} className="border-b last:border-0">
-                    <td className="px-3 py-2"><Link to="/cards/$cardId" params={{ cardId: o.cardId }} className="font-mono text-[12px] hover:underline">{o.orderReference}</Link></td>
+                    <td className="px-3 py-2"><Link to="/cards/$cardId" params={{ cardId: o.cardId }} className="font-mono text-[13px] hover:underline">{o.orderReference}</Link></td>
                     <td className="px-3 py-2"><CustomerCell customer={L.customer(o.customerId)} /></td>
                     <td className="px-3 py-2">{o.requestedDesign}</td>
                     <td className="px-3 py-2">{o.orderType}{o.replacementReference && <span className="text-muted-foreground"> · {o.replacementReference}</span>}</td>
                     <td className="px-3 py-2">{fmtDate(o.requestDate)}</td>
                     <td className="px-3 py-2"><StatusBadge status={o.orderStatus} /></td>
-                    <td className="px-3 py-2 text-right">{canManage && b.status === "Draft" && <button className="text-[12px] text-danger hover:underline" onClick={() => run(() => removeOrderFromBatch(b.id, o.id), "Order returned to eligible queue")}>Remove</button>}</td>
+                    <td className="px-3 py-2 text-right">{canManage && b.status === "Draft" && <Button variant="ghost" className="text-[13px] text-danger hover:underline" onClick={() => run(() => removeOrderFromBatch(b.id, o.id), "Order returned to eligible queue")}>Remove</Button>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -84,10 +84,10 @@ function BatchDetail() {
         <Panel title="Batch history">
           <ol className="relative space-y-3 border-l pl-4">
             {[...b.history].reverse().map((h, i) => (
-              <li key={i} className="relative"><span className="absolute -left-[21px] top-1.5 size-2 rounded-full border-2 border-card bg-foreground/40" /><div className="text-[13px]">{h.action}</div><div className="text-[11.5px] text-muted-foreground">{L.empName(h.by)} · {fmtDateTime(h.at)}</div></li>
+              <li key={i} className="relative"><span className="absolute -left-[21px] top-1.5 size-2 rounded-full border-2 border-card bg-foreground/40" /><div className="text-[14px]">{h.action}</div><div className="text-[12px] text-muted-foreground">{L.empName(h.by)} · {fmtDateTime(h.at)}</div></li>
             ))}
           </ol>
-          <p className="mt-4 text-[12px] text-muted-foreground">PDF contains order references, designs, placeholder customer tokens and shipping references only. Fields are configurable once the manufacturer confirms specifications.</p>
+          <p className="mt-4 text-[13px] text-muted-foreground">PDF contains order references, designs, placeholder customer tokens and shipping references only. Fields are configurable once the manufacturer confirms specifications.</p>
         </Panel>
       </div>
     </>

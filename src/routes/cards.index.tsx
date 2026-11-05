@@ -10,7 +10,7 @@ import { fullName, lookup } from "@/lib/format";
 import { CARD_DESIGNS } from "@/types/models";
 
 export const Route = createFileRoute("/cards/")({
-  head: () => ({ meta: [{ title: "Cards — Renda Operations" }, { name: "description", content: "Virtual and physical Renda Mastercard records." }, { property: "og:title", content: "Cards — Renda Operations" }, { property: "og:description", content: "Renda Mastercard records." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Cards — Renda Admin" }, { name: "description", content: "Virtual and physical Renda Mastercard records." }, { property: "og:title", content: "Cards — Renda Admin" }, { property: "og:description", content: "Renda Mastercard records." }] }),
   component: Cards,
 });
 
@@ -55,7 +55,7 @@ function Cards() {
     <>
       <PageHeader title="Cards" subtitle="Virtual and physical Renda Mastercard records, replacements and fulfillment." actions={<Link to="/cards/manufacturing"><Button size="sm"><Factory /> Card Manufacturing</Button></Link>} />
       <div className="mb-5 grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border md:grid-cols-4 xl:grid-cols-8">
-        {metrics.map(([l, v]) => <div key={l} className="bg-card px-3 py-3"><div className="truncate text-[11.5px] text-muted-foreground">{l}</div><div className="mt-0.5 text-[20px] font-semibold tabular">{v}</div></div>)}
+        {metrics.map(([l, v]) => <div key={l} className="bg-card px-3 py-3"><div className="truncate text-[12px] text-muted-foreground">{l}</div><div className="mt-0.5 text-[20px] font-semibold tabular">{v}</div></div>)}
       </div>
       <CardTable rows={rows} pageSize={15} toolbar={
         <>

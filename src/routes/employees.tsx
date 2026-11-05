@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import type { Role } from "@/types/models";
 
 export const Route = createFileRoute("/employees")({
-  head: () => ({ meta: [{ title: "Employees & Permissions — Renda Operations" }, { name: "description", content: "Employee accounts and role-based access." }, { property: "og:title", content: "Employees & Permissions — Renda Operations" }, { property: "og:description", content: "Employee roles and permissions." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Employees & Permissions — Renda Admin" }, { name: "description", content: "Employee accounts and role-based access." }, { property: "og:title", content: "Employees & Permissions — Renda Admin" }, { property: "og:description", content: "Employee roles and permissions." }] }),
   component: Employees,
 });
 
@@ -25,12 +25,12 @@ function Employees() {
       <PageHeader title="Employees & Permissions" subtitle="Unified dashboard with role-based access. Permissions are enforced in the action layer, not just by hiding buttons." />
       <div className="mb-4"><SimulatedNote>Demo authentication: use the profile menu to sign in as any employee. A client-side role switcher is not production security — production must enforce roles in trusted backend services.</SimulatedNote></div>
       <Panel title="Employees" bodyClass="p-0">
-        <table className="w-full text-[13px]">
-          <thead><tr className="border-b bg-secondary/60 text-left text-[11.5px] text-muted-foreground"><th className="px-4 py-2 font-medium">Employee</th><th className="px-3 py-2 font-medium">Email</th><th className="px-3 py-2 font-medium">Role</th><th className="px-3 py-2 font-medium">Status</th><th /></tr></thead>
+        <table className="w-full text-[14px]">
+          <thead><tr className="border-b bg-secondary/60 text-left text-[12px] text-muted-foreground"><th className="px-4 py-2 font-medium">Employee</th><th className="px-3 py-2 font-medium">Email</th><th className="px-3 py-2 font-medium">Role</th><th className="px-3 py-2 font-medium">Status</th><th /></tr></thead>
           <tbody>
             {db.employees.map((e) => (
               <tr key={e.id} className="border-b last:border-0">
-                <td className="px-4 py-2"><span className="flex items-center gap-2"><Avatar name={e.name} />{e.name}{e.id === me.id && <span className="text-[11px] text-muted-foreground">(you)</span>}</span></td>
+                <td className="px-4 py-2"><span className="flex items-center gap-2"><Avatar name={e.name} />{e.name}{e.id === me.id && <span className="text-[12px] text-muted-foreground">(you)</span>}</span></td>
                 <td className="px-3 py-2 text-muted-foreground">{e.email}</td>
                 <td className="px-3 py-2">
                   {canManage ? (
@@ -47,10 +47,10 @@ function Employees() {
             ))}
           </tbody>
         </table>
-        {!canManage && <p className="border-t px-4 py-2 text-[12px] text-muted-foreground">Only Administrators can change roles or employee status.</p>}
+        {!canManage && <p className="border-t px-4 py-2 text-[13px] text-muted-foreground">Only Administrators can change roles or employee status.</p>}
       </Panel>
       <Panel title="Role permission matrix" className="mt-5" bodyClass="overflow-x-auto p-0">
-        <table className="w-full text-[12.5px]">
+        <table className="w-full text-[13px]">
           <thead><tr className="border-b bg-secondary/60 text-left"><th className="px-4 py-2 font-medium text-muted-foreground">Permission</th>{ROLES.map((r) => <th key={r} className="whitespace-nowrap px-3 py-2 text-center font-medium text-muted-foreground">{r}</th>)}</tr></thead>
           <tbody>
             {ALL_PERMISSIONS.map((p) => (
@@ -61,7 +61,7 @@ function Employees() {
             ))}
           </tbody>
         </table>
-        <p className="border-t px-4 py-2 text-[12px] text-muted-foreground">Initial role definitions. Configurable once roles are stored in a trusted backend.</p>
+        <p className="border-t px-4 py-2 text-[13px] text-muted-foreground">Initial role definitions. Configurable once roles are stored in a trusted backend.</p>
       </Panel>
     </>
   );

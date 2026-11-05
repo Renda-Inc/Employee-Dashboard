@@ -7,7 +7,7 @@ import { TransactionTable } from "@/components/tables/RecordTables";
 import { fullName, lookup } from "@/lib/format";
 
 export const Route = createFileRoute("/transactions/")({
-  head: () => ({ meta: [{ title: "Transactions — Renda Operations" }, { name: "description", content: "Investigate customer transactions." }, { property: "og:title", content: "Transactions — Renda Operations" }, { property: "og:description", content: "Investigate customer transactions." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Transactions — Renda Admin" }, { name: "description", content: "Investigate customer transactions." }, { property: "og:title", content: "Transactions — Renda Admin" }, { property: "og:description", content: "Investigate customer transactions." }] }),
   component: Transactions,
 });
 
@@ -46,9 +46,9 @@ function Transactions() {
           <FilterSelect label="Status" value={status} onChange={setStatus} options={["Pending", "Completed", "Failed", "Reversed"]} />
           <FilterSelect label="Account" value={acct} onChange={setAcct} options={["Smart Spend", "Sense Save"]} />
           <FilterSelect label="Rail" value={rail} onChange={setRail} options={["Mastercard", "Internal Ledger", "Interac", "Renda Billing"]} />
-          <select aria-label="Date range" value={days} onChange={(e) => setDays(e.target.value)} className="h-8 rounded-md border bg-card px-2 text-[12.5px]"><option value="all">Any date</option><option value="1">Last 24h</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select>
-          <input aria-label="Minimum amount" type="number" placeholder="Min $" value={min} onChange={(e) => setMin(e.target.value)} className="h-8 w-20 rounded-md border bg-card px-2 text-[12.5px]" />
-          <input aria-label="Maximum amount" type="number" placeholder="Max $" value={max} onChange={(e) => setMax(e.target.value)} className="h-8 w-20 rounded-md border bg-card px-2 text-[12.5px]" />
+          <select aria-label="Date range" value={days} onChange={(e) => setDays(e.target.value)} className="h-8 rounded-md border bg-card px-2 text-[13px]"><option value="all">Any date</option><option value="1">Last 24h</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select>
+          <input aria-label="Minimum amount" type="number" placeholder="Min $" value={min} onChange={(e) => setMin(e.target.value)} className="h-8 w-20 rounded-md border bg-card px-2 text-[13px]" />
+          <input aria-label="Maximum amount" type="number" placeholder="Max $" value={max} onChange={(e) => setMax(e.target.value)} className="h-8 w-20 rounded-md border bg-card px-2 text-[13px]" />
         </>
       } />
     </>

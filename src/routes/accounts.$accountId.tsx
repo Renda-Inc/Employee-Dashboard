@@ -12,7 +12,7 @@ import { fmtDate, fmtMoney, fullName } from "@/lib/format";
 import type { Account, Customer, Transaction } from "@/types/models";
 
 export const Route = createFileRoute("/accounts/$accountId")({
-  head: () => ({ meta: [{ title: "Account details — Renda Operations" }, { name: "description", content: "Banking account details." }, { property: "og:title", content: "Account details — Renda Operations" }, { property: "og:description", content: "Banking account details." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Account details — Renda Admin" }, { name: "description", content: "Banking account details." }, { property: "og:title", content: "Account details — Renda Admin" }, { property: "og:description", content: "Banking account details." }] }),
   component: AccountDetail,
 });
 
@@ -60,14 +60,14 @@ function AccountDetail() {
           </>
         }
       />
-      <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <Panel title="Account details">
           <KV cols={3} items={[["Account type", a.accountType], ["Status", <StatusBadge status={a.accountStatus} />], ["Account identifier", <Mono>{a.maskedAccountIdentifier ?? "Not issued"}</Mono>], ["Opening date", fmtDate(a.openingDate)], ["Available balance", fmtMoney(a.availableBalance)], ["Ledger balance", fmtMoney(a.ledgerBalance)]]} />
           <div className="mt-4"><div className="eyebrow mb-1">Restrictions</div>{a.restrictions.length ? <ul className="list-disc pl-4">{a.restrictions.map((r) => <li key={r}>{r}</li>)}</ul> : <p className="text-muted-foreground">None</p>}</div>
         </Panel>
-        <div className="space-y-4">
+        <div className="space-y-6">
           <Panel title="Customer">
-            <Link to="/customers/$customerId" params={{ customerId: c.id }} className="flex items-center gap-3 hover:underline"><Avatar name={fullName(c)} size="md" /><span><span className="block font-medium">{fullName(c)}</span><span className="text-[12px] text-muted-foreground">{c.userId} · {c.customerStatus}</span></span></Link>
+            <Link to="/customers/$customerId" params={{ customerId: c.id }} className="flex items-center gap-3 hover:underline"><Avatar name={fullName(c)} size="md" /><span><span className="block font-medium">{fullName(c)}</span><span className="text-[13px] text-muted-foreground">{c.userId} · {c.customerStatus}</span></span></Link>
           </Panel>
           <Panel title="Statements & documents">
             {issued ? (

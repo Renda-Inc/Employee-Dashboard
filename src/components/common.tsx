@@ -11,11 +11,11 @@ import { currentEmployee } from "@/services/actions";
 
 export function PageHeader({ title, subtitle, actions, eyebrow }: { title: string; subtitle?: ReactNode; actions?: ReactNode; eyebrow?: ReactNode }) {
   return (
-    <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
         {eyebrow && <div className="mb-1">{eyebrow}</div>}
-        <h1 className="text-[19px] font-semibold tracking-tight text-foreground">{title}</h1>
-        {subtitle && <p className="mt-0.5 text-[13px] text-muted-foreground">{subtitle}</p>}
+        <h1 className="text-[28px] font-semibold tracking-normal text-foreground">{title}</h1>
+        {subtitle && <p className="mt-2 text-[15px] text-muted-foreground">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
@@ -26,12 +26,12 @@ export function Panel({ title, actions, children, className, bodyClass }: { titl
   return (
     <section className={cn("panel", className)}>
       {(title || actions) && (
-        <header className="flex items-center justify-between gap-2 border-b px-4 py-2.5">
-          <h2 className="text-[13px] font-semibold">{title}</h2>
+        <header className="flex items-center justify-between gap-2 flex-wrap px-6 pb-0 pt-6">
+          <h2 className="text-[17px] font-semibold">{title}</h2>
           {actions}
         </header>
       )}
-      <div className={cn("p-4", bodyClass)}>{children}</div>
+      <div className={cn("p-6", bodyClass)}>{children}</div>
     </section>
   );
 }
@@ -41,7 +41,7 @@ export function EmptyState({ title, description, icon: Icon = Inbox, action }: {
     <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
       <div className="mb-3 rounded-full bg-muted p-2.5 text-muted-foreground"><Icon className="size-5" /></div>
       <p className="text-sm font-medium">{title}</p>
-      {description && <p className="mt-1 max-w-sm text-[12.5px] text-muted-foreground">{description}</p>}
+      {description && <p className="mt-1 max-w-sm text-[13px] text-muted-foreground">{description}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
@@ -53,7 +53,7 @@ export function KV({ items, cols = 2 }: { items: [string, ReactNode][]; cols?: 1
       {items.map(([k, v]) => (
         <div key={k} className="min-w-0">
           <dt className="eyebrow">{k}</dt>
-          <dd className="mt-0.5 truncate text-[13px]">{v ?? "—"}</dd>
+          <dd className="mt-1 break-words text-[14px]">{v ?? "—"}</dd>
         </div>
       ))}
     </dl>
@@ -61,7 +61,7 @@ export function KV({ items, cols = 2 }: { items: [string, ReactNode][]; cols?: 1
 }
 
 export function Avatar({ name, size = "sm" }: { name: string; size?: "sm" | "md" | "lg" }) {
-  const s = size === "lg" ? "size-11 text-sm" : size === "md" ? "size-8 text-xs" : "size-6 text-[10px]";
+  const s = size === "lg" ? "size-14 text-lg" : size === "md" ? "size-9 text-xs" : "size-8 text-[12px]";
   return <span className={cn("inline-flex shrink-0 items-center justify-center rounded-full bg-ink font-semibold text-ink-foreground", s)}>{initials(name)}</span>;
 }
 
@@ -72,7 +72,7 @@ export function CustomerCell({ customer, sub }: { customer: Customer | undefined
       <Avatar name={fullName(customer)} />
       <span className="min-w-0">
         <span className="block truncate font-medium group-hover:underline">{fullName(customer)}</span>
-        {sub && <span className="block truncate text-[11.5px] text-muted-foreground">{sub}</span>}
+        {sub && <span className="block truncate text-[12px] text-muted-foreground">{sub}</span>}
       </span>
     </Link>
   );
@@ -80,7 +80,7 @@ export function CustomerCell({ customer, sub }: { customer: Customer | undefined
 
 export function SimulatedNote({ children }: { children?: ReactNode }) {
   return (
-    <div className="flex items-start gap-2 rounded-md border border-dashed border-info/40 bg-info-soft px-3 py-2 text-[12px] text-info">
+    <div className="flex items-start gap-2 rounded-md border border-dashed border-info/40 bg-info-soft px-3 py-2 text-[13px] text-info">
       <FlaskConical className="mt-0.5 size-3.5 shrink-0" />
       <span>{children ?? "Demo mode — this action is simulated. No real banking, card, KYC or payment system is contacted."}</span>
     </div>
@@ -88,7 +88,7 @@ export function SimulatedNote({ children }: { children?: ReactNode }) {
 }
 
 export function Mono({ children }: { children: ReactNode }) {
-  return <span className="font-mono text-[12px]">{children}</span>;
+  return <span className="font-mono text-[13px]">{children}</span>;
 }
 
 export function usePermission(p: Permission) {

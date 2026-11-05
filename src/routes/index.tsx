@@ -11,10 +11,10 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
-    meta: [
-      { title: "Overview — Renda Operations" },
+    meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, 
+      { title: "Overview — Renda Admin" },
       { name: "description", content: "Customer activity, banking operations and outstanding tasks at a glance." },
-      { property: "og:title", content: "Overview — Renda Operations" },
+      { property: "og:title", content: "Overview — Renda Admin" },
       { property: "og:description", content: "Customer activity, banking operations and outstanding tasks at a glance." },
     ],
   }),
@@ -68,8 +68,8 @@ function Overview() {
         subtitle="Monitor customer activity, banking operations, and outstanding tasks."
         actions={
           <>
-            <span className="text-[12.5px] text-muted-foreground">{today}</span>
-            <select aria-label="Activity period" value={range} onChange={(e) => setRange(e.target.value as typeof range)} className="h-8 rounded-md border bg-card px-2 text-[12.5px]">
+            <span className="text-[13px] text-muted-foreground">{today}</span>
+            <select aria-label="Activity period" value={range} onChange={(e) => setRange(e.target.value as typeof range)} className="h-8 rounded-md border bg-card px-2 text-[13px]">
               <option value="7">Activity: last 7 days</option>
               <option value="30">Activity: last 30 days</option>
               <option value="all">Activity: all time</option>
@@ -80,18 +80,18 @@ function Overview() {
       <div className="mb-5 grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border md:grid-cols-3 xl:grid-cols-6">
         {kpis.map((k) => (
           <div key={k.label} className="bg-card px-4 py-3.5">
-            <div className="text-[12px] text-muted-foreground">{k.label}</div>
-            <div className="mt-1 text-[24px] font-semibold tabular tracking-tight">{k.value}</div>
-            <div className="mt-0.5 truncate text-[11.5px] text-muted-foreground">{k.note}</div>
+            <div className="text-[13px] text-muted-foreground">{k.label}</div>
+            <div className="mt-1 text-[24px] font-semibold tabular tracking-normal">{k.value}</div>
+            <div className="mt-0.5 truncate text-[12px] text-muted-foreground">{k.note}</div>
           </div>
         ))}
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1.6fr_1fr]">
-        <Panel title={<>Requires attention <span className="ml-1 rounded bg-secondary px-1.5 text-[11px] tabular text-muted-foreground">{queue.length}</span></>} bodyClass="p-0">
+        <Panel title={<>Requires attention <span className="ml-1 rounded bg-secondary px-1.5 text-[12px] tabular text-muted-foreground">{queue.length}</span></>} bodyClass="p-0">
           {queue.length === 0 ? <EmptyState title="Nothing requires attention" /> : (
             <div className="max-h-[440px] overflow-y-auto">
-              <table className="w-full text-[13px]">
+              <table className="w-full text-[14px]">
                 <tbody>
                   {queue.map((q) => (
                     <tr key={q.id} className="cursor-pointer border-b last:border-0 hover:bg-secondary/60" onClick={() => navigate({ to: q.to, params: q.params })}>
@@ -100,11 +100,11 @@ function Overview() {
                       </td>
                       <td className="px-2 py-2">
                         <div className="font-medium">{q.type}</div>
-                        <div className="max-w-[340px] truncate text-[12px] text-muted-foreground">{q.detail}</div>
+                        <div className="max-w-[340px] truncate text-[13px] text-muted-foreground">{q.detail}</div>
                       </td>
-                      <td className="px-2 py-2 text-[12.5px]">{q.record}</td>
-                      <td className="whitespace-nowrap px-2 py-2 text-[12px] text-muted-foreground">{relTime(q.at)}</td>
-                      <td className="whitespace-nowrap py-2 pl-2 pr-4 text-right text-[12.5px] font-medium text-primary">{q.action} <ArrowRight className="inline size-3" /></td>
+                      <td className="px-2 py-2 text-[13px]">{q.record}</td>
+                      <td className="whitespace-nowrap px-2 py-2 text-[13px] text-muted-foreground">{relTime(q.at)}</td>
+                      <td className="whitespace-nowrap py-2 pl-2 pr-4 text-right text-[13px] font-medium text-primary">{q.action} <ArrowRight className="inline size-3" /></td>
                     </tr>
                   ))}
                 </tbody>
@@ -122,10 +122,10 @@ function Overview() {
                   <li key={a.id} className="flex gap-3 border-b px-4 py-2.5 last:border-0">
                     <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-foreground/30" />
                     <div className="min-w-0 flex-1">
-                      {a.link ? <Link to={a.link.to} params={a.link.params} className="block truncate text-[13px] hover:underline">{a.description}</Link> : <div className="truncate text-[13px]">{a.description}</div>}
-                      {c && <Link to="/customers/$customerId" params={{ customerId: c.id }} className="text-[12px] text-muted-foreground hover:text-foreground">{fullName(c)} · {c.userId}</Link>}
+                      {a.link ? <Link to={a.link.to} params={a.link.params} className="block truncate text-[14px] hover:underline">{a.description}</Link> : <div className="truncate text-[14px]">{a.description}</div>}
+                      {c && <Link to="/customers/$customerId" params={{ customerId: c.id }} className="text-[13px] text-muted-foreground hover:text-foreground">{fullName(c)} · {c.userId}</Link>}
                     </div>
-                    <span className="shrink-0 text-[11.5px] text-muted-foreground">{relTime(a.timestamp)}</span>
+                    <span className="shrink-0 text-[12px] text-muted-foreground">{relTime(a.timestamp)}</span>
                   </li>
                 );
               })}
@@ -147,7 +147,7 @@ function Overview() {
             </ResponsiveContainer>
           </div>
         </Panel>
-        <Panel title="Physical card orders by fulfillment stage" actions={<Link to="/cards/manufacturing" className="text-[12px] font-medium text-primary">Manufacturing →</Link>}>
+        <Panel title="Physical card orders by fulfillment stage" actions={<Link to="/cards/manufacturing" className="text-[13px] font-medium text-primary">Manufacturing →</Link>}>
           <div className="grid grid-cols-4 gap-3">
             {cardStages.map((s) => (
               <div key={s.label} className="rounded-md border px-3 py-3">
@@ -156,7 +156,7 @@ function Overview() {
               </div>
             ))}
           </div>
-          <p className="mt-3 text-[12px] text-muted-foreground">Counts update as orders are batched and submissions are recorded.</p>
+          <p className="mt-3 text-[13px] text-muted-foreground">Counts update as orders are batched and submissions are recorded.</p>
         </Panel>
       </div>
     </>

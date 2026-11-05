@@ -8,7 +8,7 @@ import { fmtDate, fmtDateTime, fullName } from "@/lib/format";
 import type { Customer, DB } from "@/types/models";
 
 export const Route = createFileRoute("/onboarding/")({
-  head: () => ({ meta: [{ title: "Onboarding & KYC — Renda Operations" }, { name: "description", content: "Verification and onboarding queue." }, { property: "og:title", content: "Onboarding & KYC — Renda Operations" }, { property: "og:description", content: "Verification and onboarding queue." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Onboarding & KYC — Renda Admin" }, { name: "description", content: "Verification and onboarding queue." }, { property: "og:title", content: "Onboarding & KYC — Renda Admin" }, { property: "og:description", content: "Verification and onboarding queue." }] }),
   component: Onboarding,
 });
 
@@ -61,7 +61,7 @@ function Onboarding() {
     { key: "s", header: "Current stage", cell: (c) => <StatusBadge status={c.customerStatus} />, sort: (c) => c.customerStatus },
     { key: "o", header: "Outstanding requirement", cell: (c) => <span className="text-muted-foreground">{outstanding(c)}</span> },
     { key: "l", header: "Last updated", cell: (c) => <span className="text-muted-foreground">{fmtDateTime(c.updatedAt)}</span>, sort: (c) => c.updatedAt },
-    { key: "a", header: "", className: "text-right", cell: () => <span className="text-[12.5px] font-medium text-primary">Open →</span> },
+    { key: "a", header: "", className: "text-right", cell: () => <span className="text-[13px] font-medium text-primary">Open →</span> },
   ];
   return (
     <>
