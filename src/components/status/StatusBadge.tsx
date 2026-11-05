@@ -24,7 +24,7 @@ const STYLE: Record<Tone, string> = {
   danger: "bg-danger-soft text-danger",
   info: "bg-info-soft text-info",
   neutral: "bg-neutral-soft text-neutral",
-  brand: "bg-brand-soft text-warning",
+  brand: "bg-secondary text-foreground",
 };
 const DOT: Record<Tone, string> = {
   success: "bg-success", warning: "bg-warning", danger: "bg-danger", info: "bg-info", neutral: "bg-neutral", brand: "bg-primary",
@@ -33,7 +33,7 @@ const DOT: Record<Tone, string> = {
 export function StatusBadge({ status, tone, className }: { status: string; tone?: Tone; className?: string }) {
   const t = tone ?? TONE[status] ?? "neutral";
   return (
-    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded px-1.5 py-0.5 text-[11.5px] font-medium", STYLE[t], className)}>
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[12px] font-medium", STYLE[t], className)}>
       <span className={cn("size-1.5 rounded-full", DOT[t])} aria-hidden />
       {status}
     </span>

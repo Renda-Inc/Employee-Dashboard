@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { fullName, lookup } from "@/lib/format";
 
 export const Route = createFileRoute("/support/")({
-  head: () => ({ meta: [{ title: "Customer Support — Renda Operations" }, { name: "description", content: "Receive, investigate, assign and resolve customer cases." }, { property: "og:title", content: "Customer Support — Renda Operations" }, { property: "og:description", content: "Customer support cases." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Customer Support — Renda Admin" }, { name: "description", content: "Receive, investigate, assign and resolve customer cases." }, { property: "og:title", content: "Customer Support — Renda Admin" }, { property: "og:description", content: "Customer support cases." }] }),
   component: Support,
 });
 
@@ -54,7 +54,7 @@ function Support() {
           <FilterSelect label="Priority" value={pr} onChange={setPr} options={["Urgent", "High", "Normal", "Low"]} />
           <FilterSelect label="Category" value={cat} onChange={setCat} options={["Account Access", "Verification", "Banking Account", "Transaction", "Transfer", "Card", "Membership", "Savings", "Alfie", "General Inquiry"]} />
           <FilterSelect label="Assigned" value={as} onChange={setAs} options={["Me", "Unassigned", ...db.employees.map((e) => e.name)]} />
-          <select aria-label="Date range" value={days} onChange={(e) => setDays(e.target.value)} className="h-8 rounded-md border bg-card px-2 text-[12.5px]"><option value="all">Any date</option><option value="1">Last 24h</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select>
+          <select aria-label="Date range" value={days} onChange={(e) => setDays(e.target.value)} className="h-8 rounded-md border bg-card px-2 text-[13px]"><option value="all">Any date</option><option value="1">Last 24h</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select>
         </>
       } />
     </>

@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import type { Customer } from "@/types/models";
 
 export const Route = createFileRoute("/customers/")({
-  head: () => ({ meta: [{ title: "Customers — Renda Operations" }, { name: "description", content: "Search and manage Renda customer records." }, { property: "og:title", content: "Customers — Renda Operations" }, { property: "og:description", content: "Search and manage Renda customer records." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Customers — Renda Admin" }, { name: "description", content: "Search and manage Renda customer records." }, { property: "og:title", content: "Customers — Renda Admin" }, { property: "og:description", content: "Search and manage Renda customer records." }] }),
   component: Customers,
 });
 
@@ -66,7 +66,7 @@ function Customers() {
       key: "act", header: <span className="sr-only">Actions</span>, className: "text-right", cell: (c) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <button aria-label="Customer actions" className="rounded p-1 hover:bg-secondary"><MoreHorizontal className="size-4" /></button>
+            <Button variant="ghost" aria-label="Customer actions" className="rounded p-1 hover:bg-secondary"><MoreHorizontal className="size-4" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
             <DropdownMenuItem onClick={() => navigate({ to: "/customers/$customerId", params: { customerId: c.id } })}>Open profile</DropdownMenuItem>
@@ -111,7 +111,7 @@ function Customers() {
             <FilterSelect label="KYC" value={kyc} onChange={setKyc} options={["Not Started", "Pending", "Under Review", "Approved", "Failed"]} />
             <FilterSelect label="Plan" value={plan} onChange={setPlan} options={["Everyday", "Plus", "None"]} />
             <FilterSelect label="Account" value={bank} onChange={setBank} options={["Not Issued", "Pending Issuance", "Issuance Failed", "Active", "Restricted", "Closed"]} />
-            <select aria-label="Registration date" value={reg} onChange={(e) => setReg(e.target.value)} className="h-8 rounded-md border bg-card px-2 text-[12.5px]">
+            <select aria-label="Registration date" value={reg} onChange={(e) => setReg(e.target.value)} className="h-8 rounded-md border bg-card px-2 text-[13px]">
               <option value="all">Registered: Any time</option>
               <option value="7">Last 7 days</option>
               <option value="30">Last 30 days</option>
@@ -119,7 +119,7 @@ function Customers() {
             </select>
             {selected.length > 0 && (
               <div className="ml-auto flex items-center gap-2">
-                <span className="text-[12px] text-muted-foreground">{selected.length} selected</span>
+                <span className="text-[13px] text-muted-foreground">{selected.length} selected</span>
                 <Button size="sm" variant="outline" onClick={exportCsv}><Download /> Export CSV</Button>
                 <Button size="sm" variant="ghost" onClick={() => setSelected([])}>Clear</Button>
               </div>

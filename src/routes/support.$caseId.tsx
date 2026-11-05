@@ -12,7 +12,7 @@ import { fmtDateTime, fullName, lookup } from "@/lib/format";
 import type { CasePriority, CaseStatus } from "@/types/models";
 
 export const Route = createFileRoute("/support/$caseId")({
-  head: () => ({ meta: [{ title: "Support case — Renda Operations" }, { name: "description", content: "Support case details, notes and resolution." }, { property: "og:title", content: "Support case — Renda Operations" }, { property: "og:description", content: "Support case details." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Support case — Renda Admin" }, { name: "description", content: "Support case details, notes and resolution." }, { property: "og:title", content: "Support case — Renda Admin" }, { property: "og:description", content: "Support case details." }] }),
   component: CaseDetail,
 });
 
@@ -49,14 +49,14 @@ function CaseDetail() {
     <>
       <PageHeader eyebrow={<Mono>{sc.caseReference}</Mono>} title={sc.subject} subtitle={<span className="inline-flex items-center gap-2"><StatusBadge status={sc.status} /><StatusBadge status={sc.priority} /> {sc.category} · opened {fmtDateTime(sc.createdAt)}</span>}
         actions={canManage && sc.assignedEmployeeId !== me.id && <Button size="sm" variant="outline" onClick={() => run(() => updateCase(sc.id, { assignedEmployeeId: me.id }), "Assigned to you")}>Assign to me</Button>} />
-      <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-        <div className="space-y-4">
+      <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+        <div className="space-y-6">
           <Panel title="Customer message">
-            <div className="flex gap-3"><Avatar name={fullName(c)} size="md" /><div><div className="text-[12px] text-muted-foreground">{fullName(c)} · submitted via in-app Help</div><p className="mt-1 whitespace-pre-wrap text-[13.5px]">{sc.message}</p></div></div>
+            <div className="flex gap-3"><Avatar name={fullName(c)} size="md" /><div><div className="text-[13px] text-muted-foreground">{fullName(c)} · submitted via in-app Help</div><p className="mt-1 whitespace-pre-wrap text-[14px]">{sc.message}</p></div></div>
           </Panel>
-          <Panel title={<>Internal notes <span className="ml-1 text-[11px] font-normal text-muted-foreground">Not visible to customer</span></>}>
+          <Panel title={<>Internal notes <span className="ml-1 text-[12px] font-normal text-muted-foreground">Not visible to customer</span></>}>
             {canManage && <div className="mb-3 space-y-2"><Textarea rows={2} placeholder="Add internal note…" value={note} onChange={(e) => setNote(e.target.value)} /><Button size="sm" onClick={() => run(() => addCaseNote(sc.id, note), "Internal note added") && setNote("")}>Add note</Button></div>}
-            {sc.notes.length ? sc.notes.map((n) => <div key={n.id} className="border-t bg-warning-soft/40 px-2 py-2"><div className="text-[13px]">{n.text}</div><div className="text-[11.5px] text-muted-foreground">{L.empName(n.by)} · {fmtDateTime(n.at)}</div></div>) : <p className="text-muted-foreground">No internal notes.</p>}
+            {sc.notes.length ? sc.notes.map((n) => <div key={n.id} className="border-t bg-warning-soft/40 px-2 py-2"><div className="text-[14px]">{n.text}</div><div className="text-[12px] text-muted-foreground">{L.empName(n.by)} · {fmtDateTime(n.at)}</div></div>) : <p className="text-muted-foreground">No internal notes.</p>}
           </Panel>
           <Panel title="Resolution">
             {canManage ? (
@@ -67,12 +67,12 @@ function CaseDetail() {
                   <Button size="sm" variant="outline" onClick={() => run(() => updateCase(sc.id, { resolution }), "Resolution saved")}>Save</Button>
                   <Button size="sm" onClick={() => run(() => updateCase(sc.id, { resolution, status: "Resolved" }), "Case resolved")} disabled={sc.status === "Resolved"}>Save & resolve</Button>
                 </div>
-                <p className="text-[11.5px] text-muted-foreground">Resolving a case does not send an email or notification to the customer in this demo.</p>
+                <p className="text-[12px] text-muted-foreground">Resolving a case does not send an email or notification to the customer in this demo.</p>
               </div>
             ) : <p>{sc.resolution ?? <span className="text-muted-foreground">Not resolved.</span>}</p>}
           </Panel>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-6">
           <Panel title="Case details">
             <KV cols={1} items={[["Customer", <Link to="/customers/$customerId" params={{ customerId: c.id }} className="text-primary">{fullName(c)} · {c.userId}</Link>]]} />
             {canManage ? (
@@ -84,16 +84,16 @@ function CaseDetail() {
             ) : <div className="mt-3"><KV cols={1} items={[["Status", <StatusBadge status={sc.status} />], ["Priority", sc.priority], ["Assigned to", L.empName(sc.assignedEmployeeId)]]} /></div>}
           </Panel>
           <Panel title="Linked records">
-            {sc.links.length ? <ul className="space-y-1">{sc.links.map((l) => <li key={l.type + l.id} className="flex gap-2 text-[13px]"><span className="w-20 capitalize text-muted-foreground">{l.type}</span>{linkLabel(l.type, l.id)}</li>)}</ul> : <p className="text-muted-foreground">None.</p>}
+            {sc.links.length ? <ul className="space-y-1">{sc.links.map((l) => <li key={l.type + l.id} className="flex gap-2 text-[14px]"><span className="w-20 capitalize text-muted-foreground">{l.type}</span>{linkLabel(l.type, l.id)}</li>)}</ul> : <p className="text-muted-foreground">None.</p>}
             {canManage && linkOptions.length > 0 && (
               <div className="mt-3 flex gap-2 border-t pt-3">
-                <select aria-label="Link record" className="h-8 min-w-0 flex-1 rounded-md border bg-card px-2 text-[12.5px]" value={link} onChange={(e) => setLink(e.target.value)}><option value="">Link a record…</option>{linkOptions.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}</select>
+                <select aria-label="Link record" className="h-8 min-w-0 flex-1 rounded-md border bg-card px-2 text-[13px]" value={link} onChange={(e) => setLink(e.target.value)}><option value="">Link a record…</option>{linkOptions.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}</select>
                 <Button size="sm" variant="outline" disabled={!link} onClick={() => { const [type, id] = link.split(":"); if (run(() => linkCaseRecord(sc.id, { type: type as "card", id }), "Record linked")) setLink(""); }}>Link</Button>
               </div>
             )}
           </Panel>
           <Panel title="Timeline">
-            <ol className="relative space-y-3 border-l pl-4">{[...sc.timeline].reverse().map((t, i) => <li key={i} className="relative"><span className="absolute -left-[21px] top-1.5 size-2 rounded-full border-2 border-card bg-foreground/40" /><div className="text-[13px]">{t.text}</div><div className="text-[11.5px] text-muted-foreground">{t.by ? L.empName(t.by) : "Customer"} · {fmtDateTime(t.at)}</div></li>)}</ol>
+            <ol className="relative space-y-3 border-l pl-4">{[...sc.timeline].reverse().map((t, i) => <li key={i} className="relative"><span className="absolute -left-[21px] top-1.5 size-2 rounded-full border-2 border-card bg-foreground/40" /><div className="text-[14px]">{t.text}</div><div className="text-[12px] text-muted-foreground">{t.by ? L.empName(t.by) : "Customer"} · {fmtDateTime(t.at)}</div></li>)}</ol>
           </Panel>
         </div>
       </div>

@@ -14,7 +14,7 @@ import { MembershipPanel } from "./customers.$customerId";
 import type { Subscription } from "@/types/models";
 
 export const Route = createFileRoute("/subscriptions")({
-  head: () => ({ meta: [{ title: "Plans & Subscriptions — Renda Operations" }, { name: "description", content: "Renda Everyday and Renda Plus memberships." }, { property: "og:title", content: "Plans & Subscriptions — Renda Operations" }, { property: "og:description", content: "Renda memberships." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Plans & Subscriptions — Renda Admin" }, { name: "description", content: "Renda Everyday and Renda Plus memberships." }, { property: "og:title", content: "Plans & Subscriptions — Renda Admin" }, { property: "og:description", content: "Renda memberships." }] }),
   component: Subscriptions,
 });
 
@@ -59,10 +59,10 @@ function Subscriptions() {
     <>
       <PageHeader title="Plans & Subscriptions" subtitle="Membership records for Renda Everyday and Renda Plus. Prices in CAD." />
       <div className="mb-5 grid gap-3 md:grid-cols-4">
-        <div className="panel px-4 py-3"><div className="text-[12px] text-muted-foreground">Renda Everyday</div><div className="text-[18px] font-semibold">{fmtMoney(PLAN_PRICES.Everyday)}<span className="text-[12px] font-normal text-muted-foreground">/mo · virtual card</span></div></div>
-        <div className="panel px-4 py-3"><div className="text-[12px] text-muted-foreground">Renda Plus</div><div className="text-[18px] font-semibold">{fmtMoney(PLAN_PRICES.Plus)}<span className="text-[12px] font-normal text-muted-foreground">/mo · physical card</span></div></div>
-        <div className="panel px-4 py-3"><div className="text-[12px] text-muted-foreground">Plus members</div><div className="text-[18px] font-semibold tabular">{plus.length}</div></div>
-        <div className="panel px-4 py-3"><div className="text-[12px] text-muted-foreground">Billing pending / issues</div><div className="text-[18px] font-semibold tabular">{db.subscriptions.filter((s) => s.latestBillingStatus === "Pending").length} / {db.subscriptions.filter((s) => s.subscriptionStatus === "Billing Issue").length}</div></div>
+        <div className="panel px-4 py-3"><div className="text-[13px] text-muted-foreground">Renda Everyday</div><div className="text-[18px] font-semibold">{fmtMoney(PLAN_PRICES.Everyday)}<span className="text-[13px] font-normal text-muted-foreground">/mo · virtual card</span></div></div>
+        <div className="panel px-4 py-3"><div className="text-[13px] text-muted-foreground">Renda Plus</div><div className="text-[18px] font-semibold">{fmtMoney(PLAN_PRICES.Plus)}<span className="text-[13px] font-normal text-muted-foreground">/mo · physical card</span></div></div>
+        <div className="panel px-4 py-3"><div className="text-[13px] text-muted-foreground">Plus members</div><div className="text-[18px] font-semibold tabular">{plus.length}</div></div>
+        <div className="panel px-4 py-3"><div className="text-[13px] text-muted-foreground">Billing pending / issues</div><div className="text-[18px] font-semibold tabular">{db.subscriptions.filter((s) => s.latestBillingStatus === "Pending").length} / {db.subscriptions.filter((s) => s.subscriptionStatus === "Billing Issue").length}</div></div>
       </div>
       <DataTable rows={rows} columns={cols} rowKey={(s) => s.id} onRowClick={(s) => setOpen(s.customerId)} toolbar={
         <>

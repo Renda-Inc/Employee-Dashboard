@@ -58,13 +58,13 @@ export function NewCaseDialog({ trigger, customerId, link, defaultCategory = "Ge
                   <option value="">Select customer…</option>
                   {db.customers.map((c) => <option key={c.id} value={c.id}>{fullName(c)} · {c.userId}</option>)}
                 </select>
-                {err.cid && <p className="text-[12px] text-danger">{err.cid}</p>}
+                {err.cid && <p className="text-[13px] text-danger">{err.cid}</p>}
               </div>
             )}
             <div className="space-y-1">
               <Label htmlFor="nc-s">Subject</Label>
               <Input id="nc-s" value={subject} onChange={(e) => setSubject(e.target.value)} />
-              {err.subject && <p className="text-[12px] text-danger">{err.subject}</p>}
+              {err.subject && <p className="text-[13px] text-danger">{err.subject}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
@@ -79,10 +79,10 @@ export function NewCaseDialog({ trigger, customerId, link, defaultCategory = "Ge
             <div className="space-y-1">
               <Label htmlFor="nc-m">Description</Label>
               <Textarea id="nc-m" rows={4} value={message} onChange={(e) => setMessage(e.target.value)} />
-              {err.message && <p className="text-[12px] text-danger">{err.message}</p>}
+              {err.message && <p className="text-[13px] text-danger">{err.message}</p>}
             </div>
-            {link && <p className="text-[12px] text-muted-foreground">Linked record: {link.type} {link.id}</p>}
-            <label className="flex items-center gap-2 text-[13px]"><Checkbox checked={assign} onCheckedChange={(v) => setAssign(!!v)} /> Assign to me</label>
+            {link && <p className="text-[13px] text-muted-foreground">Linked record: {link.type} {link.id}</p>}
+            <label className="flex items-center gap-2 text-[14px]"><Checkbox checked={assign} onCheckedChange={(v) => setAssign(!!v)} /> Assign to me</label>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>

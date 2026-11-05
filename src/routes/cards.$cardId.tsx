@@ -14,7 +14,7 @@ import { fmtDate, fmtDateTime, fullName, lookup } from "@/lib/format";
 import { CARD_DESIGNS, type CardDesign, type ReplacementReason } from "@/types/models";
 
 export const Route = createFileRoute("/cards/$cardId")({
-  head: () => ({ meta: [{ title: "Card details — Renda Operations" }, { name: "description", content: "Card details, replacement and fulfillment." }, { property: "og:title", content: "Card details — Renda Operations" }, { property: "og:description", content: "Card details." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Card details — Renda Admin" }, { name: "description", content: "Card details, replacement and fulfillment." }, { property: "og:title", content: "Card details — Renda Admin" }, { property: "og:description", content: "Card details." }] }),
   component: CardDetail,
 });
 
@@ -68,8 +68,8 @@ function CardDetail() {
           </>
         }
       />
-      <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-        <div className="space-y-4">
+      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+        <div className="space-y-6">
           <Panel title="Card details">
             <KV cols={3} items={[
               ["Customer", <Link to="/customers/$customerId" params={{ customerId: c.id }} className="text-primary">{fullName(c)}</Link>],
@@ -79,19 +79,19 @@ function CardDetail() {
               ["Manufacturing batch", batch ? <Link to="/cards/manufacturing/$batchId" params={{ batchId: batch.id }} className="text-primary">{batch.batchReference}</Link> : "—"],
               ["Fulfillment", order ? <StatusBadge status={order.orderStatus} /> : card.cardType === "Virtual" ? "Digital" : "—"],
             ]} />
-            <p className="mt-4 text-[12px] text-muted-foreground">Full card numbers, CVV and PIN are never displayed.</p>
+            <p className="mt-4 text-[13px] text-muted-foreground">Full card numbers, CVV and PIN are never displayed.</p>
           </Panel>
           <Panel title="Operational notes">
-            {card.notes.length ? card.notes.map((n) => <div key={n.id} className="border-b py-2 last:border-0"><div>{n.text}</div><div className="text-[11.5px] text-muted-foreground">{L.empName(n.by)} · {fmtDateTime(n.at)}</div></div>) : <p className="text-muted-foreground">No notes.</p>}
-            {order?.notes && <p className="mt-2 text-[12.5px] text-muted-foreground">Order note: {order.notes}</p>}
+            {card.notes.length ? card.notes.map((n) => <div key={n.id} className="border-b py-2 last:border-0"><div>{n.text}</div><div className="text-[12px] text-muted-foreground">{L.empName(n.by)} · {fmtDateTime(n.at)}</div></div>) : <p className="text-muted-foreground">No notes.</p>}
+            {order?.notes && <p className="mt-2 text-[13px] text-muted-foreground">Order note: {order.notes}</p>}
           </Panel>
         </div>
         <Panel title="Replacement history">
-          {successor && <p className="mb-3 rounded bg-info-soft px-2 py-1.5 text-[12.5px] text-info">Replaced by <Link to="/cards/$cardId" params={{ cardId: successor.id }} className="underline">{successor.cardDesign} •••• {successor.last4}</Link> ({successor.cardStatus})</p>}
+          {successor && <p className="mb-3 rounded bg-info-soft px-2 py-1.5 text-[13px] text-info">Replaced by <Link to="/cards/$cardId" params={{ cardId: successor.id }} className="underline">{successor.cardDesign} •••• {successor.last4}</Link> ({successor.cardStatus})</p>}
           {chain.length > 0 && <div className="mb-3"><div className="eyebrow mb-1">Previous cards</div>{chain.map((p) => <Link key={p.id} to="/cards/$cardId" params={{ cardId: p.id }} className="flex justify-between py-1 hover:underline"><span>{p.cardDesign} •••• {p.last4}</span><StatusBadge status={p.cardStatus} /></Link>)}</div>}
           <div className="eyebrow mb-1">Customer replacement requests</div>
           {orders.length ? orders.map((o) => (
-            <div key={o.id} className="border-t py-2 text-[12.5px]">
+            <div key={o.id} className="border-t py-2 text-[13px]">
               <div className="flex justify-between"><Mono>{o.replacementReference}</Mono><StatusBadge status={o.orderStatus} /></div>
               <div>{o.previousDesign} → <strong>{o.requestedDesign}</strong> · {o.replacementReason}</div>
               <div className="text-muted-foreground">{fmtDate(o.requestDate)}</div>
@@ -107,12 +107,12 @@ function CardDetail() {
             <DialogDescription>The existing card record and history are retained. The new card joins the next eligible manufacturing batch.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
-            <div className="grid grid-cols-2 gap-3 text-[13px]"><div><div className="eyebrow">Customer</div>{fullName(c)}</div><div><div className="eyebrow">Existing card</div>{card.cardDesign} •••• {card.last4}</div></div>
+            <div className="grid grid-cols-2 gap-3 text-[14px]"><div><div className="eyebrow">Customer</div>{fullName(c)}</div><div><div className="eyebrow">Existing card</div>{card.cardDesign} •••• {card.last4}</div></div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1"><Label htmlFor="rd">Replacement design</Label><select id="rd" className="h-9 w-full rounded-md border bg-card px-2" value={design} onChange={(e) => setDesign(e.target.value as CardDesign)}>{CARD_DESIGNS.map((d) => <option key={d}>{d}</option>)}</select></div>
               <div className="space-y-1"><Label htmlFor="rr">Reason</Label><select id="rr" className="h-9 w-full rounded-md border bg-card px-2" value={reason} onChange={(e) => setReason(e.target.value as ReplacementReason)}>{REASONS.map((d) => <option key={d}>{d}</option>)}</select></div>
             </div>
-            {(reason === "Lost card" || reason === "Suspected compromise") && <p className="text-[12px] text-warning">The existing card will be locked (simulated).</p>}
+            {(reason === "Lost card" || reason === "Suspected compromise") && <p className="text-[13px] text-warning">The existing card will be locked (simulated).</p>}
             <div className="space-y-1"><Label htmlFor="rn">Notes</Label><Textarea id="rn" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
             <SimulatedNote>Card processor actions are simulated. Manufacturing proceeds via the Friday batch workflow.</SimulatedNote>
           </div>

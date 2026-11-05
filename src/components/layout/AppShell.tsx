@@ -1,9 +1,10 @@
+import { Button } from "@/components/ui/button";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   LayoutDashboard, Users, ShieldCheck, Landmark, ArrowLeftRight, Send, CreditCard, BadgeCheck, PiggyBank, Sparkles,
   LifeBuoy, UserCog, ScrollText, Settings as SettingsIcon, Search, Bell, CircleHelp, ChevronRight, PanelLeftClose, PanelLeft,
-  LogOut, UserRound, FlaskConical, Check,
+  ChevronDown, LogOut, UserRound, FlaskConical, Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDB } from "@/services/store";
@@ -52,18 +53,18 @@ function ProfileMenu({ children, align = "end" }: { children: ReactNode; align?:
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent align={align} className="w-64">
         <DropdownMenuLabel className="font-normal">
-          <div className="text-[13px] font-medium">{me.name}</div>
-          <div className="text-[11.5px] text-muted-foreground">{me.email}</div>
+          <div className="text-[14px] font-medium">{me.name}</div>
+          <div className="text-[12px] text-muted-foreground">{me.email}</div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}><UserRound /> Profile & preferences</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuLabel className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground"><FlaskConical className="size-3" /> Demo: sign in as</DropdownMenuLabel>
+        <DropdownMenuLabel className="flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground"><FlaskConical className="size-3" /> Demo: sign in as</DropdownMenuLabel>
         {db.employees.filter((e) => e.status === "Active").map((e) => (
           <DropdownMenuItem key={e.id} onClick={() => { switchEmployee(e.id); toast.success(`Signed in as ${e.name} (${e.role}) — demo`); }}>
             <span className="flex-1">
-              <span className="block text-[12.5px]">{e.name}</span>
-              <span className="block text-[11px] text-muted-foreground">{e.role}</span>
+              <span className="block text-[13px]">{e.name}</span>
+              <span className="block text-[12px] text-muted-foreground">{e.role}</span>
             </span>
             {e.id === me.id && <Check className="text-primary" />}
           </DropdownMenuItem>
@@ -79,6 +80,8 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
   const db = useDB();
   const me = currentEmployee(db);
   const { active } = useActiveNav();
+  const [operationsOpen, setOperationsOpen] = useState(true);
+  const [managementOpen, setManagementOpen] = useState(true);
   const item = (n: NavItem) => {
     const allowed = !n.perm || can(me.role, n.perm);
     const isActive = active(n.to);
@@ -88,48 +91,48 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
         to={n.to}
         title={collapsed ? n.title : undefined}
         className={cn(
-          "relative flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] transition-colors",
+          "relative flex h-10 items-center gap-3 rounded-md px-3 text-[14px] transition-colors",
           isActive ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
           !allowed && "opacity-50",
           collapsed && "justify-center px-0",
         )}
       >
         {isActive && <span className="absolute inset-y-1.5 left-0 w-[2px] rounded-full bg-primary" aria-hidden />}
-        <n.icon className="size-4 shrink-0" strokeWidth={1.75} />
+        <n.icon className="size-[18px] shrink-0" strokeWidth={1.75} />
         {!collapsed && <span className="truncate">{n.title}</span>}
       </Link>
     );
   };
   return (
-    <aside className={cn("sticky top-0 hidden h-screen shrink-0 flex-col border-r bg-sidebar md:flex", collapsed ? "w-14" : "w-60")}>
-      <div className={cn("flex h-12 items-center border-b", collapsed ? "justify-center" : "justify-between px-4")}>
+    <aside className={cn("sticky top-0 hidden h-screen shrink-0 flex-col border-r bg-sidebar lg:flex", collapsed ? "w-[72px]" : "w-[264px]")}>
+      <div className={cn("flex h-[76px] items-center", collapsed ? "justify-center" : "justify-between px-4")}>
         {!collapsed && (
-          <Link to="/" className="flex items-baseline gap-1.5">
-            <span className="text-[15px] font-bold tracking-[0.18em]">RENDA</span>
-            <span className="size-1.5 rounded-full bg-primary" aria-hidden />
+          <Link to="/" className="flex items-center gap-2.5">
+            <span className="flex size-8 items-center justify-center rounded-md bg-ink text-lg font-semibold text-ink-foreground">r<span className="text-brand">.</span></span>
+            <span className="text-[18px] font-semibold">Renda Admin</span>
           </Link>
         )}
-        <button onClick={onToggle} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground">
+        <Button variant="ghost" onClick={onToggle} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} className="size-8 p-1 text-muted-foreground hover:bg-secondary hover:text-foreground">
           {collapsed ? <PanelLeft className="size-4" /> : <PanelLeftClose className="size-4" />}
-        </button>
+        </Button>
       </div>
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-3">
-        {!collapsed && <div className="eyebrow px-2.5 pb-2">Operations</div>}
-        {MAIN.map(item)}
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-3">
+        {!collapsed && <Button variant="ghost" aria-expanded={operationsOpen} onClick={() => setOperationsOpen((o) => !o)} className="mb-2 h-8 w-full justify-between px-3 text-[12px] text-muted-foreground">Operations <ChevronDown className={cn("size-3", !operationsOpen && "-rotate-90")} /></Button>}
+        {(collapsed || operationsOpen) && MAIN.map(item)}
         <div className="my-3 border-t" />
-        {!collapsed && <div className="eyebrow px-2.5 pb-2">Management</div>}
-        {MGMT.map(item)}
+        {!collapsed && <Button variant="ghost" aria-expanded={managementOpen} onClick={() => setManagementOpen((o) => !o)} className="mb-2 h-8 w-full justify-between px-3 text-[12px] text-muted-foreground">Administration <ChevronDown className={cn("size-3", !managementOpen && "-rotate-90")} /></Button>}
+        {(collapsed || managementOpen) && MGMT.map(item)}
       </nav>
       <ProfileMenu align="start">
-        <button className={cn("flex items-center gap-2.5 border-t px-3 py-3 text-left hover:bg-secondary", collapsed && "justify-center px-0")}>
+        <Button variant="ghost" className={cn("flex items-center gap-2.5 border-t px-3 py-3 text-left hover:bg-secondary", collapsed && "justify-center px-0")}>
           <Avatar name={me.name} size="md" />
           {!collapsed && (
             <span className="min-w-0">
-              <span className="block truncate text-[13px] font-medium">{me.name}</span>
-              <span className="block truncate text-[11.5px] text-muted-foreground">{me.role}</span>
+              <span className="block truncate text-[14px] font-medium">{me.name}</span>
+              <span className="block truncate text-[12px] text-muted-foreground">{me.role}</span>
             </span>
           )}
-        </button>
+        </Button>
       </ProfileMenu>
     </aside>
   );
@@ -150,13 +153,13 @@ function Breadcrumbs() {
     const label = c ? fullName(c)
       : db.accounts.find((a) => a.id === id)?.accountType
       ?? db.transactions.find((t) => t.id === id)?.transactionReference
-      ?? (db.cards.find((x) => x.id === id) ? `Card •••• ${db.cards.find((x) => x.id === id)!.last4}` : undefined)
+      ?? (db.cards.find((x) => x.id === id) ? `Card •••• ${db.cards.find((x) => x.id === id)?.last4}` : undefined)
       ?? db.supportCases.find((s) => s.id === id)?.caseReference
       ?? "Details";
     crumbs.push({ label });
   }
   return (
-    <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-[13px]">
+    <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-[14px]">
       {crumbs.map((c, i) => (
         <span key={i} className="flex min-w-0 items-center gap-1">
           {i > 0 && <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />}
@@ -193,16 +196,16 @@ function GlobalSearch() {
   const groups = Array.from(new Set(results.map((r) => r.group)));
   return (
     <>
-      <button onClick={() => setOpen(true)} className="flex h-8 w-full max-w-sm items-center gap-2 rounded-md border bg-background px-2.5 text-[13px] text-muted-foreground hover:border-foreground/20">
-        <Search className="size-3.5" />
-        <span className="flex-1 truncate text-left">Search customers, IDs, transactions, cards, cases…</span>
-        <kbd className="hidden rounded border bg-card px-1 font-mono text-[10.5px] sm:inline">⌘K</kbd>
-      </button>
+      <Button variant="ghost" onClick={() => setOpen(true)} className="flex h-10 w-full max-w-md items-center gap-2 rounded-md border bg-background px-2.5 text-[14px] text-muted-foreground hover:border-foreground/20">
+        <Search className="size-4" />
+        <span className="flex-1 truncate text-left">Search Renda Admin…</span>
+        <kbd className="hidden rounded border bg-card px-1 font-mono text-[12px] sm:inline">⌘K</kbd>
+      </Button>
       <CommandDialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQ(""); }}>
         <CommandInput placeholder="Search by name, Renda user ID, reference, card last 4…" value={q} onValueChange={setQ} />
         <CommandList>
           {q.trim().length < 2 ? (
-            <div className="px-4 py-6 text-center text-[12.5px] text-muted-foreground">Type at least 2 characters. Results respect your role's permissions.</div>
+            <div className="px-4 py-6 text-center text-[13px] text-muted-foreground">Type at least 2 characters. Results respect your role's permissions.</div>
           ) : (
             <CommandEmpty>No results for “{q}”.</CommandEmpty>
           )}
@@ -211,8 +214,8 @@ function GlobalSearch() {
               {results.filter((r) => r.group === g).map((r) => (
                 <CommandItem key={r.group + r.id} value={`${r.group} ${r.title} ${r.subtitle} ${r.id}`} onSelect={() => { setOpen(false); setQ(""); navigate({ to: r.to, params: r.params }); }}>
                   <div className="min-w-0">
-                    <div className="truncate text-[13px]">{r.title}</div>
-                    <div className="truncate text-[11.5px] text-muted-foreground">{r.subtitle}</div>
+                    <div className="truncate text-[14px]">{r.title}</div>
+                    <div className="truncate text-[12px] text-muted-foreground">{r.subtitle}</div>
                   </div>
                 </CommandItem>
               ))}
@@ -232,29 +235,29 @@ function Notifications() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button aria-label={`Notifications (${unread.length} unread)`} className="relative rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground">
+        <Button variant="ghost" aria-label={`Notifications (${unread.length} unread)`} className="relative rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground">
           <Bell className="size-4" />
-          {unread.length > 0 && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-primary px-1 text-center text-[10px] font-semibold leading-4 text-primary-foreground">{unread.length}</span>}
-        </button>
+          {unread.length > 0 && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-primary px-1 text-center text-[12px] font-semibold leading-4 text-primary-foreground">{unread.length}</span>}
+        </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-96 p-0">
+      <PopoverContent align="end" className="w-[min(420px,calc(100vw-2rem))] p-0">
         <div className="flex items-center justify-between border-b px-3 py-2">
-          <span className="text-[13px] font-semibold">Notifications</span>
-          {unread.length > 0 && <button className="text-[12px] text-muted-foreground hover:text-foreground" onClick={() => markNotificationsRead(list.map((n) => n.id))}>Mark all read</button>}
+          <span className="text-[14px] font-semibold">Notifications</span>
+          {unread.length > 0 && <Button variant="ghost" className="text-[13px] text-muted-foreground hover:text-foreground" onClick={() => markNotificationsRead(list.map((n) => n.id))}>Mark all read</Button>}
         </div>
         <div className="max-h-96 overflow-y-auto">
-          {list.length === 0 && <div className="p-6 text-center text-[12.5px] text-muted-foreground">You're all caught up.</div>}
+          {list.length === 0 && <div className="p-6 text-center text-[13px] text-muted-foreground">You're all caught up.</div>}
           {list.map((n) => {
             const isUnread = !db.readNotificationIds.includes(n.id);
             return (
-              <button key={n.id} onClick={() => { markNotificationsRead([n.id]); navigate({ to: n.to, params: n.params }); }} className="flex w-full gap-2.5 border-b px-3 py-2.5 text-left last:border-0 hover:bg-secondary">
+              <Button variant="ghost" key={n.id} onClick={() => { markNotificationsRead([n.id]); navigate({ to: n.to, params: n.params }); }} className="flex w-full gap-2.5 border-b px-3 py-2.5 text-left last:border-0 hover:bg-secondary">
                 <span className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", isUnread ? "bg-primary" : "bg-transparent")} />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[12.5px] font-medium">{n.type}</span>
-                  <span className="block truncate text-[12px] text-muted-foreground">{n.record} — {n.detail}</span>
+                  <span className="block text-[13px] font-medium">{n.type}</span>
+                  <span className="block truncate text-[13px] text-muted-foreground">{n.record} — {n.detail}</span>
                 </span>
-                <span className="shrink-0 text-[11px] text-muted-foreground">{relTime(n.at)}</span>
-              </button>
+                <span className="shrink-0 text-[12px] text-muted-foreground">{relTime(n.at)}</span>
+              </Button>
             );
           })}
         </div>
@@ -267,7 +270,7 @@ function MobileNav() {
   const { path } = useActiveNav();
   const navigate = useNavigate();
   return (
-    <select aria-label="Navigate" className="h-8 rounded-md border bg-card px-2 text-[13px] md:hidden" value={ALL_NAV.find((n) => (n.to === "/" ? path === "/" : path.startsWith(n.to)))?.to ?? "/"} onChange={(e) => navigate({ to: e.target.value })}>
+    <select aria-label="Navigate" className="h-8 rounded-md border bg-card px-2 text-[14px] lg:hidden" value={ALL_NAV.find((n) => (n.to === "/" ? path === "/" : path.startsWith(n.to)))?.to ?? "/"} onChange={(e) => navigate({ to: e.target.value })}>
       {ALL_NAV.map((n) => <option key={n.to} value={n.to}>{n.title}</option>)}
     </select>
   );
@@ -281,20 +284,20 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen w-full">
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-12 items-center gap-3 border-b bg-card/95 px-4 backdrop-blur">
+        <header className="sticky top-0 z-30 flex h-[76px] items-center gap-4 border-b bg-card/95 px-5 backdrop-blur xl:px-8">
           <MobileNav />
-          <div className="hidden min-w-0 flex-1 md:block"><Breadcrumbs /></div>
-          <div className="flex flex-1 justify-end md:flex-none md:basis-96"><GlobalSearch /></div>
-          <span className="hidden items-center gap-1 rounded border border-dashed border-info/40 bg-info-soft px-1.5 py-0.5 text-[11px] font-medium text-info lg:inline-flex" title="Simulated data and integrations">
+          <div className="hidden min-w-0 flex-1 lg:block"><Breadcrumbs /></div>
+          <div className="flex flex-1 justify-end lg:flex-none lg:basis-72 xl:basis-96"><GlobalSearch /></div>
+          <span className="hidden items-center gap-1 rounded border border-dashed border-info/40 bg-info-soft px-1.5 py-0.5 text-[12px] font-medium text-info xl:inline-flex" title="Simulated data and integrations">
             <FlaskConical className="size-3" /> Demo environment
           </span>
           <Notifications />
           <a href="#help" onClick={(e) => { e.preventDefault(); toast.info("Operations handbook: internal documentation is not connected in this demo."); }} aria-label="Help" className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"><CircleHelp className="size-4" /></a>
           <ProfileMenu>
-            <button aria-label="Profile menu" className="rounded-full"><Avatar name={me.name} size="md" /></button>
+            <Button variant="ghost" aria-label="Profile menu" className="rounded-full"><Avatar name={me.name} size="md" /></Button>
           </ProfileMenu>
         </header>
-        <main className="mx-auto w-full max-w-[1680px] flex-1 px-4 py-5 md:px-6">{children}</main>
+        <main className="mx-auto w-full max-w-[1680px] flex-1 px-5 py-8 xl:px-8">{children}</main>
       </div>
     </div>
   );

@@ -13,7 +13,7 @@ import { fmtDate, fmtDateTime, lookup } from "@/lib/format";
 import type { CardOrder, ManufacturingBatch } from "@/types/models";
 
 export const Route = createFileRoute("/cards/manufacturing/")({
-  head: () => ({ meta: [{ title: "Card Manufacturing — Renda Operations" }, { name: "description", content: "Review physical card orders and prepare manufacturing batches." }, { property: "og:title", content: "Card Manufacturing — Renda Operations" }, { property: "og:description", content: "Prepare Friday manufacturing batches." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Card Manufacturing — Renda Admin" }, { name: "description", content: "Review physical card orders and prepare manufacturing batches." }, { property: "og:title", content: "Card Manufacturing — Renda Admin" }, { property: "og:description", content: "Prepare Friday manufacturing batches." }] }),
   component: Manufacturing,
 });
 
@@ -49,7 +49,7 @@ function Manufacturing() {
     { key: "dt", header: "Order date", cell: (o) => fmtDate(o.requestDate), sort: (o) => o.requestDate },
     { key: "r", header: "Replacement ref", cell: (o) => <Mono>{o.replacementReference ?? "—"}</Mono> },
     { key: "e", header: "Eligibility", cell: (o) => { const why = batchIneligibility(o); return why ? <span title={why}><StatusBadge status="Blocked" /></span> : <StatusBadge status="Eligible" />; } },
-    { key: "a", header: "", className: "text-right", cell: (o) => <button className="text-[12.5px] font-medium text-primary" onClick={(e) => { e.stopPropagation(); navigate({ to: "/cards/$cardId", params: { cardId: o.cardId } }); }}>View card</button> },
+    { key: "a", header: "", className: "text-right", cell: (o) => <Button variant="ghost" className="text-[13px] font-medium text-primary" onClick={(e) => { e.stopPropagation(); navigate({ to: "/cards/$cardId", params: { cardId: o.cardId } }); }}>View card</Button> },
   ];
   const batchCols: Column<ManufacturingBatch>[] = [
     { key: "r", header: "Batch", cell: (b) => <Mono>{b.batchReference}</Mono>, sort: (b) => b.batchReference },
@@ -69,10 +69,10 @@ function Manufacturing() {
       <div className="mb-4 grid gap-3 md:grid-cols-[1.3fr_repeat(4,1fr)]">
         <div className="panel flex items-center gap-3 px-4 py-3">
           <CalendarClock className="size-5 text-primary" />
-          <div><div className="text-[11.5px] text-muted-foreground">Next Friday processing</div><div className="font-semibold">{friday}</div><div className="text-[11px] text-muted-foreground">Manual workflow — no automatic generation or submission</div></div>
+          <div><div className="text-[12px] text-muted-foreground">Next Friday processing</div><div className="font-semibold">{friday}</div><div className="text-[12px] text-muted-foreground">Manual workflow — no automatic generation or submission</div></div>
         </div>
         {[["Eligible orders", eligible.length], ["Draft batches", counts["Draft Batches"]], ["Ready for submission", counts["Ready for Submission"]], ["Orders requiring attention", attention.length]].map(([l, v]) => (
-          <div key={l} className="panel px-4 py-3"><div className="text-[11.5px] text-muted-foreground">{l}</div><div className="text-[20px] font-semibold tabular">{v}</div></div>
+          <div key={l} className="panel px-4 py-3"><div className="text-[12px] text-muted-foreground">{l}</div><div className="text-[20px] font-semibold tabular">{v}</div></div>
         ))}
       </div>
       <TabBar tabs={TABS} value={tab} onChange={setTab} counts={counts} />
@@ -83,13 +83,13 @@ function Manufacturing() {
           emptyTitle="No eligible orders" emptyDescription="New Plus card selections and replacement requests appear here until batched."
           toolbar={
             <>
-              <span className="text-[12.5px] text-muted-foreground">{canManage ? `${sel.length} of ${eligible.length} selected` : "Your role can view orders but cannot create batches."}</span>
+              <span className="text-[13px] text-muted-foreground">{canManage ? `${sel.length} of ${eligible.length} selected` : "Your role can view orders but cannot create batches."}</span>
               {canManage && (
                 <div className="ml-auto flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => setSel(eligible.filter((o) => !batchIneligibility(o)).map((o) => o.id))}>Select all eligible</Button>
                   <ActionDialog
                     disabled={!sel.length}
-                    trigger={<Button size="sm" disabled={!sel.length}>Create batch ({sel.length})</Button>}
+                    trigger={<Button variant="ghost" size="sm" disabled={!sel.length}>Create batch ({sel.length})</Button>}
                     title="Create manufacturing batch"
                     description={`${sel.length} order(s) will be linked to a new draft batch. You can review it and generate the PDF next.`}
                     confirmLabel="Create batch"
@@ -104,7 +104,7 @@ function Manufacturing() {
       ) : (
         <DataTable key={tab} rows={batchRows} columns={batchCols} rowKey={(b) => b.id} defaultSort={{ key: "c", dir: "desc" }} onRowClick={(b) => navigate({ to: "/cards/manufacturing/$batchId", params: { batchId: b.id } })} emptyTitle="No batches" />
       )}
-      {attention.length > 0 && <p className="mt-3 flex items-center gap-1 text-[12px] text-warning"><AlertTriangle className="size-3.5" />{attention.length} orders failed and require attention.</p>}
+      {attention.length > 0 && <p className="mt-3 flex items-center gap-1 text-[13px] text-warning"><AlertTriangle className="size-3.5" />{attention.length} orders failed and require attention.</p>}
       <span className="hidden">{String(run)}</span>
     </>
   );

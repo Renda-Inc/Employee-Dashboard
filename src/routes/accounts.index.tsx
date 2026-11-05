@@ -8,7 +8,7 @@ import { fmtDate, fmtDateTime, fmtMoney, fullName, lookup } from "@/lib/format";
 import type { Account } from "@/types/models";
 
 export const Route = createFileRoute("/accounts/")({
-  head: () => ({ meta: [{ title: "Banking & Accounts — Renda Operations" }, { name: "description", content: "Smart Spend and Sense Save account records." }, { property: "og:title", content: "Banking & Accounts — Renda Operations" }, { property: "og:description", content: "Smart Spend and Sense Save account records." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Banking & Accounts — Renda Admin" }, { name: "description", content: "Smart Spend and Sense Save account records." }, { property: "og:title", content: "Banking & Accounts — Renda Admin" }, { property: "og:description", content: "Smart Spend and Sense Save account records." }] }),
   component: Accounts,
 });
 
@@ -40,7 +40,7 @@ function Accounts() {
     { key: "b", header: "Available", className: "text-right", cell: (a) => <span className="tabular">{fmtMoney(a.availableBalance)}</span>, sort: (a) => a.availableBalance ?? -1 },
     { key: "o", header: "Opened", cell: (a) => fmtDate(a.openingDate), sort: (a) => a.openingDate ?? "" },
     { key: "l", header: "Last activity", cell: (a) => <span className="text-muted-foreground">{fmtDateTime(a.lastActivity)}</span>, sort: (a) => a.lastActivity ?? "" },
-    { key: "x", header: "", className: "text-right", cell: () => <span className="text-[12.5px] font-medium text-primary">View →</span> },
+    { key: "x", header: "", className: "text-right", cell: () => <span className="text-[13px] font-medium text-primary">View →</span> },
   ];
   return (
     <>

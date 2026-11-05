@@ -11,7 +11,7 @@ import { fmtDateTime, fullName } from "@/lib/format";
 import { outstanding } from "./onboarding.index";
 
 export const Route = createFileRoute("/onboarding/$customerId")({
-  head: () => ({ meta: [{ title: "Verification case — Renda Operations" }, { name: "description", content: "Customer verification and onboarding case." }, { property: "og:title", content: "Verification case — Renda Operations" }, { property: "og:description", content: "Customer verification case." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Verification case — Renda Admin" }, { name: "description", content: "Customer verification and onboarding case." }, { property: "og:title", content: "Verification case — Renda Admin" }, { property: "og:description", content: "Customer verification case." }] }),
   component: VerificationCase,
 });
 
@@ -64,12 +64,12 @@ function VerificationCase() {
         }
       />
       {reason && blocked && (
-        <div className="mb-4 flex items-start gap-2 rounded-md border border-warning/30 bg-warning-soft px-3 py-2.5 text-[13px] text-warning">
+        <div className="mb-4 flex items-start gap-2 rounded-md border border-warning/30 bg-warning-soft px-3 py-2.5 text-[14px] text-warning">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" /> <span><strong>Blocked:</strong> {reason}</span>
         </div>
       )}
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <div className="space-y-4">
+      <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+        <div className="space-y-6">
           <Panel title="Identity summary">
             <KV cols={3} items={[["Name", fullName(c)], ["Date of birth", c.dateOfBirth], ["Province", c.province], ["Email", <StatusBadge status={c.emailVerified ? "Verified" : "Pending"} />], ["Phone", <StatusBadge status={c.phoneVerified ? "Verified" : "Pending"} />], ["Onboarding", <StatusBadge status={c.onboardingStatus} />]]} />
           </Panel>
@@ -78,10 +78,10 @@ function VerificationCase() {
               <>
                 <KV cols={3} items={[["Current stage", <StatusBadge status={c.customerStatus} />], ["KYC status", <StatusBadge status={k.status} />], ["Provider", k.provider], ["Provider reference", <Mono>{k.providerReference}</Mono>], ["Initiated", fmtDateTime(k.initiatedAt)], ["Last update", fmtDateTime(k.lastUpdated)]]} />
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <div><div className="eyebrow mb-1">Outstanding requirements</div>{k.outstandingRequirements.length ? <ul className="list-disc pl-4 text-[13px]">{k.outstandingRequirements.map((r) => <li key={r}>{r}</li>)}</ul> : <p className="text-muted-foreground">None</p>}</div>
-                  <div><div className="eyebrow mb-1">Provider messages</div><ul className="space-y-1 text-[12.5px]">{k.providerMessages.map((m, i) => <li key={i} className="rounded bg-secondary px-2 py-1 font-mono text-[11.5px]">{m}</li>)}</ul></div>
+                  <div><div className="eyebrow mb-1">Outstanding requirements</div>{k.outstandingRequirements.length ? <ul className="list-disc pl-4 text-[14px]">{k.outstandingRequirements.map((r) => <li key={r}>{r}</li>)}</ul> : <p className="text-muted-foreground">None</p>}</div>
+                  <div><div className="eyebrow mb-1">Provider messages</div><ul className="space-y-1 text-[13px]">{k.providerMessages.map((m, i) => <li key={i} className="rounded bg-secondary px-2 py-1 font-mono text-[12px]">{m}</li>)}</ul></div>
                 </div>
-                {k.decisionReason && <p className="mt-3 text-[12.5px]"><span className="eyebrow">Decision reason</span><br />{k.decisionReason}</p>}
+                {k.decisionReason && <p className="mt-3 text-[13px]"><span className="eyebrow">Decision reason</span><br />{k.decisionReason}</p>}
               </>
             ) : <p className="text-muted-foreground">KYC not yet initiated. Outstanding: {outstanding(c)}.</p>}
           </Panel>
@@ -95,8 +95,8 @@ function VerificationCase() {
             {timeline.map((a) => (
               <li key={a.id} className="relative">
                 <span className="absolute -left-[21px] top-1.5 size-2 rounded-full border-2 border-card bg-foreground/40" />
-                <div className="text-[13px]">{a.description}</div>
-                <div className="text-[11.5px] text-muted-foreground">{fmtDateTime(a.timestamp)}</div>
+                <div className="text-[14px]">{a.description}</div>
+                <div className="text-[12px] text-muted-foreground">{fmtDateTime(a.timestamp)}</div>
               </li>
             ))}
           </ol>

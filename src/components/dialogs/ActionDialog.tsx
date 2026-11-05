@@ -41,7 +41,7 @@ export function ActionDialog({
               <div className="space-y-1.5">
                 <Label htmlFor="reason">{reasonLabel}</Label>
                 <Textarea id="reason" value={reason} onChange={(e) => setReason(e.target.value)} onBlur={() => setTouched(true)} rows={3} />
-                {touched && invalid && <p className="text-[12px] text-danger">Please provide at least {minReason} characters.</p>}
+                {touched && invalid && <p className="text-[13px] text-danger">Please provide at least {minReason} characters.</p>}
               </div>
             )}
             {simulated && <SimulatedNote>{typeof simulated === "string" ? simulated : undefined}</SimulatedNote>}
