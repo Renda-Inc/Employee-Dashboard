@@ -3,7 +3,7 @@ import { useDB } from "@/services/store";
 import { DataTable, type Column } from "@/components/tables/DataTable";
 import { Amount, CustomerCell, Mono } from "@/components/common";
 import { StatusBadge } from "@/components/status/StatusBadge";
-import { fmtDate, fmtDateTime, lookup } from "@/lib/format";
+import { fmtDate, fmtDateTime, lookup, txTypeLabel } from "@/lib/format";
 import type { Card, SupportCase, Transaction } from "@/types/models";
 
 export function TransactionTable({ rows, showCustomer = true, pageSize = 10, toolbar }: { rows: Transaction[]; showCustomer?: boolean; pageSize?: number; toolbar?: React.ReactNode }) {
@@ -13,7 +13,7 @@ export function TransactionTable({ rows, showCustomer = true, pageSize = 10, too
   const cols: Column<Transaction>[] = [
     { key: "ref", header: "Reference", cell: (t) => <Mono>{t.transactionReference}</Mono>, sort: (t) => t.transactionReference },
     ...(showCustomer ? [{ key: "cust", header: "Customer", cell: (t: Transaction) => <CustomerCell customer={L.customer(t.customerId)} /> }] : []),
-    { key: "type", header: "Type", cell: (t) => t.transactionType, sort: (t) => t.transactionType },
+    { key: "type", header: "Type", cell: (t) => txTypeLabel(t.transactionType), sort: (t) => t.transactionType },
     { key: "desc", header: "Description", cell: (t) => <span className="block max-w-[220px] truncate">{t.description}</span> },
     { key: "amt", header: "Amount", className: "text-right", cell: (t) => <Amount value={t.amount} direction={t.direction} />, sort: (t) => (t.direction === "debit" ? -t.amount : t.amount) },
     { key: "cur", header: "Currency", cell: (t) => <span className="text-muted-foreground">{t.currency}</span> },
