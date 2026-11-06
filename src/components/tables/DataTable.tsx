@@ -62,7 +62,7 @@ export function DataTable<T>({ rows, columns, rowKey, onRowClick, pageSize: init
   return (
     <div className="panel overflow-hidden" data-density={density}>
       {toolbar && <div className="flex flex-wrap items-center gap-3 border-b px-5 py-4">{toolbar}</div>}
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="w-full text-[14px]">
           <thead>
             <tr className="border-b bg-secondary/50 text-left">
