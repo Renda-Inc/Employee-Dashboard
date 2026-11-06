@@ -1,6 +1,6 @@
 # Renda Admin visual refinement
 
-- [ ] Unify design tokens, typography, shared controls, tables and dialogs.
-- [ ] Refine navigation and every module without changing workflows.
-- [ ] Refine Overview and cohesive customer workspace.
-- [ ] Verify existing tests, key interactions and desktop/tablet layouts.
+- [x] Unify design tokens, typography, shared controls, tables and dialogs.
+- [x] Refine navigation and every module without changing workflows.
+- [x] Refine Overview and cohesive customer workspace.
+- [x] Verify existing tests, key interactions and desktop/tablet layouts.
