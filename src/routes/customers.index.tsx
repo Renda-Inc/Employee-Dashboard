@@ -1,3 +1,4 @@
+import { SelectField } from "@/components/ui/select-field";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Download, MoreHorizontal } from "lucide-react";
@@ -111,12 +112,12 @@ function Customers() {
             <FilterSelect label="KYC" value={kyc} onChange={setKyc} options={["Not Started", "Pending", "Under Review", "Approved", "Failed"]} />
             <FilterSelect label="Plan" value={plan} onChange={setPlan} options={["Everyday", "Plus", "None"]} />
             <FilterSelect label="Account" value={bank} onChange={setBank} options={["Not Issued", "Pending Issuance", "Issuance Failed", "Active", "Restricted", "Closed"]} />
-            <select aria-label="Registration date" value={reg} onChange={(e) => setReg(e.target.value)} className="h-8 rounded-md border bg-card px-2 text-[13px]">
+            <SelectField aria-label="Registration date" value={reg} onChange={(e) => setReg(e.target.value)} className="h-10 w-auto max-w-full rounded-md border bg-card px-3 text-[13px]">
               <option value="all">Registered: Any time</option>
               <option value="7">Last 7 days</option>
               <option value="30">Last 30 days</option>
               <option value="90">Last 90 days</option>
-            </select>
+            </SelectField>
             {selected.length > 0 && (
               <div className="ml-auto flex items-center gap-2">
                 <span className="text-[13px] text-muted-foreground">{selected.length} selected</span>

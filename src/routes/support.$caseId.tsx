@@ -1,3 +1,4 @@
+import { SelectField } from "@/components/ui/select-field";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useDB } from "@/services/store";
@@ -77,9 +78,9 @@ function CaseDetail() {
             <KV cols={1} items={[["Customer", <Link to="/customers/$customerId" params={{ customerId: c.id }} className="text-primary">{fullName(c)} · {c.userId}</Link>]]} />
             {canManage ? (
               <div className="mt-3 grid gap-3">
-                <div className="space-y-1"><Label htmlFor="st">Status</Label><select id="st" className="h-9 w-full rounded-md border bg-card px-2" value={sc.status} onChange={(e) => run(() => updateCase(sc.id, { status: e.target.value as CaseStatus }), "Status updated")}>{STATUSES.map((s) => <option key={s}>{s}</option>)}</select></div>
-                <div className="space-y-1"><Label htmlFor="pr">Priority</Label><select id="pr" className="h-9 w-full rounded-md border bg-card px-2" value={sc.priority} onChange={(e) => run(() => updateCase(sc.id, { priority: e.target.value as CasePriority }), "Priority updated")}>{["Low", "Normal", "High", "Urgent"].map((s) => <option key={s}>{s}</option>)}</select></div>
-                <div className="space-y-1"><Label htmlFor="as">Assigned to</Label><select id="as" className="h-9 w-full rounded-md border bg-card px-2" value={sc.assignedEmployeeId ?? ""} onChange={(e) => run(() => updateCase(sc.id, { assignedEmployeeId: e.target.value || null }), "Assignment updated")}><option value="">Unassigned</option>{assignable.map((e) => <option key={e.id} value={e.id}>{e.name} · {e.role}</option>)}</select></div>
+                <div className="space-y-1"><Label htmlFor="st">Status</Label><SelectField id="st" className="h-9 w-full rounded-md border bg-card px-2" value={sc.status} onChange={(e) => run(() => updateCase(sc.id, { status: e.target.value as CaseStatus }), "Status updated")}>{STATUSES.map((s) => <option key={s}>{s}</option>)}</SelectField></div>
+                <div className="space-y-1"><Label htmlFor="pr">Priority</Label><SelectField id="pr" className="h-9 w-full rounded-md border bg-card px-2" value={sc.priority} onChange={(e) => run(() => updateCase(sc.id, { priority: e.target.value as CasePriority }), "Priority updated")}>{["Low", "Normal", "High", "Urgent"].map((s) => <option key={s}>{s}</option>)}</SelectField></div>
+                <div className="space-y-1"><Label htmlFor="as">Assigned to</Label><SelectField id="as" className="h-9 w-full rounded-md border bg-card px-2" value={sc.assignedEmployeeId ?? ""} onChange={(e) => run(() => updateCase(sc.id, { assignedEmployeeId: e.target.value || null }), "Assignment updated")}><option value="">Unassigned</option>{assignable.map((e) => <option key={e.id} value={e.id}>{e.name} · {e.role}</option>)}</SelectField></div>
               </div>
             ) : <div className="mt-3"><KV cols={1} items={[["Status", <StatusBadge status={sc.status} />], ["Priority", sc.priority], ["Assigned to", L.empName(sc.assignedEmployeeId)]]} /></div>}
           </Panel>
@@ -87,7 +88,7 @@ function CaseDetail() {
             {sc.links.length ? <ul className="space-y-1">{sc.links.map((l) => <li key={l.type + l.id} className="flex gap-2 text-[14px]"><span className="w-20 capitalize text-muted-foreground">{l.type}</span>{linkLabel(l.type, l.id)}</li>)}</ul> : <p className="text-muted-foreground">None.</p>}
             {canManage && linkOptions.length > 0 && (
               <div className="mt-3 flex gap-2 border-t pt-3">
-                <select aria-label="Link record" className="h-8 min-w-0 flex-1 rounded-md border bg-card px-2 text-[13px]" value={link} onChange={(e) => setLink(e.target.value)}><option value="">Link a record…</option>{linkOptions.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}</select>
+                <SelectField aria-label="Link record" className="h-8 min-w-0 flex-1 rounded-md border bg-card px-2 text-[13px]" value={link} onChange={(e) => setLink(e.target.value)}><option value="">Link a record…</option>{linkOptions.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}</SelectField>
                 <Button size="sm" variant="outline" disabled={!link} onClick={() => { const [type, id] = link.split(":"); if (run(() => linkCaseRecord(sc.id, { type: type as "card", id }), "Record linked")) setLink(""); }}>Link</Button>
               </div>
             )}

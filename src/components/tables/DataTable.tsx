@@ -1,3 +1,4 @@
+import { SelectField } from "@/components/ui/select-field";
 import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsUpDown, Search } from "lucide-react";
@@ -61,7 +62,7 @@ export function DataTable<T>({ rows, columns, rowKey, onRowClick, pageSize: init
   return (
     <div className="panel overflow-hidden" data-density={density}>
       {toolbar && <div className="flex flex-wrap items-center gap-3 border-b px-5 py-4">{toolbar}</div>}
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="w-full text-[14px]">
           <thead>
             <tr className="border-b bg-secondary/50 text-left">
@@ -118,9 +119,9 @@ export function DataTable<T>({ rows, columns, rowKey, onRowClick, pageSize: init
         <div className="flex items-center justify-between gap-2 border-t px-5 py-4 text-[13px] text-muted-foreground">
           <div className="flex items-center gap-2">
             <span>Rows</span>
-            <select aria-label="Rows per page" className="rounded border bg-card px-1.5 py-0.5" value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(0); }}>
+            <SelectField aria-label="Rows per page" className="rounded border bg-card px-1.5 py-0.5" value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(0); }}>
               {[10, 15, 25, 50].map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
+            </SelectField>
           </div>
           <div className="flex items-center gap-2">
             <span className="tabular">{page * pageSize + 1}–{Math.min(sorted.length, (page + 1) * pageSize)} of {sorted.length}</span>
@@ -160,7 +161,7 @@ export function TabBar<T extends string>({ tabs, value, onChange, counts }: { ta
           role="tab"
           aria-selected={value === t}
           onClick={() => onChange(t)}
-          className={cn("-mb-px whitespace-nowrap border-b-2 px-5 py-4 text-[14px] font-medium transition-colors", value === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")}
+          className={cn("-mb-px h-12 shrink-0 whitespace-nowrap rounded-none border-b-2 px-4 py-3 text-[14px] font-medium transition-colors", value === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")}
         >
           {t}
           {counts?.[t] !== undefined && <span className="ml-1.5 rounded bg-secondary px-1.5 py-px text-[12px] tabular text-muted-foreground">{counts[t]}</span>}

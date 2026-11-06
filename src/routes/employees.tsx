@@ -1,3 +1,4 @@
+import { SelectField } from "@/components/ui/select-field";
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, Minus } from "lucide-react";
 import { useDB } from "@/services/store";
@@ -34,7 +35,7 @@ function Employees() {
                 <td className="px-3 py-2 text-muted-foreground">{e.email}</td>
                 <td className="px-3 py-2">
                   {canManage ? (
-                    <select aria-label={`Role for ${e.name}`} className="h-8 rounded-md border bg-card px-2" value={e.role} onChange={(ev) => run(() => updateEmployee(e.id, { role: ev.target.value as Role }), `${e.name} is now ${ev.target.value}`)}>{ROLES.map((r) => <option key={r}>{r}</option>)}</select>
+                    <SelectField aria-label={`Role for ${e.name}`} className="h-10 w-auto max-w-full rounded-md border bg-card px-3" value={e.role} onChange={(ev) => run(() => updateEmployee(e.id, { role: ev.target.value as Role }), `${e.name} is now ${ev.target.value}`)}>{ROLES.map((r) => <option key={r}>{r}</option>)}</SelectField>
                   ) : e.role}
                 </td>
                 <td className="px-3 py-2"><StatusBadge status={e.status} /></td>

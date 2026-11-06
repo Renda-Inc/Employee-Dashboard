@@ -1,3 +1,4 @@
+import { SelectField } from "@/components/ui/select-field";
 import { useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -54,10 +55,10 @@ export function NewCaseDialog({ trigger, customerId, link, defaultCategory = "Ge
             {!customerId && (
               <div className="space-y-1">
                 <Label htmlFor="nc-c">Customer</Label>
-                <select id="nc-c" className="h-9 w-full rounded-md border bg-card px-2" value={cid} onChange={(e) => setCid(e.target.value)}>
+                <SelectField id="nc-c" className="h-9 w-full rounded-md border bg-card px-2" value={cid} onChange={(e) => setCid(e.target.value)}>
                   <option value="">Select customer…</option>
                   {db.customers.map((c) => <option key={c.id} value={c.id}>{fullName(c)} · {c.userId}</option>)}
-                </select>
+                </SelectField>
                 {err.cid && <p className="text-[13px] text-danger">{err.cid}</p>}
               </div>
             )}
@@ -69,11 +70,11 @@ export function NewCaseDialog({ trigger, customerId, link, defaultCategory = "Ge
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label htmlFor="nc-cat">Category</Label>
-                <select id="nc-cat" className="h-9 w-full rounded-md border bg-card px-2" value={category} onChange={(e) => setCategory(e.target.value as CaseCategory)}>{CATS.map((c) => <option key={c}>{c}</option>)}</select>
+                <SelectField id="nc-cat" className="h-9 w-full rounded-md border bg-card px-2" value={category} onChange={(e) => setCategory(e.target.value as CaseCategory)}>{CATS.map((c) => <option key={c}>{c}</option>)}</SelectField>
               </div>
               <div className="space-y-1">
                 <Label htmlFor="nc-p">Priority</Label>
-                <select id="nc-p" className="h-9 w-full rounded-md border bg-card px-2" value={priority} onChange={(e) => setPriority(e.target.value as CasePriority)}>{["Low", "Normal", "High", "Urgent"].map((c) => <option key={c}>{c}</option>)}</select>
+                <SelectField id="nc-p" className="h-9 w-full rounded-md border bg-card px-2" value={priority} onChange={(e) => setPriority(e.target.value as CasePriority)}>{["Low", "Normal", "High", "Urgent"].map((c) => <option key={c}>{c}</option>)}</SelectField>
               </div>
             </div>
             <div className="space-y-1">
