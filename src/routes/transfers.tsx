@@ -8,13 +8,13 @@ import { fmtDateTime, lookup } from "@/lib/format";
 import type { Transfer } from "@/types/models";
 
 export const Route = createFileRoute("/transfers")({
-  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Payments & Transfers — Renda Admin" }, { name: "description", content: "P2P, Interac and account-to-account transfers." }, { property: "og:title", content: "Payments & Transfers — Renda Admin" }, { property: "og:description", content: "P2P, Interac and account-to-account transfers." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Payments & Transfers — Renda Admin" }, { name: "description", content: "RenPay, Interac and account-to-account transfers." }, { property: "og:title", content: "Payments & Transfers — Renda Admin" }, { property: "og:description", content: "RenPay, Interac and account-to-account transfers." }] }),
   component: Transfers,
 });
 
-const TABS = ["All Transfers", "Internal P2P", "Interac", "Account-to-Account"] as const;
+const TABS = ["All Transfers", "RenPay", "Interac", "Account-to-Account"] as const;
 type Tab = (typeof TABS)[number];
-const TYPE: Record<Tab, Transfer["transferType"] | null> = { "All Transfers": null, "Internal P2P": "P2P", Interac: "Interac", "Account-to-Account": "Account-to-Account" };
+const TYPE: Record<Tab, Transfer["transferType"] | null> = { "All Transfers": null, RenPay: "P2P", Interac: "Interac", "Account-to-Account": "Account-to-Account" };
 
 function Transfers() {
   const db = useDB();
@@ -37,7 +37,7 @@ function Transfers() {
     { key: "st", header: "Status", cell: (t) => <StatusBadge status={t.status} />, sort: (t) => t.status },
   ];
   let cols: Column<Transfer>[];
-  if (tab === "Internal P2P") cols = [
+  if (tab === "RenPay") cols = [
     { key: "s", header: "Sender", cell: (t) => <CustomerCell customer={L.customer(t.senderCustomerId)} sub={L.customer(t.senderCustomerId)?.userId} /> },
     { key: "r", header: "Recipient", cell: (t) => <CustomerCell customer={L.customer(t.recipientCustomerId)} sub={L.customer(t.recipientCustomerId)?.userId} /> },
     ...base,

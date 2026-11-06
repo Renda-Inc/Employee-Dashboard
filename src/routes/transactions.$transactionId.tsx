@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/status/StatusBadge";
 import { NewCaseDialog } from "@/components/dialogs/NewCaseDialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { fmtDateTime, fullName, lookup } from "@/lib/format";
+import { fmtDateTime, fullName, lookup, txTypeLabel } from "@/lib/format";
 
 export const Route = createFileRoute("/transactions/$transactionId")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Transaction — Renda Admin" }, { name: "description", content: "Transaction details and investigation." }, { property: "og:title", content: "Transaction — Renda Admin" }, { property: "og:description", content: "Transaction details." }] }),
@@ -46,7 +46,7 @@ function TxnDetail() {
               ["Customer", <Link to="/customers/$customerId" params={{ customerId: c.id }} className="text-primary">{fullName(c)}</Link>],
               ["Related account", acc ? <Link to="/accounts/$accountId" params={{ accountId: acc.id }} className="text-primary">{acc.accountType} {acc.maskedAccountIdentifier}</Link> : "—"],
               ["Amount", <span>{t.amount.toFixed(2)} {t.currency} ({t.direction})</span>],
-              ["Type", t.transactionType], ["Status", <StatusBadge status={t.status} />], ["Payment rail", t.paymentRail],
+              ["Type", txTypeLabel(t.transactionType)], ["Status", <StatusBadge status={t.status} />], ["Payment rail", t.paymentRail],
               ["Created", fmtDateTime(t.timestamp)], ["Completed", fmtDateTime(t.completedAt)], ["Provider reference", <Mono>{t.providerReference}</Mono>],
             ]} />
             {t.errorMessage && <div className="mt-4 rounded-md bg-danger-soft px-3 py-2 text-[13px] text-danger"><strong>Error:</strong> {t.errorMessage}</div>}

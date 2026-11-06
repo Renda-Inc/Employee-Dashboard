@@ -134,11 +134,11 @@ export function DataTable<T>({ rows, columns, rowKey, onRowClick, pageSize: init
   );
 }
 
-export function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: readonly string[] }) {
+export function FilterSelect({ label, value, onChange, options, labels }: { label: string; value: string; onChange: (v: string) => void; options: readonly string[]; labels?: Record<string, string> }) {
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger aria-label={label} className={cn("h-10 w-auto min-w-32 max-w-full bg-card text-sm", value !== "all" && "border-primary bg-secondary text-foreground")}><SelectValue /></SelectTrigger>
-      <SelectContent><SelectItem value="all">{label}: All</SelectItem>{options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+      <SelectContent><SelectItem value="all">{label}: All</SelectItem>{options.map((o) => <SelectItem key={o} value={o}>{labels?.[o] ?? o}</SelectItem>)}</SelectContent>
     </Select>
   );
 }

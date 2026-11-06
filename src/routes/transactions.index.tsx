@@ -43,7 +43,7 @@ function Transactions() {
       <TransactionTable rows={rows} pageSize={15} toolbar={
         <>
           <SearchInput value={q} onChange={setQ} placeholder="Reference, customer, description" />
-          <FilterSelect label="Type" value={type} onChange={setType} options={["Card Purchase", "P2P Sent", "P2P Received", "Interac Sent", "Interac Received", "Account Transfer", "Plan Fee", "Interest"]} />
+          <FilterSelect label="Type" value={type} onChange={setType} options={["Card Purchase", "P2P Sent", "P2P Received", "Interac Sent", "Interac Received", "Account Transfer", "Plan Fee", "Interest"]} labels={{ "P2P Sent": "RenPay Sent", "P2P Received": "RenPay Received" }} />
           <FilterSelect label="Status" value={status} onChange={setStatus} options={["Pending", "Completed", "Failed", "Reversed"]} />
           <FilterSelect label="Account" value={acct} onChange={setAcct} options={["Smart Spend", "Sense Save"]} />
           <FilterSelect label="Rail" value={rail} onChange={setRail} options={["Mastercard", "Internal Ledger", "Interac", "Renda Billing"]} />
