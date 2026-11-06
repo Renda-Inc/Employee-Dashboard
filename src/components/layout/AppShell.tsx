@@ -90,7 +90,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
       <Link
         key={n.to}
         to={n.to}
-        title={collapsed ? n.title : undefined}
+        title={n.title}
         className={cn(
           "relative flex h-10 items-center gap-3 rounded-md px-3 text-[14px] transition-colors",
           isActive ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
@@ -197,7 +197,7 @@ function GlobalSearch() {
   const groups = Array.from(new Set(results.map((r) => r.group)));
   return (
     <>
-      <Button variant="ghost" onClick={() => setOpen(true)} className="flex h-10 w-full max-w-md items-center gap-2 rounded-md border bg-background px-2.5 text-[14px] text-muted-foreground hover:border-foreground/20">
+      <Button variant="ghost" aria-label="Search Renda Admin" onClick={() => setOpen(true)} className="flex h-10 w-full max-w-md items-center gap-2 rounded-md border bg-background px-2.5 text-[14px] text-muted-foreground hover:border-foreground/20">
         <Search className="size-4" />
         <span className="flex-1 truncate text-left">Search Renda Admin…</span>
         <kbd className="hidden rounded border bg-card px-1 font-mono text-[12px] sm:inline">⌘K</kbd>

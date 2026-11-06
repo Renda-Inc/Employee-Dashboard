@@ -25,5 +25,7 @@ const csrfMiddleware = createCsrfMiddleware({
 });
 
 export const startInstance = createStart(() => ({
+  // Preserve client rendering for the browser-persisted employee demo.
+  defaultSsr: false,
   requestMiddleware: [errorMiddleware, csrfMiddleware],
 }));
