@@ -1,3 +1,4 @@
+import { SelectField } from "@/components/ui/select-field";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChevronDown, Pencil } from "lucide-react";
@@ -275,7 +276,7 @@ export function MembershipPanel({ customerId }: { customerId: string }) {
                 <div className="flex flex-wrap items-end gap-2">
                   <div className="space-y-1">
                     <Label htmlFor="design">Customer's selected design</Label>
-                    <select id="design" value={design} onChange={(e) => setDesign(e.target.value as CardDesign)} className="h-9 rounded-md border bg-card px-2">{CARD_DESIGNS.map((d) => <option key={d}>{d}</option>)}</select>
+                    <SelectField id="design" value={design} onChange={(e) => setDesign(e.target.value as CardDesign)} className="h-9 rounded-md border bg-card px-2">{CARD_DESIGNS.map((d) => <option key={d}>{d}</option>)}</SelectField>
                   </div>
                   <Button onClick={() => run(() => recordCardSelection(customerId, design), `${design} card order created`)}>Record selection & create order</Button>
                 </div>
@@ -331,8 +332,8 @@ function ActivityTab({ c }: { c: Customer }) {
   return (
     <Panel title="Activity history" actions={
       <div className="flex gap-2">
-        <select aria-label="Event type" value={type} onChange={(e) => setType(e.target.value)} className="h-8 rounded-md border bg-card px-2 text-[13px]"><option value="all">All events</option>{["Registration", "Verification", "KYC", "Accounts", "Membership", "Cards", "Support", "Profile"].map((t) => <option key={t}>{t}</option>)}</select>
-        <select aria-label="Date range" value={days} onChange={(e) => setDays(e.target.value)} className="h-8 rounded-md border bg-card px-2 text-[13px]"><option value="all">Any time</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select>
+        <SelectField aria-label="Event type" value={type} onChange={(e) => setType(e.target.value)} className="h-10 w-auto max-w-full rounded-md border bg-card px-3 text-[13px]"><option value="all">All events</option>{["Registration", "Verification", "KYC", "Accounts", "Membership", "Cards", "Support", "Profile"].map((t) => <option key={t}>{t}</option>)}</SelectField>
+        <SelectField aria-label="Date range" value={days} onChange={(e) => setDays(e.target.value)} className="h-10 w-auto max-w-full rounded-md border bg-card px-3 text-[13px]"><option value="all">Any time</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></SelectField>
       </div>
     }>
       {ev.length === 0 ? <EmptyState title="No events" /> : (

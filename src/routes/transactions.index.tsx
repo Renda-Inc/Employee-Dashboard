@@ -1,3 +1,4 @@
+import { SelectField } from "@/components/ui/select-field";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useDB } from "@/services/store";
@@ -46,7 +47,7 @@ function Transactions() {
           <FilterSelect label="Status" value={status} onChange={setStatus} options={["Pending", "Completed", "Failed", "Reversed"]} />
           <FilterSelect label="Account" value={acct} onChange={setAcct} options={["Smart Spend", "Sense Save"]} />
           <FilterSelect label="Rail" value={rail} onChange={setRail} options={["Mastercard", "Internal Ledger", "Interac", "Renda Billing"]} />
-          <select aria-label="Date range" value={days} onChange={(e) => setDays(e.target.value)} className="h-8 rounded-md border bg-card px-2 text-[13px]"><option value="all">Any date</option><option value="1">Last 24h</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select>
+          <SelectField aria-label="Date range" value={days} onChange={(e) => setDays(e.target.value)} className="h-10 w-auto max-w-full rounded-md border bg-card px-3 text-[13px]"><option value="all">Any date</option><option value="1">Last 24h</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></SelectField>
           <input aria-label="Minimum amount" type="number" placeholder="Min $" value={min} onChange={(e) => setMin(e.target.value)} className="h-8 w-20 rounded-md border bg-card px-2 text-[13px]" />
           <input aria-label="Maximum amount" type="number" placeholder="Max $" value={max} onChange={(e) => setMax(e.target.value)} className="h-8 w-20 rounded-md border bg-card px-2 text-[13px]" />
         </>

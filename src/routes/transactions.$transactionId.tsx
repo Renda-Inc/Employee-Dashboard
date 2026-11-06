@@ -1,3 +1,4 @@
+import { SelectField } from "@/components/ui/select-field";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useDB } from "@/services/store";
@@ -66,7 +67,7 @@ function TxnDetail() {
           {cases.length ? cases.map((s) => <Link key={s.id} to="/support/$caseId" params={{ caseId: s.id }} className="flex items-center justify-between py-1.5 hover:underline"><span><Mono>{s.caseReference}</Mono> {s.subject}</span><StatusBadge status={s.status} /></Link>) : <p className="text-muted-foreground">No linked cases.</p>}
           {canCase && openCustomerCases.length > 0 && (
             <div className="mt-4 flex gap-2 border-t pt-3">
-              <select aria-label="Existing case" value={linkTo} onChange={(e) => setLinkTo(e.target.value)} className="h-8 flex-1 rounded-md border bg-card px-2 text-[13px]"><option value="">Link existing case…</option>{openCustomerCases.map((s) => <option key={s.id} value={s.id}>{s.caseReference} · {s.subject}</option>)}</select>
+              <SelectField aria-label="Existing case" value={linkTo} onChange={(e) => setLinkTo(e.target.value)} className="h-8 flex-1 rounded-md border bg-card px-2 text-[13px]"><option value="">Link existing case…</option>{openCustomerCases.map((s) => <option key={s.id} value={s.id}>{s.caseReference} · {s.subject}</option>)}</SelectField>
               <Button size="sm" variant="outline" disabled={!linkTo} onClick={() => run(() => linkCaseRecord(linkTo, { type: "transaction", id: t.id }), "Case linked") && setLinkTo("")}>Link</Button>
             </div>
           )}

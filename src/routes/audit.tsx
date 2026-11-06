@@ -1,3 +1,4 @@
+import { SelectField } from "@/components/ui/select-field";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useDB } from "@/services/store";
@@ -51,7 +52,7 @@ function Audit() {
           <FilterSelect label="Action" value={act} onChange={setAct} options={actions} />
           <FilterSelect label="Module" value={mod} onChange={setMod} options={modules} />
           <FilterSelect label="Outcome" value={out} onChange={setOut} options={["Success", "Simulated", "Denied", "Failed"]} />
-          <select aria-label="Date range" value={days} onChange={(e) => setDays(e.target.value)} className="h-8 rounded-md border bg-card px-2 text-[13px]"><option value="all">Any date</option><option value="1">Last 24h</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select>
+          <SelectField aria-label="Date range" value={days} onChange={(e) => setDays(e.target.value)} className="h-10 w-auto max-w-full rounded-md border bg-card px-3 text-[13px]"><option value="all">Any date</option><option value="1">Last 24h</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></SelectField>
         </>
       } />
       <p className="mt-3 text-[13px] text-muted-foreground">In production, audit records must be written by trusted backend services and protected from modification.</p>

@@ -1,3 +1,4 @@
+import { SelectField } from "@/components/ui/select-field";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useDB } from "@/services/store";
@@ -109,8 +110,8 @@ function CardDetail() {
           <div className="grid gap-3">
             <div className="grid grid-cols-2 gap-3 text-[14px]"><div><div className="eyebrow">Customer</div>{fullName(c)}</div><div><div className="eyebrow">Existing card</div>{card.cardDesign} •••• {card.last4}</div></div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label htmlFor="rd">Replacement design</Label><select id="rd" className="h-9 w-full rounded-md border bg-card px-2" value={design} onChange={(e) => setDesign(e.target.value as CardDesign)}>{CARD_DESIGNS.map((d) => <option key={d}>{d}</option>)}</select></div>
-              <div className="space-y-1"><Label htmlFor="rr">Reason</Label><select id="rr" className="h-9 w-full rounded-md border bg-card px-2" value={reason} onChange={(e) => setReason(e.target.value as ReplacementReason)}>{REASONS.map((d) => <option key={d}>{d}</option>)}</select></div>
+              <div className="space-y-1"><Label htmlFor="rd">Replacement design</Label><SelectField id="rd" className="h-9 w-full rounded-md border bg-card px-2" value={design} onChange={(e) => setDesign(e.target.value as CardDesign)}>{CARD_DESIGNS.map((d) => <option key={d}>{d}</option>)}</SelectField></div>
+              <div className="space-y-1"><Label htmlFor="rr">Reason</Label><SelectField id="rr" className="h-9 w-full rounded-md border bg-card px-2" value={reason} onChange={(e) => setReason(e.target.value as ReplacementReason)}>{REASONS.map((d) => <option key={d}>{d}</option>)}</SelectField></div>
             </div>
             {(reason === "Lost card" || reason === "Suspected compromise") && <p className="text-[13px] text-warning">The existing card will be locked (simulated).</p>}
             <div className="space-y-1"><Label htmlFor="rn">Notes</Label><Textarea id="rn" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>

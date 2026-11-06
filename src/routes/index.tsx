@@ -1,3 +1,4 @@
+import { SelectField } from "@/components/ui/select-field";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -70,11 +71,11 @@ function Overview() {
         actions={
           <>
             <span className="text-[13px] text-muted-foreground">{today}</span>
-            <select aria-label="Activity period" value={range} onChange={(e) => setRange(e.target.value as typeof range)} className="h-8 rounded-md border bg-card px-2 text-[13px]">
+            <SelectField aria-label="Activity period" value={range} onChange={(e) => setRange(e.target.value as typeof range)} className="h-10 w-auto max-w-full rounded-md border bg-card px-3 text-[13px]">
               <option value="7">Activity: last 7 days</option>
               <option value="30">Activity: last 30 days</option>
               <option value="all">Activity: all time</option>
-            </select>
+            </SelectField>
           </>
         }
       />
@@ -88,7 +89,7 @@ function Overview() {
         ))}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
+      <div className="grid gap-6 2xl:grid-cols-[1.45fr_1fr]">
         <Panel title={<>Requires attention <span className="ml-1 rounded bg-secondary px-1.5 text-[12px] tabular text-muted-foreground">{queue.length}</span></>} bodyClass="p-0">
           {queue.length === 0 ? <EmptyState title="Nothing requires attention" /> : (
             <div className="max-h-[460px] overflow-auto">
@@ -101,9 +102,9 @@ function Overview() {
                       </td>
                       <td className="px-2 py-2">
                         <div className="font-medium">{q.type}</div>
-                        <div className="max-w-[340px] truncate text-[13px] text-muted-foreground">{q.detail}</div>
+                        <div className="min-w-[210px] max-w-[340px] text-[13px] text-muted-foreground">{q.detail}</div>
                       </td>
-                      <td className="px-2 py-2 text-[13px]">{q.record}</td>
+                      <td className="min-w-[130px] px-4 py-2 text-[13px]">{q.record}</td>
                       <td className="whitespace-nowrap px-2 py-2 text-[13px] text-muted-foreground">{relTime(q.at)}</td>
                       <td className="whitespace-nowrap py-2 pl-2 pr-4 text-right text-[13px] font-medium text-primary">{q.action} <ArrowRight className="inline size-3" /></td>
                     </tr>
@@ -140,7 +141,7 @@ function Overview() {
           <div className="h-60">
             <ResponsiveContainer>
               <BarChart data={stageData} margin={{ left: -24, right: 8 }}>
-                <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={13} />
+                <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={13} interval={0} />
                 <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={13} />
                 <Tooltip cursor={{ fill: "var(--color-secondary)" }} contentStyle={{ fontSize: 14, background: "var(--card)", color: "var(--foreground)", borderRadius: 6, border: "1px solid var(--color-border)" }} />
                 <Bar dataKey="count" name="Customers" fill="var(--color-chart-2)" radius={[3, 3, 0, 0]} />

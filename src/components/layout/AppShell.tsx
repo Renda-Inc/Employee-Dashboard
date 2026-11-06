@@ -1,3 +1,4 @@
+import { SelectField } from "@/components/ui/select-field";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -124,7 +125,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
         {(collapsed || managementOpen) && MGMT.map(item)}
       </nav>
       <ProfileMenu align="start">
-        <Button variant="ghost" className={cn("flex items-center gap-2.5 border-t px-3 py-3 text-left hover:bg-secondary", collapsed && "justify-center px-0")}>
+        <Button variant="ghost" className={cn("flex items-center h-auto justify-start gap-2.5 rounded-none border-t px-4 py-5 text-left hover:bg-secondary", collapsed && "justify-center px-0")}>
           <Avatar name={me.name} size="md" />
           {!collapsed && (
             <span className="min-w-0">
@@ -250,7 +251,7 @@ function Notifications() {
           {list.map((n) => {
             const isUnread = !db.readNotificationIds.includes(n.id);
             return (
-              <Button variant="ghost" key={n.id} onClick={() => { markNotificationsRead([n.id]); navigate({ to: n.to, params: n.params }); }} className="flex w-full gap-2.5 border-b px-3 py-2.5 text-left last:border-0 hover:bg-secondary">
+              <Button variant="ghost" key={n.id} onClick={() => { markNotificationsRead([n.id]); navigate({ to: n.to, params: n.params }); }} className="flex h-auto w-full justify-start whitespace-normal gap-2.5 rounded-none border-b px-5 py-4 text-left last:border-0 hover:bg-secondary">
                 <span className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", isUnread ? "bg-primary" : "bg-transparent")} />
                 <span className="min-w-0 flex-1">
                   <span className="block text-[13px] font-medium">{n.type}</span>
@@ -270,9 +271,9 @@ function MobileNav() {
   const { path } = useActiveNav();
   const navigate = useNavigate();
   return (
-    <select aria-label="Navigate" className="h-8 rounded-md border bg-card px-2 text-[14px] lg:hidden" value={ALL_NAV.find((n) => (n.to === "/" ? path === "/" : path.startsWith(n.to)))?.to ?? "/"} onChange={(e) => navigate({ to: e.target.value })}>
+    <SelectField aria-label="Navigate" className="h-10 w-48 shrink-0 rounded-md border bg-card px-3 text-[14px] lg:hidden" value={ALL_NAV.find((n) => (n.to === "/" ? path === "/" : path.startsWith(n.to)))?.to ?? "/"} onChange={(e) => navigate({ to: e.target.value })}>
       {ALL_NAV.map((n) => <option key={n.to} value={n.to}>{n.title}</option>)}
-    </select>
+    </SelectField>
   );
 }
 
@@ -294,7 +295,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Notifications />
           <a href="#help" onClick={(e) => { e.preventDefault(); toast.info("Operations handbook: internal documentation is not connected in this demo."); }} aria-label="Help" className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"><CircleHelp className="size-4" /></a>
           <ProfileMenu>
-            <Button variant="ghost" aria-label="Profile menu" className="rounded-full"><Avatar name={me.name} size="md" /></Button>
+            <Button variant="ghost" aria-label="Profile menu" className="size-10 rounded-full p-0"><Avatar name={me.name} size="md" /></Button>
           </ProfileMenu>
         </header>
         <main className="mx-auto w-full max-w-[1680px] flex-1 px-5 py-8 xl:px-8">{children}</main>
