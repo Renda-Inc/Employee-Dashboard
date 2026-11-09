@@ -176,3 +176,23 @@ main > div { min-width: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
+
+/* Employee sign-in: deep charcoal to dark slate, with a restrained Renda orange glow. */
+:root {
+  --auth-charcoal: oklch(0.178 0 0);
+  --auth-slate: oklch(0.3 0.02 230);
+  --auth-glow: oklch(0.727 0.161 70 / 0.32);
+  --auth-glow-cool: oklch(0.46 0.04 230 / 0.55);
+  --gradient-auth:
+    radial-gradient(60% 55% at 88% 8%, var(--auth-glow) 0%, transparent 70%),
+    radial-gradient(55% 60% at 4% 100%, var(--auth-glow-cool) 0%, transparent 70%),
+    linear-gradient(155deg, var(--auth-charcoal) 0%, oklch(0.23 0.01 230) 45%, var(--auth-slate) 100%);
+  --shadow-auth: 0 30px 80px -20px oklch(0 0 0 / 0.55), 0 0 0 1px oklch(1 0 0 / 0.06);
+}
+@utility auth-gradient {
+  background-image: var(--gradient-auth);
+  background-color: var(--auth-charcoal);
+}
+@utility shadow-auth {
+  box-shadow: var(--shadow-auth);
+}
