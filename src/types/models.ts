@@ -281,12 +281,17 @@ export type Role =
   | "Card Operations"
   | "Read-Only Analyst";
 
+export type EmployeeStatus = "Active" | "Invitation Pending" | "Inactive" | "Suspended";
+
 export interface Employee {
   id: string;
   name: string;
   email: string;
-  role: Role;
-  status: "Active" | "Suspended";
+  /** Role name — a system role or a custom role from the employee directory. */
+  role: Role | (string & {});
+  status: EmployeeStatus;
+  /** True for employees with a real Renda Admin login (from the employee directory). */
+  directory?: boolean;
 }
 
 export type AuditOutcome = "Success" | "Simulated" | "Denied" | "Failed";

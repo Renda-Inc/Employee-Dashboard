@@ -1,15 +1,17 @@
 import { SelectField } from "@/components/ui/select-field";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   LayoutDashboard, Users, ShieldCheck, Landmark, ArrowLeftRight, Send, CreditCard, BadgeCheck, PiggyBank, Sparkles,
   LifeBuoy, UserCog, ScrollText, Settings as SettingsIcon, Search, Bell, CircleHelp, ChevronRight, PanelLeftClose, PanelLeft,
-  ChevronDown, LogOut, UserRound, FlaskConical, Check,
+  ChevronDown, LogOut, UserRound, FlaskConical, KeyRound, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDB } from "@/services/store";
-import { currentEmployee, markNotificationsRead, switchEmployee } from "@/services/actions";
+import { currentEmployee, markNotificationsRead } from "@/services/actions";
+import { signOutEverywhere } from "@/services/directory";
 import { globalSearch, notifications, type SearchResult } from "@/services/selectors";
 import { can, type Permission } from "@/services/permissions";
 import { Avatar } from "@/components/common";
@@ -34,7 +36,8 @@ const MAIN: NavItem[] = [
   { title: "Customer Support", to: "/support", icon: LifeBuoy, perm: "support.view" },
 ];
 const MGMT: NavItem[] = [
-  { title: "Employees & Permissions", to: "/employees", icon: UserCog },
+  { title: "Employee Management", to: "/employees", icon: UserCog },
+  { title: "Roles & Permissions", to: "/employees/roles", icon: KeyRound },
   { title: "Audit Logs", to: "/audit", icon: ScrollText, perm: "audit.view" },
   { title: "Settings", to: "/settings", icon: SettingsIcon },
 ];
@@ -42,13 +45,28 @@ const ALL_NAV = [...MAIN, ...MGMT];
 
 function useActiveNav() {
   const path = useRouterState({ select: (s) => s.location.pathname });
-  return { path, active: (to: string) => (to === "/" ? path === "/" : path === to || path.startsWith(to + "/")) };
+  const matches = (to: string) => (to === "/" ? path === "/" : path === to || path.startsWith(to + "/"));
+  // The most specific navigation item wins (e.g. Roles & Permissions over Employee Management).
+  const best = ALL_NAV.filter((n) => matches(n.to)).sort((a, b) => b.to.length - a.to.length)[0]?.to;
+  return { path, active: (to: string) => to === best };
 }
 
 function ProfileMenu({ children, align = "end" }: { children: ReactNode; align?: "end" | "start" }) {
   const db = useDB();
   const me = currentEmployee(db);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [signingOut, setSigningOut] = useState(false);
+  async function signOut() {
+    setSigningOut(true);
+    try {
+      await signOutEverywhere(queryClient);
+      navigate({ to: "/auth", replace: true });
+    } catch {
+      setSigningOut(false);
+      toast.error("We couldn't sign you out. Try again.");
+    }
+  }
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
@@ -56,22 +74,13 @@ function ProfileMenu({ children, align = "end" }: { children: ReactNode; align?:
         <DropdownMenuLabel className="font-normal">
           <div className="text-[14px] font-medium">{me.name}</div>
           <div className="text-[12px] text-muted-foreground">{me.email}</div>
+          <div className="mt-1 text-[12px] font-medium text-muted-foreground">{me.role}</div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}><UserRound /> Profile & preferences</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate({ to: "/employees/$employeeId", params: { employeeId: me.id } })}><UserRound /> My employee profile</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}><SettingsIcon /> Preferences & security</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuLabel className="flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground"><FlaskConical className="size-3" /> Demo: sign in as</DropdownMenuLabel>
-        {db.employees.filter((e) => e.status === "Active").map((e) => (
-          <DropdownMenuItem key={e.id} onClick={() => { switchEmployee(e.id); toast.success(`Signed in as ${e.name} (${e.role}) — demo`); }}>
-            <span className="flex-1">
-              <span className="block text-[13px]">{e.name}</span>
-              <span className="block text-[12px] text-muted-foreground">{e.role}</span>
-            </span>
-            {e.id === me.id && <Check className="text-primary" />}
-          </DropdownMenuItem>
-        ))}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => toast.info("Sign-out is simulated in this demo. Use the role switcher above.")}><LogOut /> Sign out</DropdownMenuItem>
+        <DropdownMenuItem disabled={signingOut} onSelect={(e) => { e.preventDefault(); void signOut(); }}>{signingOut ? <Loader2 className="animate-spin" /> : <LogOut />} Sign out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -145,7 +154,10 @@ function Breadcrumbs() {
   const segs = path.split("/").filter(Boolean);
   const top = ALL_NAV.find((n) => n.to === "/" + (segs[0] ?? "")) ?? ALL_NAV[0];
   const crumbs: { label: string; to?: string }[] = [{ label: top.title, to: top.to }];
-  if (segs[1] === "manufacturing") {
+  if (segs[0] === "employees" && segs[1]) {
+    if (segs[1] === "roles") crumbs.splice(0, 1, { label: "Roles & Permissions" });
+    else crumbs.push({ label: db.employees.find((e) => e.id === segs[1])?.name ?? "Employee" });
+  } else if (segs[1] === "manufacturing") {
     crumbs.push({ label: "Card Manufacturing", to: "/cards/manufacturing" });
     if (segs[2]) crumbs.push({ label: db.batches.find((b) => b.id === segs[2])?.batchReference ?? "Batch" });
   } else if (segs[1]) {

@@ -21,6 +21,7 @@ export type Permission =
   | "alfie.view"
   | "alfie.sensitive"
   | "employees.manage"
+  | "roles.manage"
   | "audit.view"
   | "settings.manage";
 
@@ -28,9 +29,10 @@ const ALL: Permission[] = [
   "customers.view", "customers.edit", "customers.lifecycle", "kyc.view", "kyc.decide", "accounts.view", "accounts.manage",
   "transactions.view", "transactions.investigate", "cards.view", "cards.lock", "cards.replace", "manufacturing.manage",
   "subscriptions.view", "subscriptions.manage", "support.view", "support.manage", "alfie.view", "alfie.sensitive",
-  "employees.manage", "audit.view", "settings.manage",
+  "employees.manage", "roles.manage", "audit.view", "settings.manage",
 ];
 
+/** Default permission sets for the system roles. Live role definitions come from the employee directory. */
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   Administrator: ALL,
   "Customer Support": [
@@ -74,15 +76,52 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   "support.manage": "Manage support cases",
   "alfie.view": "View Alfie operations",
   "alfie.sensitive": "Access sensitive Alfie context",
-  "employees.manage": "Manage employees & roles",
+  "employees.manage": "Manage employee accounts",
+  "roles.manage": "Create and edit roles",
   "audit.view": "View audit logs",
   "settings.manage": "Change system settings",
 };
 
-export const ALL_PERMISSIONS = ALL;
+/** Permissions grouped by the area of Renda Admin they unlock. */
+export const PERMISSION_GROUPS: { area: string; permissions: Permission[] }[] = [
+  { area: "Customers", permissions: ["customers.view", "customers.edit", "customers.lifecycle"] },
+  { area: "Onboarding & KYC", permissions: ["kyc.view", "kyc.decide"] },
+  { area: "Banking & Accounts", permissions: ["accounts.view", "accounts.manage"] },
+  { area: "Transactions & Transfers", permissions: ["transactions.view", "transactions.investigate"] },
+  { area: "Cards", permissions: ["cards.view", "cards.lock", "cards.replace", "manufacturing.manage"] },
+  { area: "Plans & Subscriptions", permissions: ["subscriptions.view", "subscriptions.manage"] },
+  { area: "Customer Support", permissions: ["support.view", "support.manage"] },
+  { area: "Alfie", permissions: ["alfie.view", "alfie.sensitive"] },
+  { area: "Administration", permissions: ["employees.manage", "roles.manage", "audit.view", "settings.manage"] },
+];
 
-export function can(role: Role, p: Permission) {
-  return ROLE_PERMISSIONS[role].includes(p);
+export const ALL_PERMISSIONS = ALL;
+export const isPermission = (p: string): p is Permission => (ALL as string[]).includes(p);
+
+export const DEPARTMENTS = [
+  "Customer Support", "Compliance", "Banking Operations", "Card Operations", "Finance", "Risk", "Technology", "Operations", "Executive",
+] as const;
+
+export const LANDING_PAGES: { to: string; label: string }[] = [
+  { to: "/", label: "Overview" },
+  { to: "/customers", label: "Customers" },
+  { to: "/onboarding", label: "Onboarding & KYC" },
+  { to: "/accounts", label: "Banking & Accounts" },
+  { to: "/transactions", label: "Transactions" },
+  { to: "/cards", label: "Cards" },
+  { to: "/support", label: "Customer Support" },
+  { to: "/employees", label: "Employees" },
+];
+
+// Live role → permission map, replaced when the employee directory loads.
+let registry: Record<string, Permission[]> = { ...ROLE_PERMISSIONS };
+
+export function setRolePermissions(map: Record<string, Permission[]>) {
+  registry = map;
+}
+
+export function can(role: string, p: Permission) {
+  return registry[role]?.includes(p) ?? false;
 }
 
 export class PermissionError extends Error {}
