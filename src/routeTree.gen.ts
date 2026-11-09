@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as SetPasswordRouteImport } from './routes/set-password'
-import { Route as SetupRouteImport } from './routes/setup'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAlfieRouteImport } from './routes/_authenticated/alfie'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
@@ -50,11 +49,6 @@ const AuthRoute = AuthRouteImport.update({
 const SetPasswordRoute = SetPasswordRouteImport.update({
   id: '/set-password',
   path: '/set-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SetupRoute = SetupRouteImport.update({
-  id: '/setup',
-  path: '/setup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
@@ -199,7 +193,6 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/set-password': typeof SetPasswordRoute
-  '/setup': typeof SetupRoute
   '/alfie': typeof AuthenticatedAlfieRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/savings': typeof AuthenticatedSavingsRoute
@@ -227,7 +220,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/set-password': typeof SetPasswordRoute
-  '/setup': typeof SetupRoute
   '/alfie': typeof AuthenticatedAlfieRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/savings': typeof AuthenticatedSavingsRoute
@@ -258,7 +250,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/set-password': typeof SetPasswordRoute
-  '/setup': typeof SetupRoute
   '/_authenticated/alfie': typeof AuthenticatedAlfieRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/savings': typeof AuthenticatedSavingsRoute
@@ -290,7 +281,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/set-password'
-    | '/setup'
     | '/alfie'
     | '/audit'
     | '/savings'
@@ -318,7 +308,6 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/set-password'
-    | '/setup'
     | '/alfie'
     | '/audit'
     | '/savings'
@@ -348,7 +337,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/set-password'
-    | '/setup'
     | '/_authenticated/alfie'
     | '/_authenticated/audit'
     | '/_authenticated/savings'
@@ -379,7 +367,6 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   SetPasswordRoute: typeof SetPasswordRoute
-  SetupRoute: typeof SetupRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -403,13 +390,6 @@ declare module '@tanstack/react-router' {
       path: '/set-password'
       fullPath: '/set-password'
       preLoaderRoute: typeof SetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/setup': {
-      id: '/setup'
-      path: '/setup'
-      fullPath: '/setup'
-      preLoaderRoute: typeof SetupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/': {
@@ -648,7 +628,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   SetPasswordRoute: SetPasswordRoute,
-  SetupRoute: SetupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
