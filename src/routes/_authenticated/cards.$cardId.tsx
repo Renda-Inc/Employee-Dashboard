@@ -14,7 +14,7 @@ import { SimulatedNote } from "@/components/common";
 import { fmtDate, fmtDateTime, fullName, lookup } from "@/lib/format";
 import { CARD_DESIGNS, type CardDesign, type ReplacementReason } from "@/types/models";
 
-export const Route = createFileRoute("/cards/$cardId")({
+export const Route = createFileRoute("/_authenticated/cards/$cardId")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Card details — Renda Admin" }, { name: "description", content: "Card details, replacement and fulfillment." }, { property: "og:title", content: "Card details — Renda Admin" }, { property: "og:description", content: "Card details." }] }),
   component: CardDetail,
 });

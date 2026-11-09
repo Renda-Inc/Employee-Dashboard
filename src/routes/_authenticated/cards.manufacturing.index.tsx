@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { fmtDate, fmtDateTime, lookup } from "@/lib/format";
 import type { CardOrder, ManufacturingBatch } from "@/types/models";
 
-export const Route = createFileRoute("/cards/manufacturing/")({
+export const Route = createFileRoute("/_authenticated/cards/manufacturing/")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Card Manufacturing — Renda Admin" }, { name: "description", content: "Review physical card orders and prepare manufacturing batches." }, { property: "og:title", content: "Card Manufacturing — Renda Admin" }, { property: "og:description", content: "Prepare Friday manufacturing batches." }] }),
   component: Manufacturing,
 });

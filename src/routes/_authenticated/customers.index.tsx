@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Customer } from "@/types/models";
 
-export const Route = createFileRoute("/customers/")({
+export const Route = createFileRoute("/_authenticated/customers/")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Customers — Renda Admin" }, { name: "description", content: "Search and manage Renda customer records." }, { property: "og:title", content: "Customers — Renda Admin" }, { property: "og:description", content: "Search and manage Renda customer records." }] }),
   component: Customers,
 });

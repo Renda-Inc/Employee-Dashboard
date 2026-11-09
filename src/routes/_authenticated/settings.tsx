@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export const Route = createFileRoute("/settings")({
+export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Settings — Renda Admin" }, { name: "description", content: "Organization, preferences and operational configuration." }, { property: "og:title", content: "Settings — Renda Admin" }, { property: "og:description", content: "Operations settings." }] }),
   component: Settings,
 });

@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { fmtDate, fmtMoney, fullName, lookup } from "@/lib/format";
 import type { SavingsGoal } from "@/types/models";
 
-export const Route = createFileRoute("/savings")({
+export const Route = createFileRoute("/_authenticated/savings")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Savings Goals — Renda Admin" }, { name: "description", content: "Customer savings goals created with Alfie." }, { property: "og:title", content: "Savings Goals — Renda Admin" }, { property: "og:description", content: "Customer savings goals." }] }),
   component: Savings,
 });

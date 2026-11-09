@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { fullName, lookup } from "@/lib/format";
 import { CARD_DESIGNS } from "@/types/models";
 
-export const Route = createFileRoute("/cards/")({
+export const Route = createFileRoute("/_authenticated/cards/")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Cards — Renda Admin" }, { name: "description", content: "Virtual and physical Renda Mastercard records." }, { property: "og:title", content: "Cards — Renda Admin" }, { property: "og:description", content: "Renda Mastercard records." }] }),
   component: Cards,
 });

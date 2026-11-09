@@ -22,7 +22,7 @@ import { CARD_DESIGNS, type CardDesign, type Customer } from "@/types/models";
 const TABS = ["Overview", "Personal Information", "Accounts", "Transactions", "Cards", "Membership", "Savings Goals", "Support Cases", "Activity History"] as const;
 type Tab = (typeof TABS)[number];
 
-export const Route = createFileRoute("/customers/$customerId")({
+export const Route = createFileRoute("/_authenticated/customers/$customerId")({
   validateSearch: (s: Record<string, unknown>): { tab?: Tab } => ({ tab: TABS.includes(s.tab as Tab) ? (s.tab as Tab) : undefined }),
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Customer profile — Renda Admin" }, { name: "description", content: "Central customer record across banking, cards, plans and support." }, { property: "og:title", content: "Customer profile — Renda Admin" }, { property: "og:description", content: "Central customer record." }] }),
   component: CustomerProfile,

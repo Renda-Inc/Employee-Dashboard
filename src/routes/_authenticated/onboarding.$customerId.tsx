@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { fmtDateTime, fullName } from "@/lib/format";
 import { outstanding } from "./onboarding.index";
 
-export const Route = createFileRoute("/onboarding/$customerId")({
+export const Route = createFileRoute("/_authenticated/onboarding/$customerId")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Verification case — Renda Admin" }, { name: "description", content: "Customer verification and onboarding case." }, { property: "og:title", content: "Verification case — Renda Admin" }, { property: "og:description", content: "Customer verification case." }] }),
   component: VerificationCase,
 });

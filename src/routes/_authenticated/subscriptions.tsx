@@ -13,7 +13,7 @@ import { PLAN_PRICES } from "@/services/rules";
 import { MembershipPanel } from "./customers.$customerId";
 import type { Subscription } from "@/types/models";
 
-export const Route = createFileRoute("/subscriptions")({
+export const Route = createFileRoute("/_authenticated/subscriptions")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Plans & Subscriptions — Renda Admin" }, { name: "description", content: "Renda Everyday and Renda Plus memberships." }, { property: "og:title", content: "Plans & Subscriptions — Renda Admin" }, { property: "og:description", content: "Renda memberships." }] }),
   component: Subscriptions,
 });

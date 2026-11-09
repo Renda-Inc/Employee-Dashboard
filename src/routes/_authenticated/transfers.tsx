@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/status/StatusBadge";
 import { fmtDateTime, lookup, transferTypeLabel } from "@/lib/format";
 import type { Transfer } from "@/types/models";
 
-export const Route = createFileRoute("/transfers")({
+export const Route = createFileRoute("/_authenticated/transfers")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Payments & Transfers — Renda Admin" }, { name: "description", content: "RenPay, Interac and account-to-account transfers." }, { property: "og:title", content: "Payments & Transfers — Renda Admin" }, { property: "og:description", content: "RenPay, Interac and account-to-account transfers." }] }),
   component: Transfers,
 });

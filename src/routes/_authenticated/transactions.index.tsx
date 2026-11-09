@@ -7,7 +7,7 @@ import { FilterSelect, SearchInput } from "@/components/tables/DataTable";
 import { TransactionTable } from "@/components/tables/RecordTables";
 import { fullName, lookup } from "@/lib/format";
 
-export const Route = createFileRoute("/transactions/")({
+export const Route = createFileRoute("/_authenticated/transactions/")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Transactions — Renda Admin" }, { name: "description", content: "Investigate customer transactions." }, { property: "og:title", content: "Transactions — Renda Admin" }, { property: "og:description", content: "Investigate customer transactions." }] }),
   component: Transactions,
 });

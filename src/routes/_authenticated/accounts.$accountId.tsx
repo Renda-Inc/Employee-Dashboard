@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { fmtDate, fmtMoney, fullName } from "@/lib/format";
 import type { Account, Customer, Transaction } from "@/types/models";
 
-export const Route = createFileRoute("/accounts/$accountId")({
+export const Route = createFileRoute("/_authenticated/accounts/$accountId")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Account details — Renda Admin" }, { name: "description", content: "Banking account details." }, { property: "og:title", content: "Account details — Renda Admin" }, { property: "og:description", content: "Banking account details." }] }),
   component: AccountDetail,
 });

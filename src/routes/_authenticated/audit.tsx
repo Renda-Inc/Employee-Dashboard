@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { fmtDateTime, lookup } from "@/lib/format";
 import type { AuditEvent } from "@/types/models";
 
-export const Route = createFileRoute("/audit")({
+export const Route = createFileRoute("/_authenticated/audit")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Audit Logs — Renda Admin" }, { name: "description", content: "Traceability for sensitive operations." }, { property: "og:title", content: "Audit Logs — Renda Admin" }, { property: "og:description", content: "Audit trail." }] }),
   component: Audit,
 });

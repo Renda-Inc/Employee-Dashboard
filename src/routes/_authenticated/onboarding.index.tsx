@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/status/StatusBadge";
 import { fmtDate, fmtDateTime, fullName } from "@/lib/format";
 import type { Customer, DB } from "@/types/models";
 
-export const Route = createFileRoute("/onboarding/")({
+export const Route = createFileRoute("/_authenticated/onboarding/")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Onboarding & KYC — Renda Admin" }, { name: "description", content: "Verification and onboarding queue." }, { property: "og:title", content: "Onboarding & KYC — Renda Admin" }, { property: "og:description", content: "Verification and onboarding queue." }] }),
   component: Onboarding,
 });

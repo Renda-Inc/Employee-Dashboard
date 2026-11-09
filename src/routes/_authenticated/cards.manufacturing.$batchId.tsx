@@ -9,7 +9,7 @@ import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { fmtDate, fmtDateTime, lookup } from "@/lib/format";
 
-export const Route = createFileRoute("/cards/manufacturing/$batchId")({
+export const Route = createFileRoute("/_authenticated/cards/manufacturing/$batchId")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Manufacturing batch — Renda Admin" }, { name: "description", content: "Review, export and record submission of a manufacturing batch." }, { property: "og:title", content: "Manufacturing batch — Renda Admin" }, { property: "og:description", content: "Manufacturing batch review." }] }),
   component: BatchDetail,
 });

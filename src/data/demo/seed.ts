@@ -681,7 +681,7 @@ export function buildSeed(): DB {
       manufacturerName: "Card manufacturer (to be confirmed)",
       pdfIncludeShippingReference: true,
     },
-    currentEmployeeId: "emp_01",
+    currentEmployeeId: "",
     readNotificationIds: [],
   };
 }

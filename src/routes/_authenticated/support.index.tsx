@@ -11,7 +11,7 @@ import { NewCaseDialog } from "@/components/dialogs/NewCaseDialog";
 import { Button } from "@/components/ui/button";
 import { fullName, lookup } from "@/lib/format";
 
-export const Route = createFileRoute("/support/")({
+export const Route = createFileRoute("/_authenticated/support/")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Customer Support — Renda Admin" }, { name: "description", content: "Receive, investigate, assign and resolve customer cases." }, { property: "og:title", content: "Customer Support — Renda Admin" }, { property: "og:description", content: "Customer support cases." }] }),
   component: Support,
 });

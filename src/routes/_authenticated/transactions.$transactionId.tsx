@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { fmtDateTime, fullName, lookup, transferTypeLabel, txTypeLabel } from "@/lib/format";
 
-export const Route = createFileRoute("/transactions/$transactionId")({
+export const Route = createFileRoute("/_authenticated/transactions/$transactionId")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Transaction — Renda Admin" }, { name: "description", content: "Transaction details and investigation." }, { property: "og:title", content: "Transaction — Renda Admin" }, { property: "og:description", content: "Transaction details." }] }),
   component: TxnDetail,
 });

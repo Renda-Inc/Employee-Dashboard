@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/status/StatusBadge";
 import { fmtDate, fmtDateTime, fmtMoney, fullName, lookup } from "@/lib/format";
 import type { Account } from "@/types/models";
 
-export const Route = createFileRoute("/accounts/")({
+export const Route = createFileRoute("/_authenticated/accounts/")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Banking & Accounts — Renda Admin" }, { name: "description", content: "Smart Spend and Sense Save account records." }, { property: "og:title", content: "Banking & Accounts — Renda Admin" }, { property: "og:description", content: "Smart Spend and Sense Save account records." }] }),
   component: Accounts,
 });
