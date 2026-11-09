@@ -23,8 +23,11 @@ const uid = (p: string) => `${p}_${Date.now().toString(36)}${(++seq).toString(36
 const now = () => new Date().toISOString();
 const name = (c: Customer) => `${c.firstName} ${c.lastName}`;
 
+const SIGNED_OUT: DB["employees"][number] = { id: "", name: "Signed out", email: "", role: "", status: "Inactive" };
+
+/** The signed-in employee (synced from the employee directory at sign-in). */
 export function currentEmployee(db: DB = getState()) {
-  return db.employees.find((e) => e.id === db.currentEmployeeId) ?? db.employees[0];
+  return db.employees.find((e) => e.id === db.currentEmployeeId) ?? SIGNED_OUT;
 }
 
 function pushAudit(d: DB, e: Omit<AuditEvent, "id" | "timestamp" | "employeeId">) {
