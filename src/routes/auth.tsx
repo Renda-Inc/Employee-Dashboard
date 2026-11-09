@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { needsMfa, ownAccess, rememberSession, safeRedirect, signOutEverywhere } from "@/services/directory";
-import { recordSignIn } from "@/services/employees.functions";
+import { OPEN_SIGN_IN, openSignIn, recordSignIn } from "@/services/employees.functions";
 
 type Reason = "denied" | "expired";
 
@@ -45,6 +45,7 @@ function SignIn() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const record = useServerFn(recordSignIn);
+  const open = useServerFn(openSignIn);
   const [step, setStep] = useState<"loading" | "credentials" | "mfa">("loading");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -53,7 +54,6 @@ function SignIn() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(search.reason ? REASONS[search.reason] : null);
-  const [setupRequired, setSetupRequired] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
   const fresh = useRef(false);
 
@@ -84,8 +84,6 @@ function SignIn() {
         return finish(data.session.user.id);
       }
       setStep("credentials");
-      const { data: setup } = await supabase.rpc("setup_required");
-      if (!cancelled) setSetupRequired(setup === true);
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -100,7 +98,16 @@ function SignIn() {
     }
     setBusy(true);
     rememberSession(remember);
-    const { data, error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    let { data, error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    if ((err || !data.user) && OPEN_SIGN_IN && err?.status !== 429) {
+      // Temporary: any credentials sign in to the shared demo Administrator account.
+      try {
+        const { tokenHash } = await open();
+        ({ data, error: err } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "magiclink" }));
+      } catch {
+        err = err ?? null;
+      }
+    }
     if (err || !data.user) {
       setBusy(false);
       setError(err?.status === 429 ? "Too many sign-in attempts. Wait a few minutes, then try again." : INVALID);
@@ -169,11 +176,6 @@ function SignIn() {
           <Button type="submit" size="lg" className="h-11 w-full text-[15px]" disabled={busy}>
             {busy && <Loader2 className="size-4 animate-spin" />} Sign in
           </Button>
-          {setupRequired && (
-            <p className="rounded-md bg-secondary px-3.5 py-3 text-[13px] text-muted-foreground">
-              No accounts exist yet. <Link to="/setup" className="font-medium text-foreground underline underline-offset-4">Set up the first administrator</Link>
-            </p>
-          )}
         </form>
       )}
 

@@ -94,39 +94,46 @@ export const completePasswordSetup = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/* ---------------- First administrator ---------------- */
+/* ---------------- Open sign-in (temporary) ---------------- */
 
-const BootstrapInput = z.object({
-  firstName: z.string().trim().min(1).max(60),
-  lastName: z.string().trim().min(1).max(60),
-  email: z.string().trim().toLowerCase().email().max(254),
-  password: z.string().max(128),
-});
+// TEMPORARY: while OPEN_SIGN_IN is true, any email/password that isn't a real employee login
+// signs in to one shared demo Administrator account. Set it to false to require real credentials.
+export const OPEN_SIGN_IN = true;
+const DEMO_ADMIN = { email: "demo.admin@example.com", firstName: "Demo", lastName: "Administrator" };
 
-export const bootstrapAdministrator = createServerFn({ method: "POST" })
-  .inputValidator((input: z.input<typeof BootstrapInput>) => BootstrapInput.parse(input))
-  .handler(async ({ data }) => {
-    const admin = await adminClient();
-    const { count } = await admin.from("employees").select("id", { count: "exact", head: true });
-    if ((count ?? 0) > 0) throw new Error("Renda Admin is already set up. Sign in instead.");
-    const issues = passwordIssues(data.password);
-    if (issues.length) throw new Error(`Your password needs: ${issues.join(", ").toLowerCase()}.`);
-    const { data: role } = await admin.from("roles").select("id").eq("name", ADMIN_ROLE).single();
-    if (!role) throw new Error("The Administrator role is missing.");
-    const { data: created, error } = await admin.auth.admin.createUser({ email: data.email, password: data.password, email_confirm: true });
-    if (error || !created.user) throw new Error("We couldn't create the administrator account. Try again.");
+export const openSignIn = createServerFn({ method: "POST" }).handler(async () => {
+  if (!OPEN_SIGN_IN) throw new Error("Open sign-in is turned off.");
+  const admin = await adminClient();
+  const { data: role } = await admin.from("roles").select("id").eq("name", ADMIN_ROLE).single();
+  if (!role) throw new Error("The Administrator role is missing.");
+
+  let { data: emp } = await admin.from("employees").select("id").eq("email", DEMO_ADMIN.email).maybeSingle();
+  if (!emp) {
+    const { data: created, error } = await admin.auth.admin.createUser({ email: DEMO_ADMIN.email, password: generateTemporaryPassword(), email_confirm: true });
+    if (error || !created.user) throw new Error("We couldn't sign you in. Try again.");
     const id = created.user.id;
     const { error: insErr } = await admin.from("employees").insert({
-      id, first_name: data.firstName, last_name: data.lastName, email: data.email, department: "Executive", job_title: "Administrator", status: "Active", must_change_password: false,
+      id, first_name: DEMO_ADMIN.firstName, last_name: DEMO_ADMIN.lastName, email: DEMO_ADMIN.email,
+      department: "Executive", job_title: "Administrator", status: "Active", must_change_password: false,
     });
     if (insErr) {
       await admin.auth.admin.deleteUser(id);
-      throw new Error("We couldn't create the administrator account. Try again.");
+      throw new Error("We couldn't sign you in. Try again.");
     }
-    await admin.from("user_roles").insert({ user_id: id, role_id: role.id });
-    await audit(admin, id, { action: "First administrator created", entityType: "Employee", entityId: id, entityLabel: `${data.firstName} ${data.lastName}` });
-    return { ok: true };
-  });
+    emp = { id };
+  }
+  // Keep the shared account usable: active, Administrator, no forced password change, no 2FA, not banned.
+  await admin.from("employees").update({ status: "Active", must_change_password: false }).eq("id", emp.id);
+  await admin.from("user_roles").delete().eq("user_id", emp.id);
+  await admin.from("user_roles").insert({ user_id: emp.id, role_id: role.id });
+  await admin.auth.admin.updateUserById(emp.id, { ban_duration: "none" });
+  const { data: factors } = await admin.auth.admin.mfa.listFactors({ userId: emp.id });
+  for (const f of factors?.factors ?? []) await admin.auth.admin.mfa.deleteFactor({ userId: emp.id, id: f.id });
+
+  const { data: link, error: linkErr } = await admin.auth.admin.generateLink({ type: "magiclink", email: DEMO_ADMIN.email });
+  if (linkErr || !link.properties?.hashed_token) throw new Error("We couldn't sign you in. Try again.");
+  return { tokenHash: link.properties.hashed_token };
+});
 
 /* ---------------- Employees ---------------- */
 
