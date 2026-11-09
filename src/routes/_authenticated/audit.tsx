@@ -1,6 +1,8 @@
 import { SelectField } from "@/components/ui/select-field";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { adminAuditQuery } from "@/services/directory";
 import { useDB } from "@/services/store";
 import { KV, Mono, NoAccess, PageHeader, usePermission } from "@/components/common";
 import { DataTable, FilterSelect, SearchInput, type Column } from "@/components/tables/DataTable";
@@ -25,10 +27,20 @@ function Audit() {
   const [act, setAct] = useState("all");
   const [days, setDays] = useState("all");
   const [open, setOpen] = useState<AuditEvent | null>(null);
+  const { data: adminEvents } = useQuery(adminAuditQuery(allowed));
+  // Employee-account and role events are recorded by the backend; operational events by the demo workspace.
+  const all = useMemo<AuditEvent[]>(() => [
+    ...(adminEvents ?? []).map((e) => ({
+      id: e.id, employeeId: e.actor_id ?? "", action: e.action, module: e.module, entityType: e.entity_type, entityId: e.entity_id,
+      entityLabel: e.entity_label, timestamp: e.created_at, outcome: e.outcome as AuditEvent["outcome"], details: e.details,
+      ...(e.before ? { before: e.before as Record<string, unknown> } : {}), ...(e.after ? { after: e.after as Record<string, unknown> } : {}),
+    })),
+    ...db.audit,
+  ], [adminEvents, db.audit]);
   if (!allowed) return <NoAccess what="audit logs" />;
-  const modules = Array.from(new Set(db.audit.map((a) => a.module))).sort();
-  const actions = Array.from(new Set(db.audit.map((a) => a.action))).sort();
-  const rows = db.audit.filter((a) =>
+  const modules = Array.from(new Set(all.map((a) => a.module))).sort();
+  const actions = Array.from(new Set(all.map((a) => a.action))).sort();
+  const rows = all.filter((a) =>
     (emp === "all" || L.empName(a.employeeId) === emp) && (mod === "all" || a.module === mod) && (out === "all" || a.outcome === out) && (act === "all" || a.action === act) &&
     (days === "all" || Date.now() - new Date(a.timestamp).getTime() <= Number(days) * 864e5) &&
     (!q || `${a.action} ${a.entityLabel} ${a.details}`.toLowerCase().includes(q.toLowerCase())));
@@ -48,7 +60,7 @@ function Audit() {
       <DataTable rows={rows} columns={cols} rowKey={(a) => a.id} pageSize={25} defaultSort={{ key: "t", dir: "desc" }} onRowClick={setOpen} toolbar={
         <>
           <SearchInput value={q} onChange={setQ} placeholder="Search action, record, details" />
-          <FilterSelect label="Employee" value={emp} onChange={setEmp} options={db.employees.map((e) => e.name)} />
+          <FilterSelect label="Employee" value={emp} onChange={setEmp} options={Array.from(new Set(db.employees.map((e) => e.name)))} />
           <FilterSelect label="Action" value={act} onChange={setAct} options={actions} />
           <FilterSelect label="Module" value={mod} onChange={setMod} options={modules} />
           <FilterSelect label="Outcome" value={out} onChange={setOut} options={["Success", "Simulated", "Denied", "Failed"]} />
