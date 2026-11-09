@@ -8,7 +8,7 @@ import { PasswordFields } from "@/components/auth/PasswordFields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { bootstrapAdministrator } from "@/services/employees.functions";
+import { bootstrapAdministrator, recordSignIn } from "@/services/employees.functions";
 import { passwordIssues } from "@/services/employee-rules";
 import { rememberSession } from "@/services/directory";
 
@@ -34,6 +34,7 @@ export const Route = createFileRoute("/setup")({
 function Setup() {
   const navigate = useNavigate();
   const create = useServerFn(bootstrapAdministrator);
+  const record = useServerFn(recordSignIn);
   const [f, setF] = useState({ firstName: "", lastName: "", email: "" });
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -53,6 +54,7 @@ function Setup() {
       rememberSession(true);
       const { error: err } = await supabase.auth.signInWithPassword({ email: f.email.trim().toLowerCase(), password });
       if (err) throw new Error("Your account was created. Sign in to continue.");
+      await record().catch(() => undefined);
       navigate({ to: "/", replace: true });
     } catch (err) {
       setBusy(false);
