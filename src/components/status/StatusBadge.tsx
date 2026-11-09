@@ -14,7 +14,7 @@ const TONE: Record<string, Tone> = {
   Failed: "danger", "KYC Failed": "danger", "Account Issuance Failed": "danger", "Issuance Failed": "danger", Blocked: "danger",
   Restricted: "danger", Locked: "danger", "Billing Issue": "danger", Escalated: "danger", Denied: "danger", Outage: "danger", Error: "danger",
   Reversed: "neutral", Closed: "neutral", Canceled: "neutral", Replaced: "neutral", "Not Started": "neutral", "Not Applicable": "neutral",
-  Unverified: "neutral", Suspended: "neutral", Paused: "neutral",
+  Unverified: "neutral", Suspended: "danger", Inactive: "neutral", "Invitation Pending": "warning", Paused: "neutral", System: "neutral", Custom: "info",
   Plus: "brand", Everyday: "neutral",
 };
 

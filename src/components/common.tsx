@@ -101,7 +101,7 @@ export function NoAccess({ what }: { what: string }) {
   const db = useDB();
   return (
     <div className="panel">
-      <EmptyState title="Access restricted" description={`Your role (${currentEmployee(db).role}) does not include access to ${what}. Switch demo role from the profile menu to test other permission sets.`} />
+      <EmptyState title="Access restricted" description={`Your role (${currentEmployee(db).role}) does not include access to ${what}. Contact your administrator if you need access.`} />
     </div>
   );
 }

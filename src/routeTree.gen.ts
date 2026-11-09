@@ -26,6 +26,9 @@ import { Route as AuthenticatedCardsIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedCardsCardIdRouteImport } from './routes/_authenticated/cards.$cardId'
 import { Route as AuthenticatedCustomersIndexRouteImport } from './routes/_authenticated/customers.index'
 import { Route as AuthenticatedCustomersCustomerIdRouteImport } from './routes/_authenticated/customers.$customerId'
+import { Route as AuthenticatedEmployeesIndexRouteImport } from './routes/_authenticated/employees.index'
+import { Route as AuthenticatedEmployeesEmployeeIdRouteImport } from './routes/_authenticated/employees.$employeeId'
+import { Route as AuthenticatedEmployeesRolesRouteImport } from './routes/_authenticated/employees.roles'
 import { Route as AuthenticatedOnboardingIndexRouteImport } from './routes/_authenticated/onboarding.index'
 import { Route as AuthenticatedOnboardingCustomerIdRouteImport } from './routes/_authenticated/onboarding.$customerId'
 import { Route as AuthenticatedSupportIndexRouteImport } from './routes/_authenticated/support.index'
@@ -125,6 +128,24 @@ const AuthenticatedCustomersCustomerIdRoute =
     path: '/customers/$customerId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedEmployeesIndexRoute =
+  AuthenticatedEmployeesIndexRouteImport.update({
+    id: '/employees/',
+    path: '/employees/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEmployeesEmployeeIdRoute =
+  AuthenticatedEmployeesEmployeeIdRouteImport.update({
+    id: '/employees/$employeeId',
+    path: '/employees/$employeeId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEmployeesRolesRoute =
+  AuthenticatedEmployeesRolesRouteImport.update({
+    id: '/employees/roles',
+    path: '/employees/roles',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOnboardingIndexRoute =
   AuthenticatedOnboardingIndexRouteImport.update({
     id: '/onboarding/',
@@ -188,12 +209,15 @@ export interface FileRoutesByFullPath {
   '/accounts/$accountId': typeof AuthenticatedAccountsAccountIdRoute
   '/cards/$cardId': typeof AuthenticatedCardsCardIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
+  '/employees/$employeeId': typeof AuthenticatedEmployeesEmployeeIdRoute
+  '/employees/roles': typeof AuthenticatedEmployeesRolesRoute
   '/onboarding/$customerId': typeof AuthenticatedOnboardingCustomerIdRoute
   '/support/$caseId': typeof AuthenticatedSupportCaseIdRoute
   '/transactions/$transactionId': typeof AuthenticatedTransactionsTransactionIdRoute
   '/accounts/': typeof AuthenticatedAccountsIndexRoute
   '/cards/': typeof AuthenticatedCardsIndexRoute
   '/customers/': typeof AuthenticatedCustomersIndexRoute
+  '/employees/': typeof AuthenticatedEmployeesIndexRoute
   '/onboarding/': typeof AuthenticatedOnboardingIndexRoute
   '/support/': typeof AuthenticatedSupportIndexRoute
   '/transactions/': typeof AuthenticatedTransactionsIndexRoute
@@ -214,12 +238,15 @@ export interface FileRoutesByTo {
   '/accounts/$accountId': typeof AuthenticatedAccountsAccountIdRoute
   '/cards/$cardId': typeof AuthenticatedCardsCardIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
+  '/employees/$employeeId': typeof AuthenticatedEmployeesEmployeeIdRoute
+  '/employees/roles': typeof AuthenticatedEmployeesRolesRoute
   '/onboarding/$customerId': typeof AuthenticatedOnboardingCustomerIdRoute
   '/support/$caseId': typeof AuthenticatedSupportCaseIdRoute
   '/transactions/$transactionId': typeof AuthenticatedTransactionsTransactionIdRoute
   '/accounts': typeof AuthenticatedAccountsIndexRoute
   '/cards': typeof AuthenticatedCardsIndexRoute
   '/customers': typeof AuthenticatedCustomersIndexRoute
+  '/employees': typeof AuthenticatedEmployeesIndexRoute
   '/onboarding': typeof AuthenticatedOnboardingIndexRoute
   '/support': typeof AuthenticatedSupportIndexRoute
   '/transactions': typeof AuthenticatedTransactionsIndexRoute
@@ -242,12 +269,15 @@ export interface FileRoutesById {
   '/_authenticated/accounts/$accountId': typeof AuthenticatedAccountsAccountIdRoute
   '/_authenticated/cards/$cardId': typeof AuthenticatedCardsCardIdRoute
   '/_authenticated/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
+  '/_authenticated/employees/$employeeId': typeof AuthenticatedEmployeesEmployeeIdRoute
+  '/_authenticated/employees/roles': typeof AuthenticatedEmployeesRolesRoute
   '/_authenticated/onboarding/$customerId': typeof AuthenticatedOnboardingCustomerIdRoute
   '/_authenticated/support/$caseId': typeof AuthenticatedSupportCaseIdRoute
   '/_authenticated/transactions/$transactionId': typeof AuthenticatedTransactionsTransactionIdRoute
   '/_authenticated/accounts/': typeof AuthenticatedAccountsIndexRoute
   '/_authenticated/cards/': typeof AuthenticatedCardsIndexRoute
   '/_authenticated/customers/': typeof AuthenticatedCustomersIndexRoute
+  '/_authenticated/employees/': typeof AuthenticatedEmployeesIndexRoute
   '/_authenticated/onboarding/': typeof AuthenticatedOnboardingIndexRoute
   '/_authenticated/support/': typeof AuthenticatedSupportIndexRoute
   '/_authenticated/transactions/': typeof AuthenticatedTransactionsIndexRoute
@@ -270,12 +300,15 @@ export interface FileRouteTypes {
     | '/accounts/$accountId'
     | '/cards/$cardId'
     | '/customers/$customerId'
+    | '/employees/$employeeId'
+    | '/employees/roles'
     | '/onboarding/$customerId'
     | '/support/$caseId'
     | '/transactions/$transactionId'
     | '/accounts/'
     | '/cards/'
     | '/customers/'
+    | '/employees/'
     | '/onboarding/'
     | '/support/'
     | '/transactions/'
@@ -296,12 +329,15 @@ export interface FileRouteTypes {
     | '/accounts/$accountId'
     | '/cards/$cardId'
     | '/customers/$customerId'
+    | '/employees/$employeeId'
+    | '/employees/roles'
     | '/onboarding/$customerId'
     | '/support/$caseId'
     | '/transactions/$transactionId'
     | '/accounts'
     | '/cards'
     | '/customers'
+    | '/employees'
     | '/onboarding'
     | '/support'
     | '/transactions'
@@ -323,12 +359,15 @@ export interface FileRouteTypes {
     | '/_authenticated/accounts/$accountId'
     | '/_authenticated/cards/$cardId'
     | '/_authenticated/customers/$customerId'
+    | '/_authenticated/employees/$employeeId'
+    | '/_authenticated/employees/roles'
     | '/_authenticated/onboarding/$customerId'
     | '/_authenticated/support/$caseId'
     | '/_authenticated/transactions/$transactionId'
     | '/_authenticated/accounts/'
     | '/_authenticated/cards/'
     | '/_authenticated/customers/'
+    | '/_authenticated/employees/'
     | '/_authenticated/onboarding/'
     | '/_authenticated/support/'
     | '/_authenticated/transactions/'
@@ -464,6 +503,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCustomersCustomerIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/employees/': {
+      id: '/_authenticated/employees/'
+      path: '/employees'
+      fullPath: '/employees/'
+      preLoaderRoute: typeof AuthenticatedEmployeesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/employees/$employeeId': {
+      id: '/_authenticated/employees/$employeeId'
+      path: '/employees/$employeeId'
+      fullPath: '/employees/$employeeId'
+      preLoaderRoute: typeof AuthenticatedEmployeesEmployeeIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/employees/roles': {
+      id: '/_authenticated/employees/roles'
+      path: '/employees/roles'
+      fullPath: '/employees/roles'
+      preLoaderRoute: typeof AuthenticatedEmployeesRolesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/onboarding/': {
       id: '/_authenticated/onboarding/'
       path: '/onboarding'
@@ -534,12 +594,15 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountsAccountIdRoute: typeof AuthenticatedAccountsAccountIdRoute
   AuthenticatedCardsCardIdRoute: typeof AuthenticatedCardsCardIdRoute
   AuthenticatedCustomersCustomerIdRoute: typeof AuthenticatedCustomersCustomerIdRoute
+  AuthenticatedEmployeesEmployeeIdRoute: typeof AuthenticatedEmployeesEmployeeIdRoute
+  AuthenticatedEmployeesRolesRoute: typeof AuthenticatedEmployeesRolesRoute
   AuthenticatedOnboardingCustomerIdRoute: typeof AuthenticatedOnboardingCustomerIdRoute
   AuthenticatedSupportCaseIdRoute: typeof AuthenticatedSupportCaseIdRoute
   AuthenticatedTransactionsTransactionIdRoute: typeof AuthenticatedTransactionsTransactionIdRoute
   AuthenticatedAccountsIndexRoute: typeof AuthenticatedAccountsIndexRoute
   AuthenticatedCardsIndexRoute: typeof AuthenticatedCardsIndexRoute
   AuthenticatedCustomersIndexRoute: typeof AuthenticatedCustomersIndexRoute
+  AuthenticatedEmployeesIndexRoute: typeof AuthenticatedEmployeesIndexRoute
   AuthenticatedOnboardingIndexRoute: typeof AuthenticatedOnboardingIndexRoute
   AuthenticatedSupportIndexRoute: typeof AuthenticatedSupportIndexRoute
   AuthenticatedTransactionsIndexRoute: typeof AuthenticatedTransactionsIndexRoute
@@ -558,6 +621,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountsAccountIdRoute: AuthenticatedAccountsAccountIdRoute,
   AuthenticatedCardsCardIdRoute: AuthenticatedCardsCardIdRoute,
   AuthenticatedCustomersCustomerIdRoute: AuthenticatedCustomersCustomerIdRoute,
+  AuthenticatedEmployeesEmployeeIdRoute: AuthenticatedEmployeesEmployeeIdRoute,
+  AuthenticatedEmployeesRolesRoute: AuthenticatedEmployeesRolesRoute,
   AuthenticatedOnboardingCustomerIdRoute:
     AuthenticatedOnboardingCustomerIdRoute,
   AuthenticatedSupportCaseIdRoute: AuthenticatedSupportCaseIdRoute,
@@ -566,6 +631,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountsIndexRoute: AuthenticatedAccountsIndexRoute,
   AuthenticatedCardsIndexRoute: AuthenticatedCardsIndexRoute,
   AuthenticatedCustomersIndexRoute: AuthenticatedCustomersIndexRoute,
+  AuthenticatedEmployeesIndexRoute: AuthenticatedEmployeesIndexRoute,
   AuthenticatedOnboardingIndexRoute: AuthenticatedOnboardingIndexRoute,
   AuthenticatedSupportIndexRoute: AuthenticatedSupportIndexRoute,
   AuthenticatedTransactionsIndexRoute: AuthenticatedTransactionsIndexRoute,

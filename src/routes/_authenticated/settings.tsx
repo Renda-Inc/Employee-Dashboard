@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TwoStepVerificationPanel } from "@/components/auth/TwoStepVerificationPanel";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Settings — Renda Admin" }, { name: "description", content: "Organization, preferences and operational configuration." }, { property: "og:title", content: "Settings — Renda Admin" }, { property: "og:description", content: "Operations settings." }] }),
@@ -39,6 +40,7 @@ function Settings() {
           <KV items={[["Signed in as", me.name], ["Role", me.role]]} />
           <div className="mt-4 flex items-center justify-between"><Label htmlFor="dens">Compact table density</Label><Switch id="dens" checked={s.density === "compact"} onCheckedChange={(v) => updatePreferences({ density: v ? "compact" : "comfortable" })} /></div>
         </Panel>
+        <TwoStepVerificationPanel />
         <Panel title="Notification preferences">
           {([["notifyKyc", "KYC & onboarding issues"], ["notifySupport", "Support cases & transaction investigations"], ["notifyManufacturing", "Card orders & manufacturing batches"]] as const).map(([k, l]) => (
             <div key={k} className="flex items-center justify-between py-1.5"><Label htmlFor={k}>{l}</Label><Switch id={k} checked={s[k]} onCheckedChange={(v) => updatePreferences({ [k]: v })} /></div>
@@ -46,7 +48,7 @@ function Settings() {
           <p className="mt-2 text-[13px] text-muted-foreground">Controls the in-app notification bell. No emails are sent.</p>
         </Panel>
         <Panel title="Role & permission configuration">
-          <p className="text-[14px]">Six initial roles are defined. Review the matrix and assign roles on <Link to="/employees" className="text-primary">Employees &amp; Permissions</Link>.</p>
+          <p className="text-[14px]">Create roles and choose their permissions on <Link to="/employees/roles" className="font-medium underline underline-offset-4">Roles &amp; Permissions</Link>. Assign roles to employees on <Link to="/employees" className="font-medium underline underline-offset-4">Employee Management</Link>.</p>
         </Panel>
         <Panel title="Operational configuration" className="lg:col-span-2" actions={!canOps && <span className="text-[13px] text-muted-foreground">Administrator only</span>}>
           <div className="grid gap-3 sm:grid-cols-3">
