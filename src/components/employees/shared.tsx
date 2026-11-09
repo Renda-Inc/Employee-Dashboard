@@ -62,6 +62,8 @@ export function ConfirmDialog({
               await onConfirm(reason.trim());
               setReason("");
               onOpenChange(false);
+            } catch {
+              /* the action reported its own error; keep the dialog open */
             } finally {
               setBusy(false);
             }
