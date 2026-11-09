@@ -14,13 +14,175 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      admin_audit_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_name: string
+          after: Json | null
+          before: Json | null
+          created_at: string
+          details: string
+          entity_id: string
+          entity_label: string
+          entity_type: string
+          id: string
+          module: string
+          outcome: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_name?: string
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          details?: string
+          entity_id: string
+          entity_label: string
+          entity_type: string
+          id?: string
+          module?: string
+          outcome?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_name?: string
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          details?: string
+          entity_id?: string
+          entity_label?: string
+          entity_type?: string
+          id?: string
+          module?: string
+          outcome?: string
+        }
+        Relationships: []
+      }
+      employees: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          department: string
+          email: string
+          employee_code: string
+          first_name: string
+          id: string
+          job_title: string | null
+          last_login_at: string | null
+          last_name: string
+          must_change_password: boolean
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          department: string
+          email: string
+          employee_code?: string
+          first_name: string
+          id: string
+          job_title?: string | null
+          last_login_at?: string | null
+          last_name: string
+          must_change_password?: boolean
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          email?: string
+          employee_code?: string
+          first_name?: string
+          id?: string
+          job_title?: string | null
+          last_login_at?: string | null
+          last_name?: string
+          must_change_password?: boolean
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      roles: {
+        Row: {
+          created_at: string
+          department: string | null
+          description: string
+          id: string
+          is_system: boolean
+          landing_page: string
+          name: string
+          permissions: string[]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          description?: string
+          id?: string
+          is_system?: boolean
+          landing_page?: string
+          name: string
+          permissions?: string[]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          description?: string
+          id?: string
+          is_system?: boolean
+          landing_page?: string
+          name?: string
+          permissions?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          assigned_at: string
+          role_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          role_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          role_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_permission: { Args: { _permission: string }; Returns: boolean }
+      is_active_employee: { Args: never; Returns: boolean }
+      setup_required: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
