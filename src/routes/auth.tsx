@@ -98,17 +98,21 @@ function SignIn() {
     }
     setBusy(true);
     rememberSession(remember);
-    let { data, error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    if ((err || !data.user) && OPEN_SIGN_IN && err?.status !== 429) {
+    const signIn = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    let user = signIn.data.user;
+    let err = signIn.error;
+    if ((err || !user) && OPEN_SIGN_IN && err?.status !== 429) {
       // Temporary: any credentials sign in to the shared demo Administrator account.
       try {
         const { tokenHash } = await open();
-        ({ data, error: err } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "magiclink" }));
+        const verified = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "magiclink" });
+        user = verified.data.user;
+        err = verified.error;
       } catch {
-        err = err ?? null;
+        user = null;
       }
     }
-    if (err || !data.user) {
+    if (err || !user) {
       setBusy(false);
       setError(err?.status === 429 ? "Too many sign-in attempts. Wait a few minutes, then try again." : INVALID);
       return;
@@ -119,7 +123,7 @@ function SignIn() {
       setStep("mfa");
       return;
     }
-    await finish(data.user.id);
+    await finish(user.id);
   }
 
   async function onVerify(e?: FormEvent) {
