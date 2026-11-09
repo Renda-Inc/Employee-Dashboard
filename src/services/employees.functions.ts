@@ -53,9 +53,11 @@ async function roleOf(admin: DBClient, userId: string) {
 async function otherActiveAdmins(admin: DBClient, excludeId: string) {
   const { data: role } = await admin.from("roles").select("id").eq("name", ADMIN_ROLE).single();
   if (!role) return 0;
-  const { data } = await admin.from("user_roles").select("user_id, employees!inner(status)").eq("role_id", role.id).neq("user_id", excludeId);
-  // employees is joined through the shared id
-  return (data ?? []).filter((r) => (r as unknown as { employees: { status: string } }).employees?.status === "Active").length;
+  const { data: rows } = await admin.from("user_roles").select("user_id").eq("role_id", role.id).neq("user_id", excludeId);
+  const ids = (rows ?? []).map((r) => r.user_id);
+  if (!ids.length) return 0;
+  const { count } = await admin.from("employees").select("id", { count: "exact", head: true }).in("id", ids).eq("status", "Active");
+  return count ?? 0;
 }
 
 const optionalText = (max: number) => z.string().trim().max(max).optional().transform((v) => (v ? v : null));
