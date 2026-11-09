@@ -300,7 +300,7 @@ export const updateRole = createServerFn({ method: "POST" })
     const { data: role } = await admin.from("roles").select("*").eq("id", data.id).maybeSingle();
     if (!role) throw new Error("Role not found.");
     if (role.is_system && data.name !== role.name) throw new Error("System roles can't be renamed.");
-    const permissions = role.name === ADMIN_ROLE && role.is_system ? [...ALL_PERMISSIONS] : data.permissions;
+    const permissions: string[] = role.name === ADMIN_ROLE && role.is_system ? [...ALL_PERMISSIONS] : data.permissions;
     if (!permissions.length) throw new Error("Choose at least one permission.");
     await assertUniqueName(admin, data.name, role.id);
     const { data: updated, error } = await admin.from("roles").update({
