@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/status/StatusBadge";
 import { NewCaseDialog } from "@/components/dialogs/NewCaseDialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { fmtDateTime, fullName, lookup, txTypeLabel } from "@/lib/format";
+import { fmtDateTime, fullName, lookup, transferTypeLabel, txTypeLabel } from "@/lib/format";
 
 export const Route = createFileRoute("/transactions/$transactionId")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Transaction — Renda Admin" }, { name: "description", content: "Transaction details and investigation." }, { property: "og:title", content: "Transaction — Renda Admin" }, { property: "og:description", content: "Transaction details." }] }),
@@ -50,7 +50,7 @@ function TxnDetail() {
               ["Created", fmtDateTime(t.timestamp)], ["Completed", fmtDateTime(t.completedAt)], ["Provider reference", <Mono>{t.providerReference}</Mono>],
             ]} />
             {t.errorMessage && <div className="mt-4 rounded-md bg-danger-soft px-3 py-2 text-[13px] text-danger"><strong>Error:</strong> {t.errorMessage}</div>}
-            {transfer && <p className="mt-3 text-[13px] text-muted-foreground">Part of {transfer.transferType} transfer <Mono>{transfer.transactionReference}</Mono>. <Link to="/transfers" className="text-primary">View transfers</Link></p>}
+            {transfer && <p className="mt-3 text-[13px] text-muted-foreground">Part of {transferTypeLabel(transfer.transferType)} transfer <Mono>{transfer.transactionReference}</Mono>. <Link to="/transfers" className="text-primary">View transfers</Link></p>}
             <p className="mt-4 text-[13px] text-muted-foreground">Historical transaction statuses cannot be edited. Refunds, reversals and adjustments must be performed through the payment provider and are not available in this demo.</p>
           </Panel>
           <Panel title="Internal notes">
