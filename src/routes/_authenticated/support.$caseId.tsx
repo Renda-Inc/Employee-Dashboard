@@ -34,7 +34,7 @@ function CaseDetail() {
   if (!allowed) return <NoAccess what="support cases" />;
   if (!sc) return <div className="panel"><EmptyState title="Case not found" /></div>;
   const c = L.customer(sc.customerId)!;
-  const assignable = db.employees.filter((e) => e.status === "Active" && can(e.role, "support.manage"));
+  const assignable = db.employees.filter((e) => e.directory && e.status === "Active" && can(e.role, "support.manage"));
   const linkOptions = [
     ...db.transactions.filter((t) => t.customerId === c.id).slice(0, 15).map((t) => ({ v: `transaction:${t.id}`, l: `Transaction ${t.transactionReference} · ${t.description}` })),
     ...db.cards.filter((x) => x.customerId === c.id).map((x) => ({ v: `card:${x.id}`, l: `Card ${x.cardDesign} •••• ${x.last4}` })),

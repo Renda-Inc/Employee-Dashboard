@@ -63,6 +63,21 @@ export function switchEmployee(id: string) {
   });
 }
 
+/** Mirrors the employee directory into the operations dataset so names, assignment and audit attribution resolve. */
+export function syncDirectory(meId: string, employees: DB["employees"]) {
+  setState((d) => {
+    const ids = new Set(employees.map((e) => e.id));
+    d.employees = [...d.employees.filter((e) => !e.directory && !ids.has(e.id)), ...employees];
+    d.currentEmployeeId = meId;
+  });
+}
+
+export function clearEmployeeSession() {
+  setState((d) => {
+    d.currentEmployeeId = "";
+  });
+}
+
 export function markNotificationsRead(ids: string[]) {
   setState((d) => {
     d.readNotificationIds = Array.from(new Set([...d.readNotificationIds, ...ids]));
