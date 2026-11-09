@@ -23,6 +23,7 @@ export const fullName = (c: Pick<Customer, "firstName" | "lastName">) => `${c.fi
 
 // Employee-facing label for internal P2P transfers, branded as RenPay.
 export const txTypeLabel = (t: string) => (t === "P2P Sent" ? "RenPay Sent" : t === "P2P Received" ? "RenPay Received" : t);
+export const transferTypeLabel = (t: string) => (t === "P2P" ? "RenPay" : t);
 export const initials = (n: string) => n.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
 export function lookup(db: DB) {

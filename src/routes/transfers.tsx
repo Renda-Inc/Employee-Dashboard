@@ -4,7 +4,7 @@ import { useDB } from "@/services/store";
 import { Amount, CustomerCell, Mono, NoAccess, PageHeader, usePermission } from "@/components/common";
 import { DataTable, FilterSelect, TabBar, type Column } from "@/components/tables/DataTable";
 import { StatusBadge } from "@/components/status/StatusBadge";
-import { fmtDateTime, lookup } from "@/lib/format";
+import { fmtDateTime, lookup, transferTypeLabel } from "@/lib/format";
 import type { Transfer } from "@/types/models";
 
 export const Route = createFileRoute("/transfers")({
@@ -56,7 +56,7 @@ function Transfers() {
     ...base,
   ];
   else cols = [
-    { key: "type", header: "Type", cell: (t) => t.transferType, sort: (t) => t.transferType },
+    { key: "type", header: "Type", cell: (t) => transferTypeLabel(t.transferType), sort: (t) => t.transferType },
     { key: "c", header: "Customer", cell: (t) => <CustomerCell customer={L.customer(t.senderCustomerId)} /> },
     { key: "to", header: "To", cell: (t) => t.transferType === "P2P" ? <CustomerCell customer={L.customer(t.recipientCustomerId)} /> : t.transferType === "Interac" ? <span className="text-muted-foreground">{t.direction} · {t.counterpartyLabel}</span> : <span className="text-muted-foreground">{L.account(t.destinationAccountId)?.accountType}</span> },
     ...base,
