@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { AuthLayout, BrandMark, FormError } from "@/components/auth/AuthLayout";
+import { AuthLayout, FormError } from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -143,12 +143,8 @@ function SignIn() {
       {step === "loading" && <div className="flex h-72 items-center justify-center text-muted-foreground"><Loader2 className="size-5 animate-spin" aria-label="Loading" /></div>}
 
       {step === "credentials" && (
-        <form onSubmit={onSubmit} noValidate className="space-y-6">
-          <div>
-            <BrandMark className="mb-8 hidden lg:flex" />
-            <h1 className="text-[28px] font-semibold leading-tight">Welcome to Renda Admin</h1>
-            <p className="mt-2 text-[15px] text-muted-foreground">Sign in to access your employee workspace.</p>
-          </div>
+        <form onSubmit={onSubmit} noValidate className="space-y-5">
+          <h1 className="text-[22px] font-semibold leading-tight">Sign in</h1>
           <FormError>{error}</FormError>
           <div className="space-y-2">
             <Label htmlFor="email">Work email address</Label>
@@ -175,23 +171,22 @@ function SignIn() {
           </Button>
           {setupRequired && (
             <p className="rounded-md bg-secondary px-3.5 py-3 text-[13px] text-muted-foreground">
-              No employee accounts exist yet. <Link to="/setup" className="font-medium text-foreground underline underline-offset-4">Set up the first administrator</Link>
+              No accounts exist yet. <Link to="/setup" className="font-medium text-foreground underline underline-offset-4">Set up the first administrator</Link>
             </p>
           )}
         </form>
       )}
 
       {step === "mfa" && (
-        <form onSubmit={onVerify} className="space-y-6">
+        <form onSubmit={onVerify} className="space-y-5">
           <div>
-            <span className="mb-6 flex size-11 items-center justify-center rounded-full bg-secondary"><ShieldCheck className="size-5" strokeWidth={1.75} /></span>
-            <h1 className="text-[26px] font-semibold leading-tight">Two-step verification</h1>
-            <p className="mt-2 text-[15px] text-muted-foreground">Enter the 6-digit code from your authenticator app to continue.</p>
+            <h1 className="flex items-center gap-2 text-[22px] font-semibold leading-tight"><ShieldCheck className="size-5" strokeWidth={1.75} /> Verification code</h1>
+            <p className="mt-2 text-[14px] text-muted-foreground">Enter the 6-digit code from your authenticator app.</p>
           </div>
           <FormError>{error}</FormError>
           <InputOTP maxLength={6} value={code} onChange={setCode} onComplete={() => undefined} autoFocus aria-label="Verification code">
             <InputOTPGroup>
-              {[0, 1, 2, 3, 4, 5].map((i) => <InputOTPSlot key={i} index={i} className="h-12 w-12 text-[18px]" />)}
+              {[0, 1, 2, 3, 4, 5].map((i) => <InputOTPSlot key={i} index={i} className="h-11 w-11 text-[17px]" />)}
             </InputOTPGroup>
           </InputOTP>
           <Button type="submit" size="lg" className="h-11 w-full text-[15px]" disabled={busy}>{busy && <Loader2 className="size-4 animate-spin" />} Verify and continue</Button>

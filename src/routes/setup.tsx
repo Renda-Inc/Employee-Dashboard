@@ -62,10 +62,10 @@ function Setup() {
 
   return (
     <AuthLayout>
-      <form onSubmit={onSubmit} noValidate className="space-y-6">
+      <form onSubmit={onSubmit} noValidate className="space-y-5">
         <div>
-          <h1 className="text-[26px] font-semibold leading-tight">Set up Renda Admin</h1>
-          <p className="mt-2 text-[15px] text-muted-foreground">Create the first administrator. This page closes permanently once the account exists.</p>
+          <h1 className="text-[22px] font-semibold leading-tight">Create administrator</h1>
+          <p className="mt-2 text-[14px] text-muted-foreground">First-time setup. Available only until the first account exists.</p>
         </div>
         <FormError>{error}</FormError>
         <div className="grid gap-4 sm:grid-cols-2">

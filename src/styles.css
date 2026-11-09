@@ -177,21 +177,21 @@ main > div { min-width: 0; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
 
-/* Employee sign-in: deep charcoal to dark slate, with a restrained Renda orange glow. */
+/* Employee sign-in: bright, near-white gradient with soft warm and cool tints. */
 :root {
-  --auth-charcoal: oklch(0.178 0 0);
-  --auth-slate: oklch(0.3 0.02 230);
-  --auth-glow: oklch(0.727 0.161 70 / 0.32);
-  --auth-glow-cool: oklch(0.46 0.04 230 / 0.55);
+  --auth-base-top: oklch(0.995 0.002 260);
+  --auth-base-bottom: oklch(0.962 0.007 250);
+  --auth-tint-warm: oklch(0.965 0.03 75 / 0.85);
+  --auth-tint-cool: oklch(0.93 0.025 245 / 0.75);
   --gradient-auth:
-    radial-gradient(60% 55% at 88% 8%, var(--auth-glow) 0%, transparent 70%),
-    radial-gradient(55% 60% at 4% 100%, var(--auth-glow-cool) 0%, transparent 70%),
-    linear-gradient(155deg, var(--auth-charcoal) 0%, oklch(0.23 0.01 230) 45%, var(--auth-slate) 100%);
-  --shadow-auth: 0 30px 80px -20px oklch(0 0 0 / 0.55), 0 0 0 1px oklch(1 0 0 / 0.06);
+    radial-gradient(55% 50% at 12% 8%, var(--auth-tint-warm) 0%, transparent 70%),
+    radial-gradient(60% 55% at 92% 95%, var(--auth-tint-cool) 0%, transparent 70%),
+    linear-gradient(165deg, var(--auth-base-top) 0%, var(--auth-base-bottom) 100%);
+  --shadow-auth: 0 24px 64px -28px oklch(0.25 0.02 250 / 0.22), 0 2px 6px oklch(0.25 0.02 250 / 0.04);
 }
 @utility auth-gradient {
   background-image: var(--gradient-auth);
-  background-color: var(--auth-charcoal);
+  background-color: var(--auth-base-top);
 }
 @utility shadow-auth {
   box-shadow: var(--shadow-auth);

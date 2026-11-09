@@ -59,11 +59,10 @@ function SetPassword() {
 
   return (
     <AuthLayout>
-      <form onSubmit={onSubmit} noValidate className="space-y-6">
+      <form onSubmit={onSubmit} noValidate className="space-y-5">
         <div>
-          <span className="mb-6 flex size-11 items-center justify-center rounded-full bg-secondary"><KeyRound className="size-5" strokeWidth={1.75} /></span>
-          <h1 className="text-[26px] font-semibold leading-tight">Choose your password</h1>
-          <p className="mt-2 text-[15px] text-muted-foreground">You signed in with a temporary password. Choose a personal password only you know before continuing.</p>
+          <h1 className="flex items-center gap-2 text-[22px] font-semibold leading-tight"><KeyRound className="size-5" strokeWidth={1.75} /> Set a new password</h1>
+          <p className="mt-2 text-[14px] text-muted-foreground">Replace your temporary password to continue.</p>
         </div>
         <FormError>{error}</FormError>
         <PasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} />
