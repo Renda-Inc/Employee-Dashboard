@@ -13,3 +13,9 @@
 - Use the shared semantic tokens, Button, PageHeader, Panel and table controls for every employee module; visual refinements must not modify service rules or data relationships.
 - Keep customer overview sections in the shared unboxed summary workspace and preserve URL-backed profile tabs, so detailed records remain accessible without fragmented containers.
 - Use SelectField to restyle existing select fields while retaining their option values and event handlers; shared dropdown presentation prevents inconsistent native controls.
+
+## Employee access
+- Every dashboard page lives under `src/routes/_authenticated/`, whose gate (`resolveAccess` in `src/services/directory.ts`) requires an Active employee with a role, completed MFA when enrolled, and a non-temporary password; this keeps sign-in, MFA and first-password rules in one place.
+- Employee, role and admin-audit tables are read-only to browsers; all writes go through `src/services/employees.functions.ts`, which checks `has_permission` in the database first, so business rules (last Administrator, self-changes, automatic Invitation Pending) can't be bypassed.
+- Pure access rules live in `src/services/employee-rules.ts` with tests in `src/test/employee-rules.test.ts`; server functions and UI both import them so behavior stays identical.
+- The demo operations dataset reads permissions through the live role registry (`setRolePermissions`) and mirrors directory employees into the local store, so custom roles apply to every existing module without changing module code.
