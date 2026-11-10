@@ -38,6 +38,7 @@ const repository: OperationsRepository = localStorageRepository;
 const listeners = new Set<() => void>();
 let state: DB | null = null;
 let loading: Promise<void> | null = null;
+let loaded = false;
 
 const notify = () => listeners.forEach((l) => l());
 
@@ -45,6 +46,7 @@ const notify = () => listeners.forEach((l) => l());
 export function loadOperations(): Promise<void> {
   loading ??= repository.load().then((db) => {
     state = db;
+    loaded = true;
     notify();
   });
   return loading;
@@ -55,12 +57,16 @@ export function getState(): DB {
   return state;
 }
 
-/** Applies a change to the snapshot, notifies subscribers and persists it. */
+/**
+ * Applies a change to the snapshot, notifies subscribers and persists it. Changes made before the
+ * dataset has loaded (such as clearing the session on sign-out) stay in memory so they can't
+ * overwrite saved records.
+ */
 export function setState(mutator: (draft: DB) => void) {
   const draft = structuredClone(getState());
   mutator(draft);
   state = draft;
-  void repository.save(draft);
+  if (loaded) void repository.save(draft);
   notify();
 }
 
