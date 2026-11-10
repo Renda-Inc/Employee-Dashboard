@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { Fragment, useState } from "react";
 import { Check, Copy, Eye, Minus, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -12,7 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { RoleDialog, type RoleDialogMode } from "@/components/employees/RoleDialog";
 import { ConfirmDialog, errorMessage, refreshDirectory } from "@/components/employees/shared";
 import { directoryQuery, type RoleRecord } from "@/services/directory";
-import { deleteRole } from "@/services/employees.functions";
+import { employeesApi } from "@/services/api";
 import { roleDeletionBlocker } from "@/services/employee-rules";
 import { PERMISSION_GROUPS, PERMISSION_LABELS } from "@/services/permissions";
 import { fmtDate } from "@/lib/format";
@@ -35,7 +34,6 @@ function Roles() {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery(directoryQuery);
   const canManage = usePermission("roles.manage");
-  const remove = useServerFn(deleteRole);
   const [q, setQ] = useState("");
   const [dialog, setDialog] = useState<{ mode: RoleDialogMode; role?: RoleRecord } | null>(null);
   const [deleting, setDeleting] = useState<RoleRecord | null>(null);
@@ -138,7 +136,7 @@ function Roles() {
         onConfirm={async () => {
           if (blocker || !deleting) return;
           try {
-            await remove({ data: { id: deleting.id } });
+            await employeesApi.deleteRole(deleting.id);
             await refreshDirectory(qc);
             toast.success(`${deleting.name} deleted`);
           } catch (e) {

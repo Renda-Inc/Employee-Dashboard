@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { KeyRound, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -9,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SelectField } from "@/components/ui/select-field";
 import { DEPARTMENTS } from "@/services/permissions";
-import { createEmployee } from "@/services/employees.functions";
+import { employeesApi } from "@/services/api";
 import type { RoleRecord } from "@/services/directory";
 import { RoleDialog } from "./RoleDialog";
 import { TemporaryPasswordDialog, errorMessage, refreshDirectory } from "./shared";
@@ -31,7 +30,6 @@ function validate(f: typeof EMPTY) {
 
 export function AddEmployeeDialog({ open, onOpenChange, roles, canManageRoles }: { open: boolean; onOpenChange: (o: boolean) => void; roles: RoleRecord[]; canManageRoles: boolean }) {
   const qc = useQueryClient();
-  const create = useServerFn(createEmployee);
   const [f, setF] = useState(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
   const [serverError, setServerError] = useState<string | null>(null);
@@ -49,7 +47,7 @@ export function AddEmployeeDialog({ open, onOpenChange, roles, canManageRoles }:
     setBusy(true);
     setServerError(null);
     try {
-      const res = await create({ data: { ...f, department: f.department as (typeof DEPARTMENTS)[number], email: f.email.trim().toLowerCase() } });
+      const res = await employeesApi.createEmployee({ ...f, department: f.department as (typeof DEPARTMENTS)[number], email: f.email.trim().toLowerCase() });
       await refreshDirectory(qc);
       toast.success(`${f.firstName} ${f.lastName} added as ${res.employeeCode}`);
       setIssued({ title: "Employee account created", name: `${f.firstName.trim()} ${f.lastName.trim()}`, email: f.email.trim().toLowerCase(), password: res.temporaryPassword });
