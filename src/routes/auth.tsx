@@ -1,9 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { auth } from "@/services/api";
 import { AuthLayout, FormError } from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,8 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { needsMfa, ownAccess, rememberSession, safeRedirect, signOutEverywhere } from "@/services/directory";
-import { OPEN_SIGN_IN, openSignIn, recordSignIn } from "@/services/employees.functions";
+import { ownAccess, rememberSession, safeRedirect, signOutEverywhere } from "@/services/directory";
 
 type Reason = "denied" | "expired";
 
@@ -44,8 +42,6 @@ function SignIn() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const record = useServerFn(recordSignIn);
-  const open = useServerFn(openSignIn);
   const [step, setStep] = useState<"loading" | "credentials" | "mfa">("loading");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -55,10 +51,9 @@ function SignIn() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(search.reason ? REASONS[search.reason] : null);
   const [forgotOpen, setForgotOpen] = useState(false);
-  const fresh = useRef(false);
 
-  async function finish(userId: string) {
-    const { me, role } = await ownAccess(userId);
+  async function finish() {
+    const { me, role } = await ownAccess();
     if (!me || me.status === "Inactive" || me.status === "Suspended" || !role) {
       await signOutEverywhere(queryClient);
       setError(DENIED);
@@ -66,7 +61,6 @@ function SignIn() {
       setBusy(false);
       return;
     }
-    if (fresh.current) await record().catch(() => undefined);
     if (me.must_change_password) {
       navigate({ to: "/set-password", replace: true });
       return;
@@ -77,11 +71,11 @@ function SignIn() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.auth.getSession();
+      const session = await auth.getSession();
       if (cancelled) return;
-      if (data.session) {
-        if (await needsMfa()) return setStep("mfa");
-        return finish(data.session.user.id);
+      if (session) {
+        if (session.mfaRequired) return setStep("mfa");
+        return finish();
       }
       setStep("credentials");
     })();
@@ -98,32 +92,18 @@ function SignIn() {
     }
     setBusy(true);
     rememberSession(remember);
-    const signIn = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    let user = signIn.data.user;
-    let err = signIn.error;
-    if ((err || !user) && OPEN_SIGN_IN && err?.status !== 429) {
-      // Temporary: any credentials sign in to the shared demo Administrator account.
-      try {
-        const { tokenHash } = await open();
-        const verified = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "magiclink" });
-        user = verified.data.user;
-        err = verified.error;
-      } catch {
-        user = null;
-      }
-    }
-    if (err || !user) {
+    const result = await auth.login(email.trim(), password);
+    if (!result.ok) {
       setBusy(false);
-      setError(err?.status === 429 ? "Too many sign-in attempts. Wait a few minutes, then try again." : INVALID);
+      setError(result.error === "rate-limited" ? "Too many sign-in attempts. Wait a few minutes, then try again." : INVALID);
       return;
     }
-    fresh.current = true;
-    if (await needsMfa()) {
+    if (result.session.mfaRequired) {
       setBusy(false);
       setStep("mfa");
       return;
     }
-    await finish(user.id);
+    await finish();
   }
 
   async function onVerify(e?: FormEvent) {
@@ -131,22 +111,15 @@ function SignIn() {
     if (code.length !== 6) return setError("Enter the 6-digit code from your authenticator app.");
     setBusy(true);
     setError(null);
-    const { data: factors } = await supabase.auth.mfa.listFactors();
-    const factor = factors?.totp.find((f) => f.status === "verified");
-    const { data: session } = await supabase.auth.getSession();
-    if (!factor || !session.session) {
-      setBusy(false);
-      setStep("credentials");
-      return setError("Your verification session expired. Sign in again.");
-    }
-    const { error: err } = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code });
-    if (err) {
+    try {
+      await auth.verifyMfa(code);
+    } catch (err) {
       setBusy(false);
       setCode("");
-      return setError("That code didn't work. Check your authenticator app and try again.");
+      if (!(await auth.getSession())) setStep("credentials");
+      return setError(err instanceof Error ? err.message : "That code didn't work. Check your authenticator app and try again.");
     }
-    fresh.current = true;
-    await finish(session.session.user.id);
+    await finish();
   }
 
   return (

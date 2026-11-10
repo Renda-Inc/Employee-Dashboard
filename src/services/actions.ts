@@ -1,5 +1,6 @@
-// Operational actions. Every action checks permission here (not just in the UI),
-// enforces business rules, and records an audit event. Integrations are simulated.
+// Demo implementation of `OperationsService` (see contracts/operations.ts). Every action checks
+// permission here (not just in the UI), enforces business rules and records an audit event.
+// Integrations (KYC, card processor, billing, manufacturer) are simulated.
 import type {
   AuditEvent,
   CardDesign,
@@ -11,10 +12,9 @@ import type {
   DB,
   Plan,
   ReplacementReason,
-  Role,
-  Settings,
 } from "@/types/models";
-import { getState, setState } from "./store";
+import { getState, resetState, setState } from "./store";
+import { EDITABLE_FIELDS, type EditableField, type OperationalSettings, type OperationsService, type PersonalSettings } from "./contracts/operations";
 import { can, PermissionError, RuleError, type Permission } from "./permissions";
 import { activationBlocker, batchIneligibility, PLAN_PRICES } from "./rules";
 
@@ -55,13 +55,7 @@ function activity(d: DB, customerId: string, type: DB["activity"][number]["type"
   d.activity.unshift({ id: uid("act"), customerId, type, description, timestamp: now(), link });
 }
 
-/* ---------------- Demo session ---------------- */
-
-export function switchEmployee(id: string) {
-  setState((d) => {
-    d.currentEmployeeId = id;
-  });
-}
+/* ---------------- Employee session ---------------- */
 
 /** Mirrors the employee directory into the operations dataset so names, assignment and audit attribution resolve. */
 export function syncDirectory(meId: string, employees: DB["employees"]) {
@@ -78,7 +72,7 @@ export function clearEmployeeSession() {
   });
 }
 
-export function markNotificationsRead(ids: string[]) {
+function markNotificationsRead(ids: string[]) {
   setState((d) => {
     d.readNotificationIds = Array.from(new Set([...d.readNotificationIds, ...ids]));
   });
@@ -86,13 +80,8 @@ export function markNotificationsRead(ids: string[]) {
 
 /* ---------------- Customers ---------------- */
 
-export const EDITABLE_FIELDS = [
-  "firstName", "lastName", "email", "phone", "address", "city", "province", "postalCode",
-  "maritalStatus", "employmentType", "occupation", "industry", "annualIncome",
-] as const;
-export type EditableField = (typeof EDITABLE_FIELDS)[number];
 
-export function updateCustomer(id: string, patch: Partial<Pick<Customer, EditableField>>) {
+function updateCustomer(id: string, patch: Partial<Pick<Customer, EditableField>>) {
   const c = getCustomer(id);
   authorize("customers.edit", "Update customer information", "Customers", "Customer", id, name(c));
   const before: Record<string, unknown> = {};
@@ -118,7 +107,7 @@ export function updateCustomer(id: string, patch: Partial<Pick<Customer, Editabl
 
 /* ---------------- KYC & lifecycle ---------------- */
 
-export function escalateKyc(customerId: string, reason: string) {
+function escalateKyc(customerId: string, reason: string) {
   const c = getCustomer(customerId);
   authorize("kyc.decide", "Escalate KYC to manual review", "Onboarding & KYC", "Customer", customerId, name(c));
   if (c.kycStatus !== "Pending") throw new RuleError("Only pending KYC cases can be escalated to manual review.");
@@ -140,7 +129,7 @@ export function escalateKyc(customerId: string, reason: string) {
 }
 
 /** Manual review decision — only for cases already in manual review. A failed provider result cannot be overturned here. */
-export function recordKycDecision(customerId: string, decision: "Approved" | "Failed", reason: string) {
+function recordKycDecision(customerId: string, decision: "Approved" | "Failed", reason: string) {
   const c = getCustomer(customerId);
   authorize("kyc.decide", "Record KYC decision", "Onboarding & KYC", "Customer", customerId, name(c));
   if (c.kycStatus !== "Under Review")
@@ -165,7 +154,7 @@ export function recordKycDecision(customerId: string, decision: "Approved" | "Fa
   });
 }
 
-export function requestKycResubmission(customerId: string) {
+function requestKycResubmission(customerId: string) {
   const c = getCustomer(customerId);
   authorize("kyc.decide", "Request KYC resubmission", "Onboarding & KYC", "Customer", customerId, name(c));
   if (c.kycStatus !== "Failed") throw new RuleError("Resubmission can only be requested for failed KYC checks.");
@@ -188,7 +177,7 @@ export function requestKycResubmission(customerId: string) {
   });
 }
 
-export function requestAccountIssuance(customerId: string) {
+function requestAccountIssuance(customerId: string) {
   const c = getCustomer(customerId);
   authorize("accounts.manage", "Request account issuance", "Banking & Accounts", "Customer", customerId, name(c));
   if (c.kycStatus !== "Approved") throw new RuleError("Accounts cannot be issued because KYC verification has not been approved.");
@@ -211,7 +200,7 @@ export function requestAccountIssuance(customerId: string) {
   });
 }
 
-export function simulateIssuanceResult(customerId: string, success: boolean) {
+function simulateIssuanceResult(customerId: string, success: boolean) {
   const c = getCustomer(customerId);
   authorize("accounts.manage", "Record issuance result", "Banking & Accounts", "Customer", customerId, name(c));
   if (c.accountIssuanceStatus !== "Pending") throw new RuleError("No issuance request is pending for this customer.");
@@ -234,7 +223,7 @@ export function simulateIssuanceResult(customerId: string, success: boolean) {
   });
 }
 
-export function completeSetup(customerId: string) {
+function completeSetup(customerId: string) {
   const c = getCustomer(customerId);
   authorize("customers.lifecycle", "Activate customer", "Customers", "Customer", customerId, name(c));
   const blocker = activationBlocker(c, getState().accounts);
@@ -252,7 +241,7 @@ export function completeSetup(customerId: string) {
 
 /* ---------------- Transactions ---------------- */
 
-export function addTransactionNote(txId: string, text: string) {
+function addTransactionNote(txId: string, text: string) {
   const t = getState().transactions.find((x) => x.id === txId);
   if (!t) throw new RuleError("Transaction not found.");
   authorize("transactions.investigate", "Add transaction note", "Transactions", "Transaction", txId, t.transactionReference);
@@ -265,7 +254,7 @@ export function addTransactionNote(txId: string, text: string) {
 
 /* ---------------- Support ---------------- */
 
-export function createSupportCase(input: { customerId: string; subject: string; message: string; category: CaseCategory; priority: CasePriority; links?: CaseLink[]; assignToMe?: boolean }) {
+function createSupportCase(input: { customerId: string; subject: string; message: string; category: CaseCategory; priority: CasePriority; links?: CaseLink[]; assignToMe?: boolean }) {
   const c = getCustomer(input.customerId);
   authorize("support.manage", "Create support case", "Customer Support", "Customer", c.id, name(c));
   if (input.subject.trim().length < 4) throw new RuleError("Subject must be at least 4 characters.");
@@ -288,7 +277,7 @@ export function createSupportCase(input: { customerId: string; subject: string; 
   return { id, ref };
 }
 
-export function updateCase(id: string, patch: { status?: CaseStatus; priority?: CasePriority; assignedEmployeeId?: string | null; resolution?: string }) {
+function updateCase(id: string, patch: { status?: CaseStatus; priority?: CasePriority; assignedEmployeeId?: string | null; resolution?: string }) {
   const sc = getState().supportCases.find((x) => x.id === id);
   if (!sc) throw new RuleError("Support case not found.");
   authorize("support.manage", "Update support case", "Customer Support", "Support Case", id, sc.caseReference);
@@ -330,7 +319,7 @@ export function updateCase(id: string, patch: { status?: CaseStatus; priority?: 
   });
 }
 
-export function addCaseNote(id: string, text: string) {
+function addCaseNote(id: string, text: string) {
   const sc = getState().supportCases.find((x) => x.id === id);
   if (!sc) throw new RuleError("Support case not found.");
   authorize("support.manage", "Add internal note", "Customer Support", "Support Case", id, sc.caseReference);
@@ -343,7 +332,7 @@ export function addCaseNote(id: string, text: string) {
   });
 }
 
-export function linkCaseRecord(id: string, link: CaseLink) {
+function linkCaseRecord(id: string, link: CaseLink) {
   const sc = getState().supportCases.find((x) => x.id === id);
   if (!sc) throw new RuleError("Support case not found.");
   authorize("support.manage", "Link record to case", "Customer Support", "Support Case", id, sc.caseReference);
@@ -359,7 +348,7 @@ export function linkCaseRecord(id: string, link: CaseLink) {
 
 /* ---------------- Cards ---------------- */
 
-export function lockCard(cardId: string, reason: string) {
+function lockCard(cardId: string, reason: string) {
   const card = getState().cards.find((x) => x.id === cardId);
   if (!card) throw new RuleError("Card not found.");
   authorize("cards.lock", "Lock card", "Cards", "Card", cardId, `•••• ${card.last4}`);
@@ -374,7 +363,7 @@ export function lockCard(cardId: string, reason: string) {
   });
 }
 
-export function unlockCard(cardId: string, reason: string) {
+function unlockCard(cardId: string, reason: string) {
   const card = getState().cards.find((x) => x.id === cardId);
   if (!card) throw new RuleError("Card not found.");
   authorize("cards.lock", "Unlock card", "Cards", "Card", cardId, `•••• ${card.last4}`);
@@ -390,7 +379,7 @@ export function unlockCard(cardId: string, reason: string) {
   });
 }
 
-export function createReplacement(input: { cardId: string; design: CardDesign; reason: ReplacementReason; notes: string }) {
+function createReplacement(input: { cardId: string; design: CardDesign; reason: ReplacementReason; notes: string }) {
   const db = getState();
   const card = db.cards.find((x) => x.id === input.cardId);
   if (!card) throw new RuleError("Card not found.");
@@ -416,7 +405,7 @@ export function createReplacement(input: { cardId: string; design: CardDesign; r
   return newCardId;
 }
 
-export function cancelOrder(orderId: string, reason: string) {
+function cancelOrder(orderId: string, reason: string) {
   const o = getState().cardOrders.find((x) => x.id === orderId);
   if (!o) throw new RuleError("Order not found.");
   authorize("cards.replace", "Cancel card order", "Cards", "Card Order", orderId, o.orderReference);
@@ -442,7 +431,7 @@ export function cancelOrder(orderId: string, reason: string) {
 
 /* ---------------- Plans ---------------- */
 
-export function changePlan(customerId: string, to: Plan, note: string) {
+function changePlan(customerId: string, to: Plan, note: string) {
   const db = getState();
   const c = getCustomer(customerId);
   authorize("subscriptions.manage", "Change membership plan", "Plans & Subscriptions", "Customer", customerId, name(c));
@@ -474,7 +463,7 @@ export function changePlan(customerId: string, to: Plan, note: string) {
   });
 }
 
-export function simulateBillingOutcome(customerId: string, success: boolean) {
+function simulateBillingOutcome(customerId: string, success: boolean) {
   const db = getState();
   const c = getCustomer(customerId);
   authorize("subscriptions.manage", "Record billing outcome", "Plans & Subscriptions", "Customer", customerId, name(c));
@@ -489,7 +478,7 @@ export function simulateBillingOutcome(customerId: string, success: boolean) {
   });
 }
 
-export function recordCardSelection(customerId: string, design: CardDesign) {
+function recordCardSelection(customerId: string, design: CardDesign) {
   const db = getState();
   const c = getCustomer(customerId);
   authorize("cards.replace", "Record card design selection", "Cards", "Customer", customerId, name(c));
@@ -516,7 +505,7 @@ function batchLabel(id: string) {
   return getState().batches.find((b) => b.id === id)?.batchReference ?? id;
 }
 
-export function createBatch(orderIds: string[]) {
+function createBatch(orderIds: string[]) {
   authorize("manufacturing.manage", "Create manufacturing batch", "Card Manufacturing", "Batch", "-", "New batch");
   if (!orderIds.length) throw new RuleError("Select at least one eligible order.");
   if (new Set(orderIds).size !== orderIds.length) throw new RuleError("Duplicate orders selected.");
@@ -549,7 +538,7 @@ export function createBatch(orderIds: string[]) {
   return { id, ref };
 }
 
-export function removeOrderFromBatch(batchId: string, orderId: string) {
+function removeOrderFromBatch(batchId: string, orderId: string) {
   authorize("manufacturing.manage", "Remove order from batch", "Card Manufacturing", "Batch", batchId, batchLabel(batchId));
   const b = getState().batches.find((x) => x.id === batchId);
   if (!b) throw new RuleError("Batch not found.");
@@ -571,7 +560,7 @@ export function removeOrderFromBatch(batchId: string, orderId: string) {
 }
 
 /** Records the export after the PDF file has been generated client-side. */
-export function recordPdfExport(batchId: string) {
+function recordPdfExport(batchId: string) {
   authorize("manufacturing.manage", "Generate manufacturing PDF", "Card Manufacturing", "Batch", batchId, batchLabel(batchId));
   const b = getState().batches.find((x) => x.id === batchId);
   if (!b) throw new RuleError("Batch not found.");
@@ -586,7 +575,7 @@ export function recordPdfExport(batchId: string) {
   });
 }
 
-export function markBatchReady(batchId: string) {
+function markBatchReady(batchId: string) {
   authorize("manufacturing.manage", "Mark batch ready", "Card Manufacturing", "Batch", batchId, batchLabel(batchId));
   const b = getState().batches.find((x) => x.id === batchId);
   if (!b) throw new RuleError("Batch not found.");
@@ -602,7 +591,7 @@ export function markBatchReady(batchId: string) {
 }
 
 /** Employee confirms the PDF was actually sent to the manufacturer. Never automatic. */
-export function recordBatchSubmission(batchId: string, note: string) {
+function recordBatchSubmission(batchId: string, note: string) {
   authorize("manufacturing.manage", "Record batch submission", "Card Manufacturing", "Batch", batchId, batchLabel(batchId));
   const b = getState().batches.find((x) => x.id === batchId);
   if (!b) throw new RuleError("Batch not found.");
@@ -625,32 +614,15 @@ export function recordBatchSubmission(batchId: string, note: string) {
   });
 }
 
-/* ---------------- Employees & settings ---------------- */
+/* ---------------- Settings ---------------- */
 
-export function updateEmployee(empId: string, patch: { role?: Role; status?: "Active" | "Suspended" }) {
-  const db = getState();
-  const e = db.employees.find((x) => x.id === empId);
-  if (!e) throw new RuleError("Employee not found.");
-  authorize("employees.manage", "Change employee permissions", "Employees & Permissions", "Employee", empId, e.name);
-  const admins = db.employees.filter((x) => x.role === "Administrator" && x.status === "Active");
-  const losesAdmin = e.role === "Administrator" && ((patch.role && patch.role !== "Administrator") || patch.status === "Suspended");
-  if (losesAdmin && admins.length <= 1) throw new RuleError("At least one active Administrator must remain.");
-  setState((d) => {
-    const x = d.employees.find((y) => y.id === empId)!;
-    const before = { role: x.role, status: x.status };
-    Object.assign(x, patch);
-    pushAudit(d, { action: patch.role && patch.role !== before.role ? "Employee role changed" : "Employee status changed", module: "Employees & Permissions", entityType: "Employee", entityId: empId, entityLabel: x.name, outcome: "Success", details: "", before, after: { role: x.role, status: x.status } });
-  });
-}
-
-type PersonalSettings = Pick<Settings, "density" | "notifyKyc" | "notifySupport" | "notifyManufacturing">;
-export function updatePreferences(patch: Partial<PersonalSettings>) {
+function updatePreferences(patch: Partial<PersonalSettings>) {
   setState((d) => {
     Object.assign(d.settings, patch);
   });
 }
 
-export function updateOperationalSettings(patch: Partial<Omit<Settings, keyof PersonalSettings>>) {
+function updateOperationalSettings(patch: Partial<OperationalSettings>) {
   authorize("settings.manage", "Change operational settings", "Settings", "Settings", "org", "Operational configuration");
   if (patch.kycReviewSlaHours !== undefined && (patch.kycReviewSlaHours < 1 || patch.kycReviewSlaHours > 720)) throw new RuleError("KYC review SLA must be between 1 and 720 hours.");
   if (patch.supportResponseSlaHours !== undefined && (patch.supportResponseSlaHours < 1 || patch.supportResponseSlaHours > 168)) throw new RuleError("Support SLA must be between 1 and 168 hours.");
@@ -661,3 +633,39 @@ export function updateOperationalSettings(patch: Partial<Omit<Settings, keyof Pe
     pushAudit(d, { action: "Settings changed", module: "Settings", entityType: "Settings", entityId: "org", entityLabel: "Operational configuration", outcome: "Success", details: Object.keys(patch).join(", "), before, after: patch as Record<string, unknown> });
   });
 }
+
+/* ---------------- Service ---------------- */
+
+/** Wraps a synchronous demo action so it resolves or rejects like a network call. */
+const asAsync = <A extends unknown[], R>(fn: (...args: A) => R) => (...args: A): Promise<R> => Promise.resolve().then(() => fn(...args));
+
+export const localOperations: OperationsService = {
+  updateCustomer: asAsync(updateCustomer),
+  escalateKyc: asAsync(escalateKyc),
+  recordKycDecision: asAsync(recordKycDecision),
+  requestKycResubmission: asAsync(requestKycResubmission),
+  requestAccountIssuance: asAsync(requestAccountIssuance),
+  simulateIssuanceResult: asAsync(simulateIssuanceResult),
+  completeSetup: asAsync(completeSetup),
+  addTransactionNote: asAsync(addTransactionNote),
+  createSupportCase: asAsync(createSupportCase),
+  updateCase: asAsync(updateCase),
+  addCaseNote: asAsync(addCaseNote),
+  linkCaseRecord: asAsync(linkCaseRecord),
+  lockCard: asAsync(lockCard),
+  unlockCard: asAsync(unlockCard),
+  createReplacement: asAsync(createReplacement),
+  cancelOrder: asAsync(cancelOrder),
+  changePlan: asAsync(changePlan),
+  simulateBillingOutcome: asAsync(simulateBillingOutcome),
+  recordCardSelection: asAsync(recordCardSelection),
+  createBatch: asAsync(createBatch),
+  removeOrderFromBatch: asAsync(removeOrderFromBatch),
+  recordPdfExport: asAsync(recordPdfExport),
+  markBatchReady: asAsync(markBatchReady),
+  recordBatchSubmission: asAsync(recordBatchSubmission),
+  markNotificationsRead: asAsync(markNotificationsRead),
+  updatePreferences: asAsync(updatePreferences),
+  updateOperationalSettings: asAsync(updateOperationalSettings),
+  resetDemoData: () => resetState(),
+};

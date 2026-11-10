@@ -12,7 +12,7 @@ export const refreshDirectory = (qc: QueryClient) =>
 
 export const errorMessage = (e: unknown, fallback = "Something went wrong. Try again.") => {
   if (e instanceof Error && e.message) {
-    // Validation errors arrive as JSON from the input validator.
+    // Input validation errors (zod) carry a JSON list of issues as their message.
     try {
       const parsed = JSON.parse(e.message) as { message?: string }[];
       if (Array.isArray(parsed) && parsed[0]?.message) return parsed[0].message;

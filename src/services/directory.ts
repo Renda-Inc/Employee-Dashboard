@@ -1,14 +1,14 @@
-// Employee directory reads (browser client, protected by row-level security) and session resolution.
+// Employee directory reads and employee-workspace session resolution, built on the service contracts.
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import type { Tables } from "@/integrations/supabase/types";
 import type { EmployeeStatus } from "@/types/models";
+import { auth, employeesApi } from "./api";
+import type { AdminAuditRecord, EmployeeRow, RoleRecord } from "./contracts/employees";
 import { isPermission, setRolePermissions, type Permission } from "./permissions";
 import { clearEmployeeSession, syncDirectory } from "./actions";
+import { loadOperations } from "./store";
 
-export type RoleRecord = Tables<"roles">;
-export type EmployeeRecord = Omit<Tables<"employees">, "status"> & { status: EmployeeStatus; name: string; role: RoleRecord | null };
-export type AdminAuditRecord = Tables<"admin_audit_events">;
+export type { AdminAuditRecord, RoleRecord };
+export type EmployeeRecord = EmployeeRow & { name: string; role: RoleRecord | null };
 
 export interface Directory {
   employees: EmployeeRecord[];
@@ -16,28 +16,18 @@ export interface Directory {
   assignedCount: Record<string, number>;
 }
 
+const toRecord = (e: EmployeeRow, role: RoleRecord | null): EmployeeRecord => ({ ...e, status: e.status as EmployeeStatus, name: `${e.first_name} ${e.last_name}`, role });
+
 export async function fetchDirectory(): Promise<Directory> {
-  const [emp, roles, assigns, session] = await Promise.all([
-    supabase.from("employees").select("*").order("created_at"),
-    supabase.from("roles").select("*").order("created_at"),
-    supabase.from("user_roles").select("user_id, role_id"),
-    supabase.auth.getSession(),
-  ]);
-  if (emp.error || roles.error || assigns.error) throw new Error("The employee directory couldn't be loaded.");
-  const roleById = new Map(roles.data.map((r) => [r.id, r]));
-  const roleOf = new Map(assigns.data.map((a) => [a.user_id, a.role_id]));
+  const [snapshot, session] = await Promise.all([employeesApi.getDirectory(), auth.getSession()]);
+  const roleById = new Map(snapshot.roles.map((r) => [r.id, r]));
+  const roleOf = new Map(snapshot.assignments.map((a) => [a.user_id, a.role_id]));
   const assignedCount: Record<string, number> = {};
-  for (const a of assigns.data) assignedCount[a.role_id] = (assignedCount[a.role_id] ?? 0) + 1;
-  const employees: EmployeeRecord[] = emp.data.map((e) => ({
-    ...e,
-    status: e.status as EmployeeStatus,
-    name: `${e.first_name} ${e.last_name}`,
-    role: roleById.get(roleOf.get(e.id) ?? "") ?? null,
-  }));
-  setRolePermissions(Object.fromEntries(roles.data.map((r) => [r.name, r.permissions.filter(isPermission) as Permission[]])));
-  const meId = session.data.session?.user.id ?? "";
-  syncDirectory(meId, employees.map((e) => ({ id: e.id, name: e.name, email: e.email, role: e.role?.name ?? "", status: e.status, directory: true })));
-  return { employees, roles: roles.data, assignedCount };
+  for (const a of snapshot.assignments) assignedCount[a.role_id] = (assignedCount[a.role_id] ?? 0) + 1;
+  const employees = snapshot.employees.map((e) => toRecord(e, roleById.get(roleOf.get(e.id) ?? "") ?? null));
+  setRolePermissions(Object.fromEntries(snapshot.roles.map((r) => [r.name, r.permissions.filter(isPermission) as Permission[]])));
+  syncDirectory(session?.userId ?? "", employees.map((e) => ({ id: e.id, name: e.name, email: e.email, role: e.role?.name ?? "", status: e.status, directory: true })));
+  return { employees, roles: snapshot.roles, assignedCount };
 }
 
 export const directoryQuery = queryOptions({ queryKey: ["directory"], queryFn: fetchDirectory, staleTime: 30_000 });
@@ -47,9 +37,11 @@ export const adminAuditQuery = (enabled: boolean) =>
     queryKey: ["admin-audit"],
     enabled,
     queryFn: async () => {
-      const { data, error } = await supabase.from("admin_audit_events").select("*").order("created_at", { ascending: false }).limit(1000);
-      if (error) throw new Error("Administration audit events couldn't be loaded.");
-      return data;
+      try {
+        return await employeesApi.listAuditEvents();
+      } catch {
+        throw new Error("Administration audit events couldn't be loaded.");
+      }
     },
   });
 
@@ -69,17 +61,14 @@ export function sessionExpiredByBrowserClose() {
 }
 
 export async function needsMfa() {
-  const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  return !!data && data.nextLevel === "aal2" && data.currentLevel !== "aal2";
+  return (await auth.getSession())?.mfaRequired ?? false;
 }
 
-export async function ownAccess(userId: string) {
-  const [{ data: me }, { data: assignment }] = await Promise.all([
-    supabase.from("employees").select("*").eq("id", userId).maybeSingle(),
-    supabase.from("user_roles").select("role_id, roles(*)").eq("user_id", userId).maybeSingle(),
-  ]);
-  return { me, role: (assignment?.roles ?? null) as RoleRecord | null };
-}
+/** The signed-in employee's record and role. */
+export const ownAccess = async () => {
+  const { employee, role } = await auth.getCurrentEmployee();
+  return { me: employee, role };
+};
 
 export type AccessResult =
   | { kind: "ok"; me: EmployeeRecord }
@@ -93,17 +82,19 @@ export async function resolveAccess(queryClient: QueryClient): Promise<AccessRes
     await signOutEverywhere(queryClient);
     return { kind: "signin", reason: "expired" };
   }
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) return { kind: "signin" };
-  if (await needsMfa()) return { kind: "mfa" };
-  const { me, role } = await ownAccess(data.user.id);
+  const session = await auth.getSession();
+  if (!session) return { kind: "signin" };
+  if (session.mfaRequired) return { kind: "mfa" };
+  const { me, role } = await ownAccess();
   if (!me || me.status === "Inactive" || me.status === "Suspended" || !role) {
     await signOutEverywhere(queryClient);
     return { kind: "signin", reason: "denied" };
   }
   if (me.must_change_password) return { kind: "set-password" };
+  // Load the operations dataset before the directory mirrors employees into it.
+  await loadOperations();
   await queryClient.ensureQueryData(directoryQuery);
-  return { kind: "ok", me: { ...me, status: me.status as EmployeeStatus, name: `${me.first_name} ${me.last_name}`, role } };
+  return { kind: "ok", me: toRecord(me, role) };
 }
 
 export async function signOutEverywhere(queryClient: QueryClient) {
@@ -111,12 +102,12 @@ export async function signOutEverywhere(queryClient: QueryClient) {
   queryClient.clear();
   clearEmployeeSession();
   setRolePermissions({});
-  await supabase.auth.signOut();
+  await auth.logout();
 }
 
-/** Where an employee lands after signing in, from their role. */
-export async function landingPath(userId: string) {
-  const { role } = await ownAccess(userId);
+/** Where the signed-in employee lands after signing in, from their role. */
+export async function landingPath() {
+  const { role } = await ownAccess();
   return role?.landing_page ?? "/";
 }
 

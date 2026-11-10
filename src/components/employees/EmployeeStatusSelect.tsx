@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { ASSIGNABLE_STATUSES, type AssignableStatus } from "@/services/employee-rules";
-import { updateEmployeeAccount } from "@/services/employees.functions";
+import { employeesApi } from "@/services/api";
 import type { EmployeeRecord } from "@/services/directory";
 import { ConfirmDialog, errorMessage, refreshDirectory } from "./shared";
 
@@ -18,7 +17,6 @@ const COPY: Record<AssignableStatus, { title: string; body: string; label: strin
 /** Account status shown as a dropdown; changes are confirmed and recorded in the audit log. */
 export function EmployeeStatusSelect({ employee, editable }: { employee: EmployeeRecord; editable: boolean }) {
   const qc = useQueryClient();
-  const update = useServerFn(updateEmployeeAccount);
   const [pending, setPending] = useState<AssignableStatus | null>(null);
   if (!editable) return <StatusBadge status={employee.status} />;
   const reactivatesInvite = pending === "Active" && employee.must_change_password;
@@ -46,7 +44,7 @@ export function EmployeeStatusSelect({ employee, editable }: { employee: Employe
           withReason={pending !== "Active"}
           onConfirm={async (reason) => {
             try {
-              const res = await update({ data: { id: employee.id, status: pending, ...(reason ? { reason } : {}) } });
+              const res = await employeesApi.updateEmployee({ id: employee.id, status: pending, ...(reason ? { reason } : {}) });
               await refreshDirectory(qc);
               toast.success(`${employee.name} is now ${res.status}`);
             } catch (e) {

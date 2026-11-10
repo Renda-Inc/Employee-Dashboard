@@ -1,22 +1,18 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useState, type FormEvent } from "react";
 import { KeyRound, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { auth } from "@/services/api";
 import { AuthLayout, FormError } from "@/components/auth/AuthLayout";
 import { PasswordFields } from "@/components/auth/PasswordFields";
 import { Button } from "@/components/ui/button";
-import { completePasswordSetup } from "@/services/employees.functions";
 import { passwordIssues } from "@/services/employee-rules";
 import { landingPath, signOutEverywhere } from "@/services/directory";
 
 export const Route = createFileRoute("/set-password")({
   ssr: false,
   beforeLoad: async () => {
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) throw redirect({ to: "/auth" });
-    return { userId: data.user.id };
+    if (!(await auth.getSession())) throw redirect({ to: "/auth" });
   },
   head: () => ({
     meta: [
@@ -32,10 +28,8 @@ export const Route = createFileRoute("/set-password")({
 });
 
 function SetPassword() {
-  const { userId } = Route.useRouteContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const save = useServerFn(completePasswordSetup);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
@@ -49,8 +43,8 @@ function SetPassword() {
     setBusy(true);
     setError(null);
     try {
-      await save({ data: { password } });
-      navigate({ href: await landingPath(userId), replace: true });
+      await auth.completePasswordSetup(password);
+      navigate({ href: await landingPath(), replace: true });
     } catch (err) {
       setBusy(false);
       setError(err instanceof Error ? err.message : "We couldn't save your password. Try again.");

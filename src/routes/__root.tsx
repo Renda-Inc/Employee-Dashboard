@@ -13,7 +13,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { supabase } from "@/integrations/supabase/client";
+import { auth } from "@/services/api";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -122,13 +122,11 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((event) => {
-      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+    return auth.onAuthStateChange((event) => {
       // Re-run the employee gate; a signed-out session is redirected to sign-in.
       if (event === "SIGNED_OUT") router.invalidate();
       else queryClient.invalidateQueries({ queryKey: ["directory"] });
     });
-    return () => data.subscription.unsubscribe();
   }, [router, queryClient]);
 
   return (

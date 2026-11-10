@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { SelectField } from "@/components/ui/select-field";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { ALL_PERMISSIONS, DEPARTMENTS, LANDING_PAGES, PERMISSION_GROUPS, PERMISSION_LABELS, type Permission } from "@/services/permissions";
-import { createRole, updateRole } from "@/services/employees.functions";
+import { employeesApi } from "@/services/api";
 import type { RoleRecord } from "@/services/directory";
 import { errorMessage, refreshDirectory } from "./shared";
 
@@ -38,8 +37,6 @@ export function RoleDialog({ open, mode, role, canManage, onOpenChange, onModeCh
   onSaved?: (role: RoleRecord) => void;
 }) {
   const qc = useQueryClient();
-  const create = useServerFn(createRole);
-  const update = useServerFn(updateRole);
   const [d, setD] = useState<Draft>(() => fromRole(role, mode));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +60,7 @@ export function RoleDialog({ open, mode, role, canManage, onOpenChange, onModeCh
       department: (d.department || null) as (typeof DEPARTMENTS)[number] | null,
     };
     try {
-      const saved = mode === "edit" && role ? await update({ data: { ...payload, id: role.id } }) : await create({ data: payload });
+      const saved = mode === "edit" && role ? await employeesApi.updateRole({ ...payload, id: role.id }) : await employeesApi.createRole(payload);
       await refreshDirectory(qc);
       toast.success(mode === "edit" ? `${saved.name} updated` : `${saved.name} created`);
       onSaved?.(saved);

@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { ArrowLeft, KeyRound, Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
@@ -14,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { EmployeeStatusSelect } from "@/components/employees/EmployeeStatusSelect";
 import { ConfirmDialog, TemporaryPasswordDialog, errorMessage, refreshDirectory } from "@/components/employees/shared";
 import { adminAuditQuery, directoryQuery, type EmployeeRecord, type RoleRecord } from "@/services/directory";
-import { resetEmployeePassword, updateEmployeeAccount } from "@/services/employees.functions";
+import { employeesApi } from "@/services/api";
 import { DEPARTMENTS, LANDING_PAGES, PERMISSION_GROUPS, PERMISSION_LABELS } from "@/services/permissions";
 import { useDB } from "@/services/store";
 import { fmtDate, fmtDateTime, relTime } from "@/lib/format";
@@ -41,8 +40,6 @@ function EmployeeProfile() {
   const canManage = usePermission("employees.manage");
   const canAudit = usePermission("audit.view");
   const { data: events } = useQuery(adminAuditQuery(canAudit));
-  const update = useServerFn(updateEmployeeAccount);
-  const reset = useServerFn(resetEmployeePassword);
   const [editing, setEditing] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [issued, setIssued] = useState<{ title: string; name: string; email: string; password: string } | null>(null);
@@ -62,7 +59,7 @@ function EmployeeProfile() {
     if (!e || roleId === e.role?.id) return;
     setRoleBusy(true);
     try {
-      await update({ data: { id: e.id, roleId } });
+      await employeesApi.updateEmployee({ id: e.id, roleId });
       await refreshDirectory(qc);
       toast.success(`${e.name}'s role updated`);
     } catch (err) {
@@ -148,7 +145,7 @@ function EmployeeProfile() {
         confirmLabel="Generate new password"
         onConfirm={async () => {
           try {
-            const res = await reset({ data: { id: e.id } });
+            const res = await employeesApi.resetPassword(e.id);
             await refreshDirectory(qc);
             setIssued({ title: "Password reset", name: e.name, email: e.email, password: res.temporaryPassword });
           } catch (err) {
@@ -183,7 +180,6 @@ function RolePermissionSummary({ role }: { role: RoleRecord | null }) {
 
 function EditEmployeeDialog({ open, onOpenChange, employee }: { open: boolean; onOpenChange: (o: boolean) => void; employee: EmployeeRecord }) {
   const qc = useQueryClient();
-  const update = useServerFn(updateEmployeeAccount);
   const init = () => ({ firstName: employee.first_name, lastName: employee.last_name, department: employee.department, jobTitle: employee.job_title ?? "", phone: employee.phone ?? "" });
   const [f, setF] = useState(init);
   const [busy, setBusy] = useState(false);
@@ -197,7 +193,7 @@ function EditEmployeeDialog({ open, onOpenChange, employee }: { open: boolean; o
     setBusy(true);
     setError(null);
     try {
-      await update({ data: { id: employee.id, firstName: f.firstName.trim(), lastName: f.lastName.trim(), department: f.department as (typeof DEPARTMENTS)[number], jobTitle: f.jobTitle.trim() || null, phone: f.phone.trim() || null } });
+      await employeesApi.updateEmployee({ id: employee.id, firstName: f.firstName.trim(), lastName: f.lastName.trim(), department: f.department as (typeof DEPARTMENTS)[number], jobTitle: f.jobTitle.trim() || null, phone: f.phone.trim() || null });
       await refreshDirectory(qc);
       toast.success("Employee details saved");
       onOpenChange(false);
