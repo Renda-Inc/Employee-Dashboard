@@ -1,50 +1,72 @@
-// Demo data layer: one shared dataset, persisted to localStorage.
-// Swap this module for authenticated API calls when a backend exists.
+// Operations dataset cache. React reads a synchronous snapshot (`useDB`); loading and saving go
+// through an `OperationsRepository`, so the storage behind it can change without touching pages.
 import { useSyncExternalStore } from "react";
 import type { DB } from "@/types/models";
+import type { OperationsRepository } from "./contracts/operations";
 import { buildSeed } from "@/data/demo/seed";
 
 const KEY = "renda-ops-demo-v1";
-const listeners = new Set<() => void>();
 
-function load(): DB {
-  if (typeof window === "undefined") return buildSeed();
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as DB;
-      if (parsed.version === 1) return parsed;
-    }
-  } catch {
-    /* fall through to seed */
-  }
-  return buildSeed();
-}
-
-let state: DB = load();
-
-export function getState() {
-  return state;
-}
-
-export function setState(mutator: (draft: DB) => void) {
-  const draft = structuredClone(state);
-  mutator(draft);
-  state = draft;
-  if (typeof window !== "undefined") {
+/** Demo repository: the dataset lives in this browser's localStorage. */
+export const localStorageRepository: OperationsRepository = {
+  async load() {
     try {
-      window.localStorage.setItem(KEY, JSON.stringify(state));
+      const raw = window.localStorage.getItem(KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as DB;
+        if (parsed.version === 1) return parsed;
+      }
+    } catch {
+      /* fall through to seed */
+    }
+    return buildSeed();
+  },
+  async save(db) {
+    try {
+      window.localStorage.setItem(KEY, JSON.stringify(db));
     } catch {
       /* storage full — keep in memory */
     }
-  }
-  listeners.forEach((l) => l());
+  },
+  async reset() {
+    window.localStorage.removeItem(KEY);
+    return buildSeed();
+  },
+};
+
+const repository: OperationsRepository = localStorageRepository;
+const listeners = new Set<() => void>();
+let state: DB | null = null;
+let loading: Promise<void> | null = null;
+
+const notify = () => listeners.forEach((l) => l());
+
+/** Loads the dataset once per page load. The employee workspace gate awaits this before rendering. */
+export function loadOperations(): Promise<void> {
+  loading ??= repository.load().then((db) => {
+    state = db;
+    notify();
+  });
+  return loading;
 }
 
-export function resetDemo() {
-  state = buildSeed();
-  if (typeof window !== "undefined") window.localStorage.removeItem(KEY);
-  listeners.forEach((l) => l());
+export function getState(): DB {
+  state ??= buildSeed();
+  return state;
+}
+
+/** Applies a change to the snapshot, notifies subscribers and persists it. */
+export function setState(mutator: (draft: DB) => void) {
+  const draft = structuredClone(getState());
+  mutator(draft);
+  state = draft;
+  void repository.save(draft);
+  notify();
+}
+
+export async function resetState() {
+  state = await repository.reset();
+  notify();
 }
 
 function subscribe(l: () => void) {
