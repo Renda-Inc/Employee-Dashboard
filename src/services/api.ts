@@ -14,5 +14,3 @@ export const auth: AuthService = mockAuthService;
 export const employeesApi: EmployeeAdminApi = mockEmployeeAdminApi;
 /** Changes to customer, banking, card and support records. */
 export const operations: OperationsService = localOperations;
-
-export { OPEN_SIGN_IN } from "./mock/auth";

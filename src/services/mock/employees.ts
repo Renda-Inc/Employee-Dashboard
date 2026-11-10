@@ -107,7 +107,7 @@ export const mockEmployeeAdminApi: EmployeeAdminApi = {
         before.role = currentRole?.name ?? null;
         after.role = nextRole.name;
       }
-      const action = nextStatus !== before.status && "status" in after ? "Employee status changed" : "role" in after ? "Employee role changed" : "Employee details updated";
+      const action = "status" in after ? "Employee status changed" : "role" in after ? "Employee role changed" : "Employee details updated";
       if (Object.keys(after).length) audit(t, actor.id, { action, entityType: "Employee", entityId: data.id, entityLabel: fullName(target), details: data.reason ?? "", before, after });
       return { status: nextStatus };
     });
