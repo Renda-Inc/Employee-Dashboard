@@ -12,8 +12,6 @@ import type {
   DB,
   Plan,
   ReplacementReason,
-  Role,
-  Settings,
 } from "@/types/models";
 import { getState, resetState, setState } from "./store";
 import { EDITABLE_FIELDS, type EditableField, type OperationalSettings, type OperationsService, type PersonalSettings } from "./contracts/operations";
