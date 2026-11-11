@@ -16,7 +16,7 @@ export function buildBatchPdf(db: DB, batch: ManufacturingBatch): jsPDF {
   const orders = batch.orderIds
     .map((id) => db.cardOrders.find((o) => o.id === id)!)
     .filter(Boolean);
-  const emp = (id: string | null) => db.employees.find((e) => e.id === id)?.name ?? "—";
+  const emp = (id: string | null) => db.employees.find((e) => e.id === id)?.name ?? "-";
   const W = doc.internal.pageSize.getWidth();
   let y = 56;
 
@@ -28,7 +28,7 @@ export function buildBatchPdf(db: DB, batch: ManufacturingBatch): jsPDF {
     .text("Card Manufacturing Order", 48, y + 14);
   doc
     .setFontSize(8)
-    .text("DEMO DOCUMENT — placeholder identifiers, not for production use", W - 48, y, {
+    .text("DEMO DOCUMENT. Placeholder identifiers, not for production use", W - 48, y, {
       align: "right",
     });
   y += 44;

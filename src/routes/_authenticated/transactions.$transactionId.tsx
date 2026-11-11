@@ -25,9 +25,9 @@ export const Route = createFileRoute("/_authenticated/transactions/$transactionI
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { title: "Transaction — Renda Admin" },
+      { title: "Transaction | Renda Admin" },
       { name: "description", content: "Transaction details and investigation." },
-      { property: "og:title", content: "Transaction — Renda Admin" },
+      { property: "og:title", content: "Transaction | Renda Admin" },
       { property: "og:description", content: "Transaction details." },
     ],
   }),
@@ -110,7 +110,7 @@ function TxnDetail() {
                       {acc.accountType} {acc.maskedAccountIdentifier}
                     </Link>
                   ) : (
-                    "—"
+                    "-"
                   ),
                 ],
                 [

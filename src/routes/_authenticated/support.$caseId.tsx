@@ -28,9 +28,9 @@ export const Route = createFileRoute("/_authenticated/support/$caseId")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { title: "Support case — Renda Admin" },
+      { title: "Support case | Renda Admin" },
       { name: "description", content: "Support case details, notes and resolution." },
-      { property: "og:title", content: "Support case — Renda Admin" },
+      { property: "og:title", content: "Support case | Renda Admin" },
       { property: "og:description", content: "Support case details." },
     ],
   }),

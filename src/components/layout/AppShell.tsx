@@ -463,7 +463,7 @@ function Notifications() {
                 <span className="min-w-0 flex-1">
                   <span className="block text-[13px] font-medium">{n.type}</span>
                   <span className="block truncate text-[13px] text-muted-foreground">
-                    {n.record} — {n.detail}
+                    {n.record} - {n.detail}
                   </span>
                 </span>
                 <span className="shrink-0 text-[12px] text-muted-foreground">{relTime(n.at)}</span>

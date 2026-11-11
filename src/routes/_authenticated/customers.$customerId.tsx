@@ -58,12 +58,12 @@ export const Route = createFileRoute("/_authenticated/customers/$customerId")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { title: "Customer profile — Renda Admin" },
+      { title: "Customer profile | Renda Admin" },
       {
         name: "description",
         content: "Central customer record across banking, cards, plans and support.",
       },
-      { property: "og:title", content: "Customer profile — Renda Admin" },
+      { property: "og:title", content: "Customer profile | Renda Admin" },
       { property: "og:description", content: "Central customer record." },
     ],
   }),
@@ -270,7 +270,7 @@ function OverviewTab({ c }: { c: Customer }) {
           c.customerStatus !== "Active" &&
           c.customerStatus !== "Restricted" &&
           c.customerStatus !== "Closed" ? (
-            <span className="ml-1">— {activationBlocker(c, db.accounts)}</span>
+            <span className="ml-1">- {activationBlocker(c, db.accounts)}</span>
           ) : null}
         </p>
       </Panel>
@@ -301,7 +301,7 @@ function OverviewTab({ c }: { c: Customer }) {
             cols={1}
             items={[
               ["Status", <StatusBadge status={c.kycStatus} />],
-              ["Provider ref", kyc ? <Mono>{kyc.providerReference}</Mono> : "—"],
+              ["Provider ref", kyc ? <Mono>{kyc.providerReference}</Mono> : "-"],
               ["Last update", fmtDateTime(kyc?.lastUpdated)],
             ]}
           />
@@ -339,8 +339,8 @@ function OverviewTab({ c }: { c: Customer }) {
             cols={1}
             items={[
               ["Plan", <PlanBadge plan={sub?.plan} />],
-              ["Status", sub ? <StatusBadge status={sub.subscriptionStatus} /> : "—"],
-              ["Monthly fee", sub ? fmtMoney(sub.monthlyPrice) : "—"],
+              ["Status", sub ? <StatusBadge status={sub.subscriptionStatus} /> : "-"],
+              ["Monthly fee", sub ? fmtMoney(sub.monthlyPrice) : "-"],
             ]}
           />
         </Panel>
@@ -433,7 +433,7 @@ function PersonalTab({ c }: { c: Customer }) {
     if (
       await run(
         () => operations.updateCustomer(c.id, patch),
-        "Customer information updated — audit event recorded",
+        "Customer information updated. Audit event recorded",
       )
     )
       setEditing(false);
@@ -498,7 +498,7 @@ function PersonalTab({ c }: { c: Customer }) {
           <Label>Date of birth</Label>
           <Input value={fmtDate(c.dateOfBirth)} disabled />
           <p className="text-[12px] text-muted-foreground">
-            Identity field — changes require KYC re-verification.
+            Identity field. Changes require KYC re-verification.
           </p>
         </div>
       </div>

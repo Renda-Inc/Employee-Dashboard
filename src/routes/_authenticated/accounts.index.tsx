@@ -12,9 +12,9 @@ export const Route = createFileRoute("/_authenticated/accounts/")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { title: "Banking & Accounts — Renda Admin" },
+      { title: "Banking & Accounts | Renda Admin" },
       { name: "description", content: "Smart Spend and Sense Save account records." },
-      { property: "og:title", content: "Banking & Accounts — Renda Admin" },
+      { property: "og:title", content: "Banking & Accounts | Renda Admin" },
       { property: "og:description", content: "Smart Spend and Sense Save account records." },
     ],
   }),
@@ -69,7 +69,7 @@ function Accounts() {
     },
     { key: "u", header: "User ID", cell: (a) => <Mono>{L.customer(a.customerId)?.userId}</Mono> },
     { key: "t", header: "Account type", cell: (a) => a.accountType, sort: (a) => a.accountType },
-    { key: "m", header: "Account", cell: (a) => <Mono>{a.maskedAccountIdentifier ?? "—"}</Mono> },
+    { key: "m", header: "Account", cell: (a) => <Mono>{a.maskedAccountIdentifier ?? "-"}</Mono> },
     {
       key: "s",
       header: "Status",

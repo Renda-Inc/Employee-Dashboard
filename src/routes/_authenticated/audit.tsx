@@ -16,9 +16,9 @@ export const Route = createFileRoute("/_authenticated/audit")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { title: "Audit Logs — Renda Admin" },
+      { title: "Audit Logs | Renda Admin" },
       { name: "description", content: "Traceability for sensitive operations." },
-      { property: "og:title", content: "Audit Logs — Renda Admin" },
+      { property: "og:title", content: "Audit Logs | Renda Admin" },
       { property: "og:description", content: "Audit trail." },
     ],
   }),
@@ -118,9 +118,9 @@ function Audit() {
   const fmt = (v: Record<string, unknown> | undefined) =>
     v
       ? Object.entries(v)
-          .map(([k, x]) => `${k}: ${x === null ? "—" : String(x)}`)
+          .map(([k, x]) => `${k}: ${x === null ? "-" : String(x)}`)
           .join("\n")
-      : "—";
+      : "-";
   return (
     <>
       <PageHeader
@@ -188,7 +188,7 @@ function Audit() {
                     ["Module", open.module],
                     ["Record", `${open.entityType} · ${open.entityLabel}`],
                     ["Outcome", <StatusBadge status={open.outcome} />],
-                    ["Details", open.details || "—"],
+                    ["Details", open.details || "-"],
                     ["Event ID", <Mono>{open.id}</Mono>],
                   ]}
                 />

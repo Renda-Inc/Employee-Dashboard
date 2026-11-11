@@ -138,7 +138,7 @@ export function AddEmployeeDialog({
           <DialogHeader>
             <DialogTitle>Add employee</DialogTitle>
             <DialogDescription>
-              Create a Renda Admin account. The system generates a one-time temporary password — no
+              Create a Renda Admin account. The system generates a one-time temporary password. No
               one chooses or shares a password for the employee.
             </DialogDescription>
           </DialogHeader>

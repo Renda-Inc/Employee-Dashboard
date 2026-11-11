@@ -14,9 +14,9 @@ export const Route = createFileRoute("/_authenticated/cards/")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { title: "Cards — Renda Admin" },
+      { title: "Cards | Renda Admin" },
       { name: "description", content: "Virtual and physical Renda Mastercard records." },
-      { property: "og:title", content: "Cards — Renda Admin" },
+      { property: "og:title", content: "Cards | Renda Admin" },
       { property: "og:description", content: "Renda Mastercard records." },
     ],
   }),

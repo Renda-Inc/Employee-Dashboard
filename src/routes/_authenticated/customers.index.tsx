@@ -22,9 +22,9 @@ export const Route = createFileRoute("/_authenticated/customers/")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { title: "Customers — Renda Admin" },
+      { title: "Customers | Renda Admin" },
       { name: "description", content: "Search and manage Renda customer records." },
-      { property: "og:title", content: "Customers — Renda Admin" },
+      { property: "og:title", content: "Customers | Renda Admin" },
       { property: "og:description", content: "Search and manage Renda customer records." },
     ],
   }),

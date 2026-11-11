@@ -12,9 +12,9 @@ export const Route = createFileRoute("/_authenticated/onboarding/")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { title: "Onboarding & KYC — Renda Admin" },
+      { title: "Onboarding & KYC | Renda Admin" },
       { name: "description", content: "Verification and onboarding queue." },
-      { property: "og:title", content: "Onboarding & KYC — Renda Admin" },
+      { property: "og:title", content: "Onboarding & KYC | Renda Admin" },
       { property: "og:description", content: "Verification and onboarding queue." },
     ],
   }),
@@ -43,9 +43,9 @@ export function outstanding(c: Customer): string {
   if (c.kycStatus === "Failed") return "Resubmit identity documents";
   if (c.accountIssuanceStatus === "Not Started") return "Request account issuance";
   if (c.accountIssuanceStatus === "Pending") return "Awaiting banking provider";
-  if (c.accountIssuanceStatus === "Failed") return "Retry issuance — provider error";
+  if (c.accountIssuanceStatus === "Failed") return "Retry issuance. Provider error";
   if (c.customerStatus === "Setup In Progress") return "Complete setup";
-  return "—";
+  return "-";
 }
 
 const match = (t: Tab, c: Customer) => {

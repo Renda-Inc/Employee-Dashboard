@@ -25,7 +25,7 @@ export const localStorageRepository: OperationsRepository = {
     try {
       window.localStorage.setItem(KEY, JSON.stringify(db));
     } catch {
-      /* storage full — keep in memory */
+      /* storage full, keep in memory */
     }
   },
   async reset() {

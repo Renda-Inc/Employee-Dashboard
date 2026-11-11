@@ -24,12 +24,12 @@ export const Route = createFileRoute("/_authenticated/cards/manufacturing/$batch
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { title: "Manufacturing batch — Renda Admin" },
+      { title: "Manufacturing batch | Renda Admin" },
       {
         name: "description",
         content: "Review, export and record submission of a manufacturing batch.",
       },
-      { property: "og:title", content: "Manufacturing batch — Renda Admin" },
+      { property: "og:title", content: "Manufacturing batch | Renda Admin" },
       { property: "og:description", content: "Manufacturing batch review." },
     ],
   }),
@@ -114,7 +114,7 @@ function BatchDetail() {
                   reasonLabel="How was it sent? (e.g. emailed to production desk)"
                   confirmLabel="Record submission"
                   onConfirm={(r) => operations.recordBatchSubmission(b.id, r)}
-                  success="Submission recorded — audit event created"
+                  success="Submission recorded. Audit event created"
                 />
               )}
             </>
@@ -165,7 +165,7 @@ function BatchDetail() {
                 ["Created by", L.empName(b.createdBy)],
                 ["Reviewed by", L.empName(b.reviewedBy)],
                 ["Submitted by", L.empName(b.submittedBy)],
-                ["Submission note", b.submissionNote ?? "—"],
+                ["Submission note", b.submissionNote ?? "-"],
               ]}
             />
             <div className="mt-4 flex flex-wrap gap-2">

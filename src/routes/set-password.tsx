@@ -16,9 +16,9 @@ export const Route = createFileRoute("/set-password")({
   },
   head: () => ({
     meta: [
-      { title: "Choose your password — Renda Admin" },
+      { title: "Choose your password | Renda Admin" },
       { name: "description", content: "Choose a personal password for your Renda Admin account." },
-      { property: "og:title", content: "Choose your password — Renda Admin" },
+      { property: "og:title", content: "Choose your password | Renda Admin" },
       {
         property: "og:description",
         content: "Set a personal password before entering Renda Admin.",

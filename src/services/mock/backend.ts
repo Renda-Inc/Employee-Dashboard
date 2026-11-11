@@ -148,7 +148,7 @@ export function writeTables<T>(mutate: (t: MockTables) => T): T {
   try {
     window.localStorage.setItem(TABLES_KEY, JSON.stringify(draft));
   } catch {
-    /* storage full — keep in memory */
+    /* storage full, keep in memory */
   }
   return result;
 }
@@ -233,7 +233,7 @@ export function audit(
   t.audit = t.audit.slice(0, 1000);
 }
 
-/** Active, verified (when enrolled) caller — the equivalent of `is_active_employee()` in the schema. */
+/** Active, verified (when enrolled) caller, the equivalent of `is_active_employee()` in the schema. */
 export function activeCaller(t: MockTables) {
   const s = readSession();
   const me = s ? findEmployee(t, s.userId) : null;

@@ -17,12 +17,12 @@ export const Route = createFileRoute("/_authenticated/cards/manufacturing/")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { title: "Card Manufacturing — Renda Admin" },
+      { title: "Card Manufacturing | Renda Admin" },
       {
         name: "description",
         content: "Review physical card orders and prepare manufacturing batches.",
       },
-      { property: "og:title", content: "Card Manufacturing — Renda Admin" },
+      { property: "og:title", content: "Card Manufacturing | Renda Admin" },
       { property: "og:description", content: "Prepare Friday manufacturing batches." },
     ],
   }),
@@ -106,7 +106,7 @@ function Manufacturing() {
     {
       key: "r",
       header: "Replacement ref",
-      cell: (o) => <Mono>{o.replacementReference ?? "—"}</Mono>,
+      cell: (o) => <Mono>{o.replacementReference ?? "-"}</Mono>,
     },
     {
       key: "e",
@@ -208,7 +208,7 @@ function Manufacturing() {
             <div className="text-[12px] text-muted-foreground">Next Friday processing</div>
             <div className="font-semibold">{friday}</div>
             <div className="text-[12px] text-muted-foreground">
-              Manual workflow — no automatic generation or submission
+              Manual workflow. No automatic generation or submission
             </div>
           </div>
         </div>

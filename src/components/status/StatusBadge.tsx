@@ -114,6 +114,6 @@ export function StatusBadge({
 }
 
 export function PlanBadge({ plan }: { plan: string | undefined }) {
-  if (!plan) return <span className="text-muted-foreground">—</span>;
+  if (!plan) return <span className="text-muted-foreground">-</span>;
   return <StatusBadge status={plan === "Plus" ? "Plus" : "Everyday"} />;
 }

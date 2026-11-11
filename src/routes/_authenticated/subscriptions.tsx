@@ -18,9 +18,9 @@ export const Route = createFileRoute("/_authenticated/subscriptions")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { title: "Plans & Subscriptions — Renda Admin" },
+      { title: "Plans & Subscriptions | Renda Admin" },
       { name: "description", content: "Renda Everyday and Renda Plus memberships." },
-      { property: "og:title", content: "Plans & Subscriptions — Renda Admin" },
+      { property: "og:title", content: "Plans & Subscriptions | Renda Admin" },
       { property: "og:description", content: "Renda memberships." },
     ],
   }),
@@ -87,7 +87,7 @@ function Subscriptions() {
         s.cardSelectionRequired ? (
           <StatusBadge status="Card selection pending" tone="warning" />
         ) : (
-          <span className="text-muted-foreground">—</span>
+          <span className="text-muted-foreground">-</span>
         ),
     },
     {
@@ -104,7 +104,7 @@ function Subscriptions() {
                 </Button>
               }
               title="Record simulated billing failure"
-              simulated="Demo billing outcome — no payment processor is contacted."
+              simulated="Demo billing outcome. No payment processor is contacted."
               onConfirm={() => operations.simulateBillingOutcome(s.customerId, false)}
               success="Billing failure recorded (simulated)"
             />
@@ -115,7 +115,7 @@ function Subscriptions() {
                 </Button>
               }
               title="Record simulated billing success"
-              simulated="Demo billing outcome — no payment is collected."
+              simulated="Demo billing outcome. No payment is collected."
               onConfirm={() => operations.simulateBillingOutcome(s.customerId, true)}
               success="Billing success recorded (simulated)"
             />
@@ -188,7 +188,7 @@ function Subscriptions() {
           <SheetHeader>
             <SheetTitle>
               {open && L.customer(open)
-                ? `${fullName(L.customer(open)!)} — membership`
+                ? `${fullName(L.customer(open)!)}: membership`
                 : "Membership"}
             </SheetTitle>
           </SheetHeader>

@@ -25,12 +25,12 @@ import { fmtDate } from "@/lib/format";
 export const Route = createFileRoute("/_authenticated/employees/roles")({
   head: () => ({
     meta: [
-      { title: "Roles & Permissions — Renda Admin" },
+      { title: "Roles & Permissions | Renda Admin" },
       {
         name: "description",
         content: "Create and manage employee roles and exactly what each role can access.",
       },
-      { property: "og:title", content: "Roles & Permissions — Renda Admin" },
+      { property: "og:title", content: "Roles & Permissions | Renda Admin" },
       { property: "og:description", content: "Role-based access control for Renda Admin." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -74,7 +74,7 @@ function Roles() {
       className: "whitespace-normal",
       cell: (r) => (
         <span className="line-clamp-2 block min-w-[220px] max-w-[380px] text-muted-foreground">
-          {r.description || "—"}
+          {r.description || "-"}
         </span>
       ),
     },

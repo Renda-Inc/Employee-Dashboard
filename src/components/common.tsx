@@ -98,7 +98,7 @@ export function KV({ items, cols = 2 }: { items: [string, ReactNode][]; cols?: 1
       {items.map(([k, v]) => (
         <div key={k} className="min-w-0">
           <dt className="eyebrow">{k}</dt>
-          <dd className="mt-1 break-words text-[14px]">{v ?? "—"}</dd>
+          <dd className="mt-1 break-words text-[14px]">{v ?? "-"}</dd>
         </div>
       ))}
     </dl>
@@ -146,7 +146,7 @@ export function SimulatedNote({ children }: { children?: ReactNode }) {
       <FlaskConical className="mt-0.5 size-3.5 shrink-0" />
       <span>
         {children ??
-          "Demo mode — this action is simulated. No real banking, card, KYC or payment system is contacted."}
+          "Demo mode. This action is simulated. No real banking, card, KYC or payment system is contacted."}
       </span>
     </div>
   );
