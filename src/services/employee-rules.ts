@@ -1,4 +1,4 @@
-// Pure employee-access rules shared by the server functions and the UI.
+// Pure employee-access rules shared by the employee services and the UI. A real backend should apply the same rules.
 import type { EmployeeStatus } from "@/types/models";
 
 export const EMPLOYEE_STATUSES: EmployeeStatus[] = ["Active", "Invitation Pending", "Inactive", "Suspended"];

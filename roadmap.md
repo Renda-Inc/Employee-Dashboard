@@ -7,3 +7,4 @@
 - [x] Roles & Permissions: roles directory, create/edit/view/duplicate/delete, matrix, enforced RBAC.
 - [x] Login page refinement: bright whitish gradient, centered compact form, no marketing copy.
 - [x] Verify full sign-in → manage employees → first sign-in flow end-to-end; remove test accounts.
+- [x] Prepare for GitHub export: swappable service contracts, mock auth/employees, schema reference, remove old backend code.

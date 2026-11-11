@@ -28,7 +28,7 @@ function Audit() {
   const [days, setDays] = useState("all");
   const [open, setOpen] = useState<AuditEvent | null>(null);
   const { data: adminEvents } = useQuery(adminAuditQuery(allowed));
-  // Employee-account and role events are recorded by the backend; operational events by the demo workspace.
+  // Employee-account and role events are recorded by the employee service; operational events by the operations service.
   const all = useMemo<AuditEvent[]>(() => [
     ...(adminEvents ?? []).map((e) => ({
       id: e.id, employeeId: e.actor_id ?? "", action: e.action, module: e.module, entityType: e.entity_type, entityId: e.entity_id,
