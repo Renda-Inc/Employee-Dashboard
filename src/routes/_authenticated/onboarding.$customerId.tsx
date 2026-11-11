@@ -24,9 +24,9 @@ export const Route = createFileRoute("/_authenticated/onboarding/$customerId")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { title: "Verification case — Renda Admin" },
+      { title: "Verification case | Renda Admin" },
       { name: "description", content: "Customer verification and onboarding case." },
-      { property: "og:title", content: "Verification case — Renda Admin" },
+      { property: "og:title", content: "Verification case | Renda Admin" },
       { property: "og:description", content: "Customer verification case." },
     ],
   }),
@@ -64,15 +64,15 @@ function VerificationCase() {
     c.accountIssuanceStatus === "Pending";
   const reason =
     c.kycStatus === "Pending"
-      ? "KYC Pending — Awaiting identity verification result."
+      ? "KYC Pending: Awaiting identity verification result."
       : c.kycStatus === "Under Review"
-        ? "KYC Under Review — Manual compliance review required."
+        ? "KYC Under Review: Manual compliance review required."
         : c.kycStatus === "Failed"
-          ? `KYC Failed — ${k?.providerMessages.at(-1) ?? "Verification unsuccessful."}`
+          ? `KYC Failed: ${k?.providerMessages.at(-1) ?? "Verification unsuccessful."}`
           : c.accountIssuanceStatus === "Failed"
-            ? "Account Issuance Failed — Banking provider returned an error."
+            ? "Account Issuance Failed: Banking provider returned an error."
             : c.accountIssuanceStatus === "Pending"
-              ? "Account Issuance Pending — Awaiting banking provider confirmation."
+              ? "Account Issuance Pending: Awaiting banking provider confirmation."
               : null;
   const eligible = c.kycStatus === "Approved" && c.emailVerified && c.phoneVerified;
 
@@ -128,11 +128,11 @@ function VerificationCase() {
                 <ActionDialog
                   trigger={<Button size="sm">Approve</Button>}
                   title="Approve after manual review"
-                  description="Authorized manual review decision. This does not activate the customer — account issuance and setup must still complete."
+                  description="Authorized manual review decision. This does not activate the customer. Account issuance and setup must still complete."
                   reasonLabel="Documented reason (required for audit)"
                   minReason={10}
                   onConfirm={(r) => operations.recordKycDecision(c.id, "Approved", r)}
-                  success="KYC approved — audit event recorded"
+                  success="KYC approved. Audit event recorded"
                   confirmLabel="Record approval"
                 />
               </>
@@ -178,14 +178,14 @@ function VerificationCase() {
                     </Button>
                   }
                   title="Simulate issuance failure"
-                  simulated="Demo only — records a simulated provider error response."
+                  simulated="Demo only. Records a simulated provider error response."
                   onConfirm={() => operations.simulateIssuanceResult(c.id, false)}
                   success="Simulated failure recorded"
                 />
                 <ActionDialog
                   trigger={<Button size="sm">Simulate provider confirmation</Button>}
                   title="Simulate issuance confirmation"
-                  simulated="Demo only — records a simulated successful provider response. No real account is opened."
+                  simulated="Demo only. Records a simulated successful provider response. No real account is opened."
                   onConfirm={() => operations.simulateIssuanceResult(c.id, true)}
                   success="Accounts issued (simulated)"
                 />

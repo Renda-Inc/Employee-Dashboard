@@ -24,12 +24,12 @@ export const Route = createFileRoute("/_authenticated/")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { title: "Overview — Renda Admin" },
+      { title: "Overview | Renda Admin" },
       {
         name: "description",
         content: "Customer activity, banking operations and outstanding tasks at a glance.",
       },
-      { property: "og:title", content: "Overview — Renda Admin" },
+      { property: "og:title", content: "Overview | Renda Admin" },
       {
         property: "og:description",
         content: "Customer activity, banking operations and outstanding tasks at a glance.",

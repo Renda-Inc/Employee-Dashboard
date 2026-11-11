@@ -15,9 +15,9 @@ import { fmtDate, relTime } from "@/lib/format";
 export const Route = createFileRoute("/_authenticated/employees/")({
   head: () => ({
     meta: [
-      { title: "Employee Management — Renda Admin" },
+      { title: "Employee Management | Renda Admin" },
       { name: "description", content: "Invite, manage and review Renda Admin employee accounts." },
-      { property: "og:title", content: "Employee Management — Renda Admin" },
+      { property: "og:title", content: "Employee Management | Renda Admin" },
       { property: "og:description", content: "Employee accounts, roles and access status." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

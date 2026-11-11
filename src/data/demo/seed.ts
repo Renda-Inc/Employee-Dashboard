@@ -1,4 +1,4 @@
-// Deterministic demo dataset. Same output on every run — no Math.random.
+// Deterministic demo dataset. Same output on every run, no Math.random.
 import type {
   Account,
   ActivityEvent,
@@ -735,7 +735,7 @@ export function buildSeed(): DB {
         act(
           id,
           "Accounts",
-          "Account issuance failed — banking provider returned an error",
+          "Account issuance failed: banking provider returned an error",
           iso(regMs + 1 * D),
         );
     }
@@ -891,11 +891,11 @@ export function buildSeed(): DB {
     };
   };
 
-  // B0 (historical, submitted Oct 9) — initial cards for cus_026, cus_027 → delivered
-  // B1 (submitted Oct 23) — initial cus_028, replacement cus_026 (Pearl Ivory? no: Classic → Blue Nova)
-  // B2 (ready) — initial cus_029, replacement cus_027 (Pearl Ivory → Classic... design change)
-  // B3 (draft) — initial cus_030
-  // Eligible — initial cus_031, cus_032, replacement cus_026? (kept simple)
+  // B0 (historical, submitted Oct 9), initial cards for cus_026, cus_027 → delivered
+  // B1 (submitted Oct 23), initial cus_028, replacement cus_026 (Pearl Ivory? no: Classic → Blue Nova)
+  // B2 (ready), initial cus_029, replacement cus_027 (Pearl Ivory → Classic... design change)
+  // B3 (draft), initial cus_030
+  // Eligible, initial cus_031, cus_032, replacement cus_026? (kept simple)
   const c026 = mkCard("cus_026", "p1", designs[0], "Replaced", ago(14), "bat_000");
   const c027 = mkCard("cus_027", "p1", designs[1], "Active", ago(13), "bat_000");
   const c026r = mkCard("cus_026", "p2", "Blue Nova", "In Production", null, "bat_001");
@@ -1017,7 +1017,7 @@ export function buildSeed(): DB {
     requestDate: ago(5),
     replacementReason: "Customer-requested design change",
     replacementReference: "RPL-2026-0315",
-    notes: "Canceled by customer before batching — original order already in production.",
+    notes: "Canceled by customer before batching. Original order already in production.",
   });
   cardOrders.push(o1, o2, o3, o4, o5, o6, o7, o8, o9, o10);
   for (const o of cardOrders) {
@@ -1284,11 +1284,11 @@ export function buildSeed(): DB {
   }
   const COUNTERPARTIES = [
     "J. Robertson",
-    "Landlord — M. Patel",
+    "Landlord. M. Patel",
     "S. Nguyen",
     "Bright Dental Inc.",
     "A. Lavoie",
-    "Payroll — Northwind Ltd.",
+    "Payroll. Northwind Ltd.",
   ];
   for (let k = 0; k < 12; k++) {
     const a = actives[(k * 3 + 1) % actives.length];
@@ -1481,7 +1481,7 @@ export function buildSeed(): DB {
     ],
     [
       "cus_033",
-      "Account restricted — need access",
+      "Account restricted. Need access",
       "I can't send money anymore. Please explain why my account is restricted.",
       "Account Access",
       "Urgent",
@@ -1656,7 +1656,7 @@ export function buildSeed(): DB {
       timestamp: ago(1, 2),
       workflow: "Subscription Analysis",
       description:
-        "Subscription analysis failed — duplicate merchant descriptors could not be reconciled.",
+        "Subscription analysis failed: duplicate merchant descriptors could not be reconciled.",
       severity: "Error",
       status: "Open",
       customerId: "cus_028",
@@ -1674,7 +1674,7 @@ export function buildSeed(): DB {
       id: "alf_05",
       timestamp: ago(2, 4),
       workflow: "Savings Goals",
-      description: "Goal progress sync requires attention — Sense Save balance not yet reflected.",
+      description: "Goal progress sync requires attention. Sense Save balance not yet reflected.",
       severity: "Warning",
       status: "Resolved",
       customerId: "cus_021",
@@ -1683,7 +1683,7 @@ export function buildSeed(): DB {
       id: "alf_06",
       timestamp: ago(2, 9),
       workflow: "Conversation",
-      description: "Conversation handed off to Help — customer asked about card delivery.",
+      description: "Conversation handed off to Help. Customer asked about card delivery.",
       severity: "Info",
       status: "Resolved",
       customerId: "cus_031",

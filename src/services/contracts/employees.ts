@@ -133,7 +133,7 @@ export type UpdateRoleInput = z.input<typeof UpdateRoleInput>;
 /**
  * Employee and role administration. Every method runs as the signed-in employee; the backend
  * must check the caller's permission (`employees.manage`, `roles.manage`, `audit.view`) and the
- * rules in `employee-rules.ts` itself — the UI checks are for presentation only.
+ * rules in `employee-rules.ts` itself, the UI checks are for presentation only.
  */
 export interface EmployeeAdminApi {
   /** Employees, roles and role assignments visible to an active employee. */

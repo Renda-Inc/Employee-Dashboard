@@ -17,9 +17,9 @@ export const Route = createFileRoute("/_authenticated/settings")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { title: "Settings — Renda Admin" },
+      { title: "Settings | Renda Admin" },
       { name: "description", content: "Organization, preferences and operational configuration." },
-      { property: "og:title", content: "Settings — Renda Admin" },
+      { property: "og:title", content: "Settings | Renda Admin" },
       { property: "og:description", content: "Operations settings." },
     ],
   }),

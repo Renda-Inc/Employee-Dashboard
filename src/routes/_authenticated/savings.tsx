@@ -14,9 +14,9 @@ export const Route = createFileRoute("/_authenticated/savings")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { title: "Savings Goals — Renda Admin" },
+      { title: "Savings Goals | Renda Admin" },
       { name: "description", content: "Customer savings goals created with Alfie." },
-      { property: "og:title", content: "Savings Goals — Renda Admin" },
+      { property: "og:title", content: "Savings Goals | Renda Admin" },
       { property: "og:description", content: "Customer savings goals." },
     ],
   }),
@@ -79,7 +79,7 @@ function Savings() {
         ),
       sort: (g) => pct(g) ?? -1,
     },
-    { key: "a", header: "Account", cell: (g) => L.account(g.accountId)?.accountType ?? "—" },
+    { key: "a", header: "Account", cell: (g) => L.account(g.accountId)?.accountType ?? "-" },
     { key: "d", header: "Created", cell: (g) => fmtDate(g.createdAt), sort: (g) => g.createdAt },
     {
       key: "s",
@@ -92,7 +92,7 @@ function Savings() {
     <>
       <PageHeader
         title="Savings Goals"
-        subtitle="Goals customers set up with Alfie. Read-only — goals do not move funds or change balances."
+        subtitle="Goals customers set up with Alfie. Read-only. Goals do not move funds or change balances."
       />
       <DataTable
         rows={rows}
@@ -142,7 +142,7 @@ function Savings() {
                           {L.account(open.accountId)!.accountType}
                         </Link>
                       ) : (
-                        "—"
+                        "-"
                       ),
                     ],
                     ["Currency", open.currency],

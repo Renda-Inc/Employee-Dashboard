@@ -43,9 +43,9 @@ import { fmtDate, fmtDateTime, relTime } from "@/lib/format";
 export const Route = createFileRoute("/_authenticated/employees/$employeeId")({
   head: () => ({
     meta: [
-      { title: "Employee profile — Renda Admin" },
+      { title: "Employee profile | Renda Admin" },
       { name: "description", content: "Employee account details, role, access and activity." },
-      { property: "og:title", content: "Employee profile — Renda Admin" },
+      { property: "og:title", content: "Employee profile | Renda Admin" },
       { property: "og:description", content: "Employee account details and access." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -163,8 +163,8 @@ function EmployeeProfile() {
               ["Employee ID", <Mono>{e.employee_code}</Mono>],
               ["Work email", e.email],
               ["Department", e.department],
-              ["Job title", e.job_title || "—"],
-              ["Phone", e.phone || "—"],
+              ["Job title", e.job_title || "-"],
+              ["Phone", e.phone || "-"],
               ["Account status", <StatusBadge status={e.status} />],
               [
                 "Last login",
@@ -278,7 +278,7 @@ function RolePermissionSummary({ role }: { role: RoleRecord | null }) {
   if (!role)
     return (
       <p className="text-[14px] text-muted-foreground">
-        No role assigned — this employee can't access any module.
+        No role assigned. This employee can't access any module.
       </p>
     );
   const groups = PERMISSION_GROUPS.map((g) => ({

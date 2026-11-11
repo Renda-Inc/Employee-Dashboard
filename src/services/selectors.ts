@@ -57,7 +57,7 @@ export function attentionQueue(db: DB): QueueItem[] {
         record: fullName(c),
         detail:
           c.kycStatus === "Failed"
-            ? "KYC failed — resubmission needed"
+            ? "KYC failed: resubmission needed"
             : "Phone verification incomplete",
         at: c.updatedAt,
         action: "Open",

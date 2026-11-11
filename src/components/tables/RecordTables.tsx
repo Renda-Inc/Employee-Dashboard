@@ -159,7 +159,7 @@ export function CardTable({
       header: "Batch",
       cell: (c) => (
         <Mono>
-          {db.batches.find((b) => b.id === c.manufacturingBatchId)?.batchReference ?? "—"}
+          {db.batches.find((b) => b.id === c.manufacturingBatchId)?.batchReference ?? "-"}
         </Mono>
       ),
     },
@@ -172,7 +172,7 @@ export function CardTable({
           <StatusBadge status={o.orderStatus} />
         ) : (
           <span className="text-muted-foreground">
-            {c.cardType === "Virtual" ? "Digital" : "—"}
+            {c.cardType === "Virtual" ? "Digital" : "-"}
           </span>
         );
       },

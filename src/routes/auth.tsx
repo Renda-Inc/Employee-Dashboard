@@ -31,9 +31,9 @@ export const Route = createFileRoute("/auth")({
   },
   head: () => ({
     meta: [
-      { title: "Sign in — Renda Admin" },
+      { title: "Sign in | Renda Admin" },
       { name: "description", content: "Sign in to the Renda Admin employee workspace." },
-      { property: "og:title", content: "Sign in — Renda Admin" },
+      { property: "og:title", content: "Sign in | Renda Admin" },
       { property: "og:description", content: "Employee sign-in for Renda Admin." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

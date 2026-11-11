@@ -1,11 +1,11 @@
 import type { Customer, DB } from "@/types/models";
 
 const cad = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" });
-export const fmtMoney = (n: number | null | undefined) => (n == null ? "—" : cad.format(n));
+export const fmtMoney = (n: number | null | undefined) => (n == null ? "-" : cad.format(n));
 export const fmtDate = (s: string | null | undefined) =>
   s
     ? new Date(s).toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" })
-    : "—";
+    : "-";
 export const fmtDateTime = (s: string | null | undefined) =>
   s
     ? new Date(s).toLocaleString("en-CA", {
@@ -14,7 +14,7 @@ export const fmtDateTime = (s: string | null | undefined) =>
         hour: "2-digit",
         minute: "2-digit",
       })
-    : "—";
+    : "-";
 
 export function relTime(s: string) {
   const diff = Date.now() - new Date(s).getTime();
@@ -52,6 +52,6 @@ export function lookup(db: DB) {
     employee: (id: string | null | undefined) => (id ? employees.get(id) : undefined),
     account: (id: string | null | undefined) => (id ? accounts.get(id) : undefined),
     empName: (id: string | null | undefined) =>
-      id === "customer" ? "Customer" : id ? (employees.get(id)?.name ?? id) : "—",
+      id === "customer" ? "Customer" : id ? (employees.get(id)?.name ?? id) : "-",
   };
 }

@@ -20,12 +20,12 @@ export const Route = createFileRoute("/_authenticated/alfie")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { title: "Alfie Operations — Renda Admin" },
+      { title: "Alfie Operations | Renda Admin" },
       {
         name: "description",
         content: "Operational monitoring for Alfie, Renda's financial intelligence engine.",
       },
-      { property: "og:title", content: "Alfie Operations — Renda Admin" },
+      { property: "og:title", content: "Alfie Operations | Renda Admin" },
       { property: "og:description", content: "Alfie operational monitoring." },
     ],
   }),

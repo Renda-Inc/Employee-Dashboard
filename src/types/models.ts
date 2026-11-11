@@ -291,7 +291,7 @@ export interface Employee {
   id: string;
   name: string;
   email: string;
-  /** Role name — a system role or a custom role from the employee directory. */
+  /** Role name, a system role or a custom role from the employee directory. */
   role: Role | (string & {});
   status: EmployeeStatus;
   /** True for employees with a real Renda Admin login (from the employee directory). */

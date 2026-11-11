@@ -191,7 +191,7 @@ function escalateKyc(customerId: string, reason: string) {
   });
 }
 
-/** Manual review decision — only for cases already in manual review. A failed provider result cannot be overturned here. */
+/** Manual review decision, only for cases already in manual review. A failed provider result cannot be overturned here. */
 function recordKycDecision(customerId: string, decision: "Approved" | "Failed", reason: string) {
   const c = getCustomer(customerId);
   authorize(
@@ -273,7 +273,7 @@ function requestKycResubmission(customerId: string) {
       k.outstandingRequirements = ["Awaiting customer resubmission and provider result"];
       k.providerMessages = [
         ...k.providerMessages,
-        "Resubmission requested (simulated — no provider call made).",
+        "Resubmission requested (simulated. No provider call made).",
       ];
     }
     pushAudit(d, {
@@ -384,7 +384,7 @@ function simulateIssuanceResult(customerId: string, success: boolean) {
       entityId: customerId,
       entityLabel: name(x),
       outcome: "Simulated",
-      details: "Demo provider response — no real banking system contacted.",
+      details: "Demo provider response. No real banking system contacted.",
     });
     activity(
       d,
@@ -392,7 +392,7 @@ function simulateIssuanceResult(customerId: string, success: boolean) {
       "Accounts",
       success
         ? "Smart Spend and Sense Save accounts issued (simulated)"
-        : "Account issuance failed — provider error (simulated)",
+        : "Account issuance failed: provider error (simulated)",
     );
   });
 }
@@ -427,7 +427,7 @@ function completeSetup(customerId: string) {
       before: { customerStatus: "Setup In Progress" },
       after: { customerStatus: "Active" },
     });
-    activity(d, customerId, "Accounts", "Setup completed — customer is now Active");
+    activity(d, customerId, "Accounts", "Setup completed. Customer is now Active");
   });
 }
 
@@ -680,7 +680,7 @@ function lockCard(cardId: string, reason: string) {
       id: uid("note"),
       at: now(),
       by: d.currentEmployeeId,
-      text: `Locked: ${reason.trim()} (simulated — card processor not contacted)`,
+      text: `Locked: ${reason.trim()} (simulated. Card processor not contacted)`,
     });
     pushAudit(d, {
       action: "Card lock requested",
@@ -881,7 +881,7 @@ function changePlan(customerId: string, to: Plan, note: string) {
   );
   const sub = db.subscriptions.find((s) => s.customerId === customerId);
   if (!sub)
-    throw new RuleError("This customer has no subscription yet — a plan is selected during setup.");
+    throw new RuleError("This customer has no subscription yet. A plan is selected during setup.");
   if (sub.subscriptionStatus === "Canceled" || c.customerStatus === "Closed")
     throw new RuleError("Plans cannot be changed for closed accounts.");
   if (c.customerStatus === "Restricted")
@@ -966,7 +966,7 @@ function simulateBillingOutcome(customerId: string, success: boolean) {
       entityId: customerId,
       entityLabel: name(c),
       outcome: "Simulated",
-      details: "Demo billing outcome — no payment processed.",
+      details: "Demo billing outcome. No payment processed.",
     });
   });
 }

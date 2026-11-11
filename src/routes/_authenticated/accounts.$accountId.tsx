@@ -26,9 +26,9 @@ export const Route = createFileRoute("/_authenticated/accounts/$accountId")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { title: "Account details — Renda Admin" },
+      { title: "Account details | Renda Admin" },
       { name: "description", content: "Banking account details." },
-      { property: "og:title", content: "Account details — Renda Admin" },
+      { property: "og:title", content: "Account details | Renda Admin" },
       { property: "og:description", content: "Banking account details." },
     ],
   }),
@@ -42,14 +42,14 @@ function sampleDoc(kind: "statement" | "cheque", a: Account, c: Customer, txns: 
     .setFont("helvetica", "normal")
     .setFontSize(9)
     .setTextColor(200, 60, 40)
-    .text("SAMPLE — NOT AN OFFICIAL BANK DOCUMENT (demo)", 48, 72);
+    .text("SAMPLE. NOT AN OFFICIAL BANK DOCUMENT (demo)", 48, 72);
   doc
     .setTextColor(23, 25, 28)
     .setFontSize(12)
     .text(
       kind === "statement"
-        ? `${a.accountType} — Sample statement`
-        : `${a.accountType} — Sample void cheque`,
+        ? `${a.accountType}: Sample statement`
+        : `${a.accountType}: Sample void cheque`,
       48,
       104,
     );

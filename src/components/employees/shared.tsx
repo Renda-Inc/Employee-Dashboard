@@ -158,7 +158,7 @@ export function TemporaryPasswordDialog({
                       setCopied(true);
                       toast.success("Temporary password copied");
                     } catch {
-                      toast.error("Copy failed — select the password and copy it manually.");
+                      toast.error("Copy failed: select the password and copy it manually.");
                     }
                   }}
                 >

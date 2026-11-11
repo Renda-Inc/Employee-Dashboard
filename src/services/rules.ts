@@ -1,4 +1,4 @@
-// Pure business rules. No UI, no storage — easy to test and to move server-side later.
+// Pure business rules. No UI, no storage, easy to test and to move server-side later.
 import type { Account, CardOrder, Customer, Plan } from "@/types/models";
 
 export const PLAN_PRICES: Record<Plan, number> = { Everyday: 0, Plus: 9.96 };

@@ -35,9 +35,9 @@ export const Route = createFileRoute("/_authenticated/cards/$cardId")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { title: "Card details — Renda Admin" },
+      { title: "Card details | Renda Admin" },
       { name: "description", content: "Card details, replacement and fulfillment." },
-      { property: "og:title", content: "Card details — Renda Admin" },
+      { property: "og:title", content: "Card details | Renda Admin" },
       { property: "og:description", content: "Card details." },
     ],
   }),
@@ -130,11 +130,11 @@ function CardDetail() {
                 title="Lock card"
                 description={`Lock ${card.cardDesign} •••• ${card.last4} for ${fullName(c)}.`}
                 reasonLabel="Reason for locking"
-                simulated="Demo mode — the card processor is not contacted. The lock is recorded as a simulated outcome."
+                simulated="Demo mode. The card processor is not contacted. The lock is recorded as a simulated outcome."
                 destructive
                 confirmLabel="Lock card"
                 onConfirm={(r) => operations.lockCard(card.id, r)}
-                success="Card locked (simulated) — audit event recorded"
+                success="Card locked (simulated). Audit event recorded"
               />
             )}
             {canLock && card.cardStatus === "Locked" && (
@@ -210,7 +210,7 @@ function CardDetail() {
                       {acc.accountType} {acc.maskedAccountIdentifier}
                     </Link>
                   ) : (
-                    "—"
+                    "-"
                   ),
                 ],
                 ["Card type", card.cardType],
@@ -219,7 +219,7 @@ function CardDetail() {
                 ["Issue date", fmtDate(card.issueDate)],
                 [
                   "Replacement ref",
-                  card.replacementReference ? <Mono>{card.replacementReference}</Mono> : "—",
+                  card.replacementReference ? <Mono>{card.replacementReference}</Mono> : "-",
                 ],
                 [
                   "Manufacturing batch",
@@ -232,7 +232,7 @@ function CardDetail() {
                       {batch.batchReference}
                     </Link>
                   ) : (
-                    "—"
+                    "-"
                   ),
                 ],
                 [
@@ -242,7 +242,7 @@ function CardDetail() {
                   ) : card.cardType === "Virtual" ? (
                     "Digital"
                   ) : (
-                    "—"
+                    "-"
                   ),
                 ],
               ]}
