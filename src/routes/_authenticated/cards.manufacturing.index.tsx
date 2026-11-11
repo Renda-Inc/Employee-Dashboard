@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CalendarClock, AlertTriangle } from "lucide-react";
 import { useDB } from "@/services/store";
-import { createBatch } from "@/services/actions";
+import { operations } from "@/services/api";
 import { batchIneligibility, nextFriday } from "@/services/rules";
 import { CustomerCell, Mono, NoAccess, PageHeader, run, usePermission } from "@/components/common";
 import { DataTable, TabBar, type Column } from "@/components/tables/DataTable";
@@ -93,7 +93,7 @@ function Manufacturing() {
                     title="Create manufacturing batch"
                     description={`${sel.length} order(s) will be linked to a new draft batch. You can review it and generate the PDF next.`}
                     confirmLabel="Create batch"
-                    onConfirm={() => { const r = createBatch(sel); setSel([]); navigate({ to: "/cards/manufacturing/$batchId", params: { batchId: r.id } }); }}
+                    onConfirm={() => { const r = operations.createBatch(sel); setSel([]); navigate({ to: "/cards/manufacturing/$batchId", params: { batchId: r.id } }); }}
                     success="Draft batch created"
                   />
                 </div>

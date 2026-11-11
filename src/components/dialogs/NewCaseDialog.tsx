@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useDB } from "@/services/store";
-import { createSupportCase } from "@/services/actions";
+import { operations } from "@/services/api";
 import { run } from "@/components/common";
 import { fullName } from "@/lib/format";
 import type { CaseCategory, CaseLink, CasePriority } from "@/types/models";
@@ -35,7 +35,7 @@ export function NewCaseDialog({ trigger, customerId, link, defaultCategory = "Ge
     setErr(e);
     if (Object.keys(e).length) return;
     let res: { id: string; ref: string } | undefined;
-    const ok = run(() => { res = createSupportCase({ customerId: cid, subject, message, category, priority, links: link ? [link] : [], assignToMe: assign }); }, "Support case created");
+    const ok = run(() => { res = operations.createSupportCase({ customerId: cid, subject, message, category, priority, links: link ? [link] : [], assignToMe: assign }); }, "Support case created");
     if (ok && res) {
       setOpen(false);
       navigate({ to: "/support/$caseId", params: { caseId: res.id } });

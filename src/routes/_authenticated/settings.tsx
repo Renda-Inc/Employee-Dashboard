@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useDB, resetDemo } from "@/services/store";
-import { currentEmployee, updateOperationalSettings, updatePreferences } from "@/services/actions";
+import { currentEmployee } from "@/services/actions";
+import { operations } from "@/services/api";
 import { KV, PageHeader, Panel, run, usePermission } from "@/components/common";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { ActionDialog } from "@/components/dialogs/ActionDialog";
@@ -38,12 +39,12 @@ function Settings() {
         <Panel title="Organization"><KV items={[["Organization", s.organizationName], ["Timezone", s.timezone], ["Currency", "CAD"], ["Environment", <StatusBadge status="Demo" tone="info" />]]} /></Panel>
         <Panel title="Employee preferences">
           <KV items={[["Signed in as", me.name], ["Role", me.role]]} />
-          <div className="mt-4 flex items-center justify-between"><Label htmlFor="dens">Compact table density</Label><Switch id="dens" checked={s.density === "compact"} onCheckedChange={(v) => updatePreferences({ density: v ? "compact" : "comfortable" })} /></div>
+          <div className="mt-4 flex items-center justify-between"><Label htmlFor="dens">Compact table density</Label><Switch id="dens" checked={s.density === "compact"} onCheckedChange={(v) => operations.updatePreferences({ density: v ? "compact" : "comfortable" })} /></div>
         </Panel>
         <TwoStepVerificationPanel />
         <Panel title="Notification preferences">
           {([["notifyKyc", "KYC & onboarding issues"], ["notifySupport", "Support cases & transaction investigations"], ["notifyManufacturing", "Card orders & manufacturing batches"]] as const).map(([k, l]) => (
-            <div key={k} className="flex items-center justify-between py-1.5"><Label htmlFor={k}>{l}</Label><Switch id={k} checked={s[k]} onCheckedChange={(v) => updatePreferences({ [k]: v })} /></div>
+            <div key={k} className="flex items-center justify-between py-1.5"><Label htmlFor={k}>{l}</Label><Switch id={k} checked={s[k]} onCheckedChange={(v) => operations.updatePreferences({ [k]: v })} /></div>
           ))}
           <p className="mt-2 text-[13px] text-muted-foreground">Controls the in-app notification bell. No emails are sent.</p>
         </Panel>
@@ -57,8 +58,8 @@ function Settings() {
             <div className="space-y-1"><Label htmlFor="mfr">Manufacturer name (on PDF)</Label><Input id="mfr" value={mfr} onChange={(e) => setMfr(e.target.value)} disabled={!canOps} /></div>
           </div>
           <div className="mt-3 flex items-center justify-between">
-            <div className="flex items-center gap-2"><Switch id="ship" checked={s.pdfIncludeShippingReference} disabled={!canOps} onCheckedChange={(v) => run(() => updateOperationalSettings({ pdfIncludeShippingReference: v }), "PDF fields updated")} /><Label htmlFor="ship">Include shipping reference in manufacturing PDF</Label></div>
-            <Button size="sm" disabled={!canOps} onClick={() => run(() => updateOperationalSettings({ kycReviewSlaHours: Number(kyc), supportResponseSlaHours: Number(sup), manufacturerName: mfr.trim() || s.manufacturerName }), "Operational settings saved")}>Save configuration</Button>
+            <div className="flex items-center gap-2"><Switch id="ship" checked={s.pdfIncludeShippingReference} disabled={!canOps} onCheckedChange={(v) => run(() => operations.updateOperationalSettings({ pdfIncludeShippingReference: v }), "PDF fields updated")} /><Label htmlFor="ship">Include shipping reference in manufacturing PDF</Label></div>
+            <Button size="sm" disabled={!canOps} onClick={() => run(() => operations.updateOperationalSettings({ kycReviewSlaHours: Number(kyc), supportResponseSlaHours: Number(sup), manufacturerName: mfr.trim() || s.manufacturerName }), "Operational settings saved")}>Save configuration</Button>
           </div>
           <p className="mt-3 text-[13px] text-muted-foreground">Batch processing day: Friday (manual). These settings do not modify any real banking infrastructure.</p>
         </Panel>

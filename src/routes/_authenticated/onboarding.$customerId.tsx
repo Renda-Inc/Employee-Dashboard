@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AlertTriangle } from "lucide-react";
 import { useDB } from "@/services/store";
-import { escalateKyc, recordKycDecision, requestKycResubmission, requestAccountIssuance, simulateIssuanceResult, completeSetup } from "@/services/actions";
+import { operations } from "@/services/api";
 import { activationBlocker } from "@/services/rules";
 import { EmptyState, KV, Mono, NoAccess, PageHeader, Panel, SimulatedNote, usePermission } from "@/components/common";
 import { ActionDialog } from "@/components/dialogs/ActionDialog";
@@ -44,22 +44,22 @@ function VerificationCase() {
         subtitle={<><Mono>{c.userId}</Mono> · <Link to="/customers/$customerId" params={{ customerId: c.id }} className="text-primary">Open customer profile</Link></>}
         actions={
           <>
-            {c.kycStatus === "Pending" && canDecide && <ActionDialog trigger={<Button size="sm" variant="outline">Escalate to manual review</Button>} title="Escalate to manual review" reasonLabel="Documented reason" minReason={10} onConfirm={(r) => escalateKyc(c.id, r)} success="Escalated to manual review" />}
+            {c.kycStatus === "Pending" && canDecide && <ActionDialog trigger={<Button size="sm" variant="outline">Escalate to manual review</Button>} title="Escalate to manual review" reasonLabel="Documented reason" minReason={10} onConfirm={(r) => operations.escalateKyc(c.id, r)} success="Escalated to manual review" />}
             {c.kycStatus === "Under Review" && canDecide && (
               <>
-                <ActionDialog trigger={<Button size="sm" variant="outline">Decline</Button>} title="Decline after manual review" description="Records a compliance decision. The customer will need to resubmit." reasonLabel="Documented reason" minReason={10} destructive onConfirm={(r) => recordKycDecision(c.id, "Failed", r)} success="KYC declined" confirmLabel="Record decline" />
-                <ActionDialog trigger={<Button size="sm">Approve</Button>} title="Approve after manual review" description="Authorized manual review decision. This does not activate the customer — account issuance and setup must still complete." reasonLabel="Documented reason (required for audit)" minReason={10} onConfirm={(r) => recordKycDecision(c.id, "Approved", r)} success="KYC approved — audit event recorded" confirmLabel="Record approval" />
+                <ActionDialog trigger={<Button size="sm" variant="outline">Decline</Button>} title="Decline after manual review" description="Records a compliance decision. The customer will need to resubmit." reasonLabel="Documented reason" minReason={10} destructive onConfirm={(r) => operations.recordKycDecision(c.id, "Failed", r)} success="KYC declined" confirmLabel="Record decline" />
+                <ActionDialog trigger={<Button size="sm">Approve</Button>} title="Approve after manual review" description="Authorized manual review decision. This does not activate the customer — account issuance and setup must still complete." reasonLabel="Documented reason (required for audit)" minReason={10} onConfirm={(r) => operations.recordKycDecision(c.id, "Approved", r)} success="KYC approved — audit event recorded" confirmLabel="Record approval" />
               </>
             )}
-            {c.kycStatus === "Failed" && canDecide && <ActionDialog trigger={<Button size="sm" variant="outline">Request resubmission</Button>} title="Request document resubmission" description="Failed checks cannot be marked as passed. This returns the case to KYC Pending until the provider returns a new result." simulated onConfirm={() => requestKycResubmission(c.id)} success="Resubmission requested" />}
-            {canBank && c.kycStatus === "Approved" && (c.accountIssuanceStatus === "Not Started" || c.accountIssuanceStatus === "Failed") && <ActionDialog trigger={<Button size="sm">{c.accountIssuanceStatus === "Failed" ? "Retry issuance" : "Request account issuance"}</Button>} title="Request Smart Spend & Sense Save issuance" simulated onConfirm={() => requestAccountIssuance(c.id)} success="Issuance requested" />}
+            {c.kycStatus === "Failed" && canDecide && <ActionDialog trigger={<Button size="sm" variant="outline">Request resubmission</Button>} title="Request document resubmission" description="Failed checks cannot be marked as passed. This returns the case to KYC Pending until the provider returns a new result." simulated onConfirm={() => operations.requestKycResubmission(c.id)} success="Resubmission requested" />}
+            {canBank && c.kycStatus === "Approved" && (c.accountIssuanceStatus === "Not Started" || c.accountIssuanceStatus === "Failed") && <ActionDialog trigger={<Button size="sm">{c.accountIssuanceStatus === "Failed" ? "Retry issuance" : "Request account issuance"}</Button>} title="Request Smart Spend & Sense Save issuance" simulated onConfirm={() => operations.requestAccountIssuance(c.id)} success="Issuance requested" />}
             {canBank && c.accountIssuanceStatus === "Pending" && (
               <>
-                <ActionDialog trigger={<Button size="sm" variant="outline">Simulate provider error</Button>} title="Simulate issuance failure" simulated="Demo only — records a simulated provider error response." onConfirm={() => simulateIssuanceResult(c.id, false)} success="Simulated failure recorded" />
-                <ActionDialog trigger={<Button size="sm">Simulate provider confirmation</Button>} title="Simulate issuance confirmation" simulated="Demo only — records a simulated successful provider response. No real account is opened." onConfirm={() => simulateIssuanceResult(c.id, true)} success="Accounts issued (simulated)" />
+                <ActionDialog trigger={<Button size="sm" variant="outline">Simulate provider error</Button>} title="Simulate issuance failure" simulated="Demo only — records a simulated provider error response." onConfirm={() => operations.simulateIssuanceResult(c.id, false)} success="Simulated failure recorded" />
+                <ActionDialog trigger={<Button size="sm">Simulate provider confirmation</Button>} title="Simulate issuance confirmation" simulated="Demo only — records a simulated successful provider response. No real account is opened." onConfirm={() => operations.simulateIssuanceResult(c.id, true)} success="Accounts issued (simulated)" />
               </>
             )}
-            {canLife && c.customerStatus === "Setup In Progress" && <ActionDialog trigger={<Button size="sm">Complete setup</Button>} title="Activate customer" description={activationBlocker(c, db.accounts) ?? "All requirements satisfied."} onConfirm={() => completeSetup(c.id)} success="Customer is now Active" />}
+            {canLife && c.customerStatus === "Setup In Progress" && <ActionDialog trigger={<Button size="sm">Complete setup</Button>} title="Activate customer" description={activationBlocker(c, db.accounts) ?? "All requirements satisfied."} onConfirm={() => operations.completeSetup(c.id)} success="Customer is now Active" />}
           </>
         }
       />

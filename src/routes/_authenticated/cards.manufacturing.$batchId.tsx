@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Download, FileText } from "lucide-react";
 import { useDB, getState } from "@/services/store";
-import { markBatchReady, recordBatchSubmission, recordPdfExport, removeOrderFromBatch } from "@/services/actions";
+import { operations } from "@/services/api";
 import { buildBatchPdf } from "@/services/pdf";
 import { CustomerCell, EmptyState, KV, Mono, NoAccess, PageHeader, Panel, run, usePermission } from "@/components/common";
 import { ActionDialog } from "@/components/dialogs/ActionDialog";
@@ -29,7 +29,7 @@ function BatchDetail() {
 
   const generate = () =>
     run(() => {
-      recordPdfExport(b.id); // authorizes + audits first
+      operations.recordPdfExport(b.id); // authorizes + audits first
       buildBatchPdf(getState(), getState().batches.find((x) => x.id === b.id)!).save(`${b.batchReference}.pdf`);
     }, "Manufacturing PDF generated and downloaded");
   const download = () => run(() => buildBatchPdf(db, b).save(`${b.batchReference}.pdf`), "PDF downloaded");
@@ -43,8 +43,8 @@ function BatchDetail() {
           <>
             {b.status === "Draft" && <Button size="sm" variant="outline" onClick={generate}><FileText /> {b.pdfReference ? "Regenerate PDF" : "Generate PDF"}</Button>}
             {b.pdfReference && <Button size="sm" variant="outline" onClick={download}><Download /> Download PDF</Button>}
-            {b.status === "Draft" && <ActionDialog trigger={<Button variant="ghost" size="sm" disabled={!b.pdfReference}>Mark ready for submission</Button>} disabled={!b.pdfReference} title="Mark batch ready" description="Confirms the batch and PDF have been reviewed. This does not submit anything to the manufacturer." onConfirm={() => markBatchReady(b.id)} success="Batch marked ready for submission" />}
-            {b.status === "Ready for Submission" && <ActionDialog trigger={<Button variant="ghost" size="sm">Record submission</Button>} title="Record submission to manufacturer" description="Only confirm once the PDF has actually been sent. Orders will move to Submitted and cannot be batched again." reasonLabel="How was it sent? (e.g. emailed to production desk)" confirmLabel="Record submission" onConfirm={(r) => recordBatchSubmission(b.id, r)} success="Submission recorded — audit event created" />}
+            {b.status === "Draft" && <ActionDialog trigger={<Button variant="ghost" size="sm" disabled={!b.pdfReference}>Mark ready for submission</Button>} disabled={!b.pdfReference} title="Mark batch ready" description="Confirms the batch and PDF have been reviewed. This does not submit anything to the manufacturer." onConfirm={() => operations.markBatchReady(b.id)} success="Batch marked ready for submission" />}
+            {b.status === "Ready for Submission" && <ActionDialog trigger={<Button variant="ghost" size="sm">Record submission</Button>} title="Record submission to manufacturer" description="Only confirm once the PDF has actually been sent. Orders will move to Submitted and cannot be batched again." reasonLabel="How was it sent? (e.g. emailed to production desk)" confirmLabel="Record submission" onConfirm={(r) => operations.recordBatchSubmission(b.id, r)} success="Submission recorded — audit event created" />}
           </>
         ) : b.pdfReference ? <Button size="sm" variant="outline" onClick={download}><Download /> Download PDF</Button> : null}
       />
@@ -73,7 +73,7 @@ function BatchDetail() {
                     <td className="px-3 py-2">{o.orderType}{o.replacementReference && <span className="text-muted-foreground"> · {o.replacementReference}</span>}</td>
                     <td className="px-3 py-2">{fmtDate(o.requestDate)}</td>
                     <td className="px-3 py-2"><StatusBadge status={o.orderStatus} /></td>
-                    <td className="px-3 py-2 text-right">{canManage && b.status === "Draft" && <Button variant="ghost" className="text-[13px] text-danger hover:underline" onClick={() => run(() => removeOrderFromBatch(b.id, o.id), "Order returned to eligible queue")}>Remove</Button>}</td>
+                    <td className="px-3 py-2 text-right">{canManage && b.status === "Draft" && <Button variant="ghost" className="text-[13px] text-danger hover:underline" onClick={() => run(() => operations.removeOrderFromBatch(b.id, o.id), "Order returned to eligible queue")}>Remove</Button>}</td>
                   </tr>
                 ))}
               </tbody>

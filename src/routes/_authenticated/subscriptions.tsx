@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useDB } from "@/services/store";
-import { simulateBillingOutcome } from "@/services/actions";
+import { operations } from "@/services/api";
 import { CustomerCell, Mono, NoAccess, PageHeader, usePermission } from "@/components/common";
 import { DataTable, FilterSelect, SearchInput, type Column } from "@/components/tables/DataTable";
 import { StatusBadge, PlanBadge } from "@/components/status/StatusBadge";
@@ -49,8 +49,8 @@ function Subscriptions() {
     {
       key: "a", header: "", className: "text-right", cell: (s) => canManage && s.latestBillingStatus === "Pending" ? (
         <span onClick={(e) => e.stopPropagation()} className="inline-flex gap-1">
-          <ActionDialog trigger={<Button size="sm" variant="ghost">Billing failed</Button>} title="Record simulated billing failure" simulated="Demo billing outcome — no payment processor is contacted." onConfirm={() => simulateBillingOutcome(s.customerId, false)} success="Billing failure recorded (simulated)" />
-          <ActionDialog trigger={<Button size="sm" variant="outline">Billing succeeded</Button>} title="Record simulated billing success" simulated="Demo billing outcome — no payment is collected." onConfirm={() => simulateBillingOutcome(s.customerId, true)} success="Billing success recorded (simulated)" />
+          <ActionDialog trigger={<Button size="sm" variant="ghost">Billing failed</Button>} title="Record simulated billing failure" simulated="Demo billing outcome — no payment processor is contacted." onConfirm={() => operations.simulateBillingOutcome(s.customerId, false)} success="Billing failure recorded (simulated)" />
+          <ActionDialog trigger={<Button size="sm" variant="outline">Billing succeeded</Button>} title="Record simulated billing success" simulated="Demo billing outcome — no payment is collected." onConfirm={() => operations.simulateBillingOutcome(s.customerId, true)} success="Billing success recorded (simulated)" />
         </span>
       ) : null,
     },

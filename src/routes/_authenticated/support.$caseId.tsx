@@ -2,7 +2,8 @@ import { SelectField } from "@/components/ui/select-field";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useDB } from "@/services/store";
-import { addCaseNote, currentEmployee, linkCaseRecord, updateCase } from "@/services/actions";
+import { currentEmployee } from "@/services/actions";
+import { operations } from "@/services/api";
 import { can } from "@/services/permissions";
 import { Avatar, EmptyState, KV, Mono, NoAccess, PageHeader, Panel, run, usePermission } from "@/components/common";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -49,14 +50,14 @@ function CaseDetail() {
   return (
     <>
       <PageHeader eyebrow={<Mono>{sc.caseReference}</Mono>} title={sc.subject} subtitle={<span className="inline-flex items-center gap-2"><StatusBadge status={sc.status} /><StatusBadge status={sc.priority} /> {sc.category} · opened {fmtDateTime(sc.createdAt)}</span>}
-        actions={canManage && sc.assignedEmployeeId !== me.id && <Button size="sm" variant="outline" onClick={() => run(() => updateCase(sc.id, { assignedEmployeeId: me.id }), "Assigned to you")}>Assign to me</Button>} />
+        actions={canManage && sc.assignedEmployeeId !== me.id && <Button size="sm" variant="outline" onClick={() => run(() => operations.updateCase(sc.id, { assignedEmployeeId: me.id }), "Assigned to you")}>Assign to me</Button>} />
       <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
         <div className="space-y-6">
           <Panel title="Customer message">
             <div className="flex gap-3"><Avatar name={fullName(c)} size="md" /><div><div className="text-[13px] text-muted-foreground">{fullName(c)} · submitted via in-app Help</div><p className="mt-1 whitespace-pre-wrap text-[14px]">{sc.message}</p></div></div>
           </Panel>
           <Panel title={<>Internal notes <span className="ml-1 text-[12px] font-normal text-muted-foreground">Not visible to customer</span></>}>
-            {canManage && <div className="mb-3 space-y-2"><Textarea rows={2} placeholder="Add internal note…" value={note} onChange={(e) => setNote(e.target.value)} /><Button size="sm" onClick={() => run(() => addCaseNote(sc.id, note), "Internal note added") && setNote("")}>Add note</Button></div>}
+            {canManage && <div className="mb-3 space-y-2"><Textarea rows={2} placeholder="Add internal note…" value={note} onChange={(e) => setNote(e.target.value)} /><Button size="sm" onClick={() => run(() => operations.addCaseNote(sc.id, note), "Internal note added") && setNote("")}>Add note</Button></div>}
             {sc.notes.length ? sc.notes.map((n) => <div key={n.id} className="border-t bg-warning-soft/40 px-2 py-2"><div className="text-[14px]">{n.text}</div><div className="text-[12px] text-muted-foreground">{L.empName(n.by)} · {fmtDateTime(n.at)}</div></div>) : <p className="text-muted-foreground">No internal notes.</p>}
           </Panel>
           <Panel title="Resolution">
@@ -65,8 +66,8 @@ function CaseDetail() {
                 <Label htmlFor="res">Resolution details (required to resolve or close)</Label>
                 <Textarea id="res" rows={3} value={resolution} onChange={(e) => setResolution(e.target.value)} />
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => run(() => updateCase(sc.id, { resolution }), "Resolution saved")}>Save</Button>
-                  <Button size="sm" onClick={() => run(() => updateCase(sc.id, { resolution, status: "Resolved" }), "Case resolved")} disabled={sc.status === "Resolved"}>Save & resolve</Button>
+                  <Button size="sm" variant="outline" onClick={() => run(() => operations.updateCase(sc.id, { resolution }), "Resolution saved")}>Save</Button>
+                  <Button size="sm" onClick={() => run(() => operations.updateCase(sc.id, { resolution, status: "Resolved" }), "Case resolved")} disabled={sc.status === "Resolved"}>Save & resolve</Button>
                 </div>
                 <p className="text-[12px] text-muted-foreground">Resolving a case does not send an email or notification to the customer in this demo.</p>
               </div>
@@ -78,9 +79,9 @@ function CaseDetail() {
             <KV cols={1} items={[["Customer", <Link to="/customers/$customerId" params={{ customerId: c.id }} className="text-primary">{fullName(c)} · {c.userId}</Link>]]} />
             {canManage ? (
               <div className="mt-3 grid gap-3">
-                <div className="space-y-1"><Label htmlFor="st">Status</Label><SelectField id="st" className="h-9 w-full rounded-md border bg-card px-2" value={sc.status} onChange={(e) => run(() => updateCase(sc.id, { status: e.target.value as CaseStatus }), "Status updated")}>{STATUSES.map((s) => <option key={s}>{s}</option>)}</SelectField></div>
-                <div className="space-y-1"><Label htmlFor="pr">Priority</Label><SelectField id="pr" className="h-9 w-full rounded-md border bg-card px-2" value={sc.priority} onChange={(e) => run(() => updateCase(sc.id, { priority: e.target.value as CasePriority }), "Priority updated")}>{["Low", "Normal", "High", "Urgent"].map((s) => <option key={s}>{s}</option>)}</SelectField></div>
-                <div className="space-y-1"><Label htmlFor="as">Assigned to</Label><SelectField id="as" className="h-9 w-full rounded-md border bg-card px-2" value={sc.assignedEmployeeId ?? ""} onChange={(e) => run(() => updateCase(sc.id, { assignedEmployeeId: e.target.value || null }), "Assignment updated")}><option value="">Unassigned</option>{assignable.map((e) => <option key={e.id} value={e.id}>{e.name} · {e.role}</option>)}</SelectField></div>
+                <div className="space-y-1"><Label htmlFor="st">Status</Label><SelectField id="st" className="h-9 w-full rounded-md border bg-card px-2" value={sc.status} onChange={(e) => run(() => operations.updateCase(sc.id, { status: e.target.value as CaseStatus }), "Status updated")}>{STATUSES.map((s) => <option key={s}>{s}</option>)}</SelectField></div>
+                <div className="space-y-1"><Label htmlFor="pr">Priority</Label><SelectField id="pr" className="h-9 w-full rounded-md border bg-card px-2" value={sc.priority} onChange={(e) => run(() => operations.updateCase(sc.id, { priority: e.target.value as CasePriority }), "Priority updated")}>{["Low", "Normal", "High", "Urgent"].map((s) => <option key={s}>{s}</option>)}</SelectField></div>
+                <div className="space-y-1"><Label htmlFor="as">Assigned to</Label><SelectField id="as" className="h-9 w-full rounded-md border bg-card px-2" value={sc.assignedEmployeeId ?? ""} onChange={(e) => run(() => operations.updateCase(sc.id, { assignedEmployeeId: e.target.value || null }), "Assignment updated")}><option value="">Unassigned</option>{assignable.map((e) => <option key={e.id} value={e.id}>{e.name} · {e.role}</option>)}</SelectField></div>
               </div>
             ) : <div className="mt-3"><KV cols={1} items={[["Status", <StatusBadge status={sc.status} />], ["Priority", sc.priority], ["Assigned to", L.empName(sc.assignedEmployeeId)]]} /></div>}
           </Panel>
@@ -89,7 +90,7 @@ function CaseDetail() {
             {canManage && linkOptions.length > 0 && (
               <div className="mt-3 flex gap-2 border-t pt-3">
                 <SelectField aria-label="Link record" className="h-8 min-w-0 flex-1 rounded-md border bg-card px-2 text-[13px]" value={link} onChange={(e) => setLink(e.target.value)}><option value="">Link a record…</option>{linkOptions.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}</SelectField>
-                <Button size="sm" variant="outline" disabled={!link} onClick={() => { const [type, id] = link.split(":"); if (run(() => linkCaseRecord(sc.id, { type: type as "card", id }), "Record linked")) setLink(""); }}>Link</Button>
+                <Button size="sm" variant="outline" disabled={!link} onClick={() => { const [type, id] = link.split(":"); if (run(() => operations.linkCaseRecord(sc.id, { type: type as "card", id }), "Record linked")) setLink(""); }}>Link</Button>
               </div>
             )}
           </Panel>

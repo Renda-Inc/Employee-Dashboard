@@ -3,7 +3,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChevronDown, Pencil } from "lucide-react";
 import { useDB } from "@/services/store";
-import { completeSetup, updateCustomer, changePlan, recordCardSelection, EDITABLE_FIELDS, type EditableField } from "@/services/actions";
+import { EDITABLE_FIELDS, type EditableField } from "@/services/contracts/operations";
+import { operations } from "@/services/api";
 import { activationBlocker } from "@/services/rules";
 import { Avatar, EmptyState, KV, Mono, NoAccess, Panel, run, SimulatedNote, usePermission, Amount } from "@/components/common";
 import { TabBar } from "@/components/tables/DataTable";
@@ -79,7 +80,7 @@ function CustomerProfile() {
                 title="Activate customer"
                 description={blocker ?? "All onboarding, KYC, issuance and setup conditions are satisfied. The customer will become Active."}
                 confirmLabel="Activate"
-                onConfirm={() => completeSetup(c.id)}
+                onConfirm={() => operations.completeSetup(c.id)}
                 success="Customer is now Active"
               />
             )}
@@ -182,7 +183,7 @@ function PersonalTab({ c }: { c: Customer }) {
   const save = () => {
     if (!validate()) return;
     const patch = { ...form, annualIncome: Number(form.annualIncome) };
-    if (run(() => updateCustomer(c.id, patch), "Customer information updated — audit event recorded")) setEditing(false);
+    if (run(() => operations.updateCustomer(c.id, patch), "Customer information updated — audit event recorded")) setEditing(false);
   };
 
   if (!editing) {
@@ -264,7 +265,7 @@ export function MembershipPanel({ customerId }: { customerId: string }) {
     <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
       <div className="space-y-6">
         <Panel title="Current membership" actions={canManage && sub.subscriptionStatus !== "Canceled" && (
-          <ActionDialog trigger={<Button size="sm" variant="outline">{target === "Plus" ? "Upgrade to Plus" : "Downgrade to Everyday"}</Button>} title={`Change plan to Renda ${target}`} description={target === "Plus" ? "Renda Plus is CAD $9.96/month. Billing remains pending until the billing outcome is recorded. A physical card selection will be required if none exists." : "Downgrading removes the monthly fee. Existing physical cards are unaffected."} reasonLabel="Note (reason for change)" minReason={5} simulated onConfirm={(r) => changePlan(customerId, target, r)} success={`Plan changed to ${target}`} confirmLabel="Change plan" />
+          <ActionDialog trigger={<Button size="sm" variant="outline">{target === "Plus" ? "Upgrade to Plus" : "Downgrade to Everyday"}</Button>} title={`Change plan to Renda ${target}`} description={target === "Plus" ? "Renda Plus is CAD $9.96/month. Billing remains pending until the billing outcome is recorded. A physical card selection will be required if none exists." : "Downgrading removes the monthly fee. Existing physical cards are unaffected."} reasonLabel="Note (reason for change)" minReason={5} simulated onConfirm={(r) => operations.changePlan(customerId, target, r)} success={`Plan changed to ${target}`} confirmLabel="Change plan" />
         )}>
           <KV cols={3} items={[["Plan", <PlanBadge plan={sub.plan} />], ["Status", <StatusBadge status={sub.subscriptionStatus} />], ["Monthly fee", `${fmtMoney(sub.monthlyPrice)} ${sub.currency}`], ["Start date", fmtDate(sub.startDate)], ["Next billing", fmtDate(sub.nextBillingDate)], ["Latest billing", <StatusBadge status={sub.latestBillingStatus} />]]} />
         </Panel>
@@ -278,7 +279,7 @@ export function MembershipPanel({ customerId }: { customerId: string }) {
                     <Label htmlFor="design">Customer's selected design</Label>
                     <SelectField id="design" value={design} onChange={(e) => setDesign(e.target.value as CardDesign)} className="h-9 rounded-md border bg-card px-2">{CARD_DESIGNS.map((d) => <option key={d}>{d}</option>)}</SelectField>
                   </div>
-                  <Button onClick={() => run(() => recordCardSelection(customerId, design), `${design} card order created`)}>Record selection & create order</Button>
+                  <Button onClick={() => run(() => operations.recordCardSelection(customerId, design), `${design} card order created`)}>Record selection & create order</Button>
                 </div>
               ) : <p className="text-[13px] text-muted-foreground">Your role cannot record card selections.</p>}
               <p className="text-[13px] text-muted-foreground">Record only a design the customer confirmed. Duplicate initial orders are blocked.</p>

@@ -2,7 +2,7 @@ import { SelectField } from "@/components/ui/select-field";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useDB } from "@/services/store";
-import { cancelOrder, createReplacement, lockCard, unlockCard } from "@/services/actions";
+import { operations } from "@/services/api";
 import { EmptyState, KV, Mono, NoAccess, PageHeader, Panel, run, usePermission } from "@/components/common";
 import { ActionDialog } from "@/components/dialogs/ActionDialog";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -49,7 +49,7 @@ function CardDetail() {
 
   const submitReplacement = () => {
     let id = "";
-    if (run(() => { id = createReplacement({ cardId: card.id, design, reason, notes }); }, "Replacement request created")) {
+    if (run(() => { id = operations.createReplacement({ cardId: card.id, design, reason, notes }); }, "Replacement request created")) {
       setOpen(false);
       navigate({ to: "/cards/$cardId", params: { cardId: id } });
     }
@@ -62,10 +62,10 @@ function CardDetail() {
         subtitle={<span className="inline-flex items-center gap-2"><StatusBadge status={card.cardStatus} /><Link to="/customers/$customerId" params={{ customerId: c.id }} className="text-primary">{fullName(c)}</Link></span>}
         actions={
           <>
-            {canLock && card.cardStatus === "Active" && <ActionDialog trigger={<Button size="sm" variant="outline">Lock card</Button>} title="Lock card" description={`Lock ${card.cardDesign} •••• ${card.last4} for ${fullName(c)}.`} reasonLabel="Reason for locking" simulated="Demo mode — the card processor is not contacted. The lock is recorded as a simulated outcome." destructive confirmLabel="Lock card" onConfirm={(r) => lockCard(card.id, r)} success="Card locked (simulated) — audit event recorded" />}
-            {canLock && card.cardStatus === "Locked" && <ActionDialog trigger={<Button size="sm" variant="outline">Unlock card</Button>} title="Unlock card" reasonLabel="Reason for unlocking" simulated onConfirm={(r) => unlockCard(card.id, r)} success="Card unlocked (simulated)" />}
+            {canLock && card.cardStatus === "Active" && <ActionDialog trigger={<Button size="sm" variant="outline">Lock card</Button>} title="Lock card" description={`Lock ${card.cardDesign} •••• ${card.last4} for ${fullName(c)}.`} reasonLabel="Reason for locking" simulated="Demo mode — the card processor is not contacted. The lock is recorded as a simulated outcome." destructive confirmLabel="Lock card" onConfirm={(r) => operations.lockCard(card.id, r)} success="Card locked (simulated) — audit event recorded" />}
+            {canLock && card.cardStatus === "Locked" && <ActionDialog trigger={<Button size="sm" variant="outline">Unlock card</Button>} title="Unlock card" reasonLabel="Reason for unlocking" simulated onConfirm={(r) => operations.unlockCard(card.id, r)} success="Card unlocked (simulated)" />}
             {canReplace && card.cardType === "Physical" && (card.cardStatus === "Active" || card.cardStatus === "Locked") && !successor && <Button size="sm" onClick={() => { setDesign((CARD_DESIGNS.find((d) => d !== card.cardDesign) ?? "Classic")); setOpen(true); }}>Request replacement</Button>}
-            {canReplace && order?.orderStatus === "Eligible" && <ActionDialog trigger={<Button size="sm" variant="outline">Cancel order</Button>} title={`Cancel ${order.orderReference}`} description="The order and card history are preserved with a Canceled outcome." reasonLabel="Reason" destructive onConfirm={(r) => cancelOrder(order.id, r)} success="Order canceled" />}
+            {canReplace && order?.orderStatus === "Eligible" && <ActionDialog trigger={<Button size="sm" variant="outline">Cancel order</Button>} title={`Cancel ${order.orderReference}`} description="The order and card history are preserved with a Canceled outcome." reasonLabel="Reason" destructive onConfirm={(r) => operations.cancelOrder(order.id, r)} success="Order canceled" />}
           </>
         }
       />
