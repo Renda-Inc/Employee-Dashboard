@@ -4,7 +4,7 @@ import { CalendarClock, AlertTriangle } from "lucide-react";
 import { useDB } from "@/services/store";
 import { operations } from "@/services/api";
 import { batchIneligibility, nextFriday } from "@/services/rules";
-import { CustomerCell, Mono, NoAccess, PageHeader, run, usePermission } from "@/components/common";
+import { CustomerCell, Mono, NoAccess, PageHeader, usePermission } from "@/components/common";
 import { DataTable, TabBar, type Column } from "@/components/tables/DataTable";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { ActionDialog } from "@/components/dialogs/ActionDialog";
