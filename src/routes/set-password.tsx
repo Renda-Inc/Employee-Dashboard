@@ -19,7 +19,10 @@ export const Route = createFileRoute("/set-password")({
       { title: "Choose your password — Renda Admin" },
       { name: "description", content: "Choose a personal password for your Renda Admin account." },
       { property: "og:title", content: "Choose your password — Renda Admin" },
-      { property: "og:description", content: "Set a personal password before entering Renda Admin." },
+      {
+        property: "og:description",
+        content: "Set a personal password before entering Renda Admin.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -55,13 +58,33 @@ function SetPassword() {
     <AuthLayout>
       <form onSubmit={onSubmit} noValidate className="space-y-5">
         <div>
-          <h1 className="flex items-center gap-2 text-[22px] font-semibold leading-tight"><KeyRound className="size-5" strokeWidth={1.75} /> Set a new password</h1>
-          <p className="mt-2 text-[14px] text-muted-foreground">Replace your temporary password to continue.</p>
+          <h1 className="flex items-center gap-2 text-[22px] font-semibold leading-tight">
+            <KeyRound className="size-5" strokeWidth={1.75} /> Set a new password
+          </h1>
+          <p className="mt-2 text-[14px] text-muted-foreground">
+            Replace your temporary password to continue.
+          </p>
         </div>
         <FormError>{error}</FormError>
-        <PasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} />
-        <Button type="submit" size="lg" className="h-11 w-full text-[15px]" disabled={busy}>{busy && <Loader2 className="size-4 animate-spin" />} Save password and continue</Button>
-        <button type="button" className="w-full text-center text-[14px] text-muted-foreground hover:text-foreground" onClick={async () => { await signOutEverywhere(queryClient); navigate({ to: "/auth", replace: true }); }}>Sign out</button>
+        <PasswordFields
+          password={password}
+          confirm={confirm}
+          onPassword={setPassword}
+          onConfirm={setConfirm}
+        />
+        <Button type="submit" size="lg" className="h-11 w-full text-[15px]" disabled={busy}>
+          {busy && <Loader2 className="size-4 animate-spin" />} Save password and continue
+        </Button>
+        <button
+          type="button"
+          className="w-full text-center text-[14px] text-muted-foreground hover:text-foreground"
+          onClick={async () => {
+            await signOutEverywhere(queryClient);
+            navigate({ to: "/auth", replace: true });
+          }}
+        >
+          Sign out
+        </button>
       </form>
     </AuthLayout>
   );

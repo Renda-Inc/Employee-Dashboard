@@ -16,21 +16,47 @@ export interface Directory {
   assignedCount: Record<string, number>;
 }
 
-const toRecord = (e: EmployeeRow, role: RoleRecord | null): EmployeeRecord => ({ ...e, status: e.status as EmployeeStatus, name: `${e.first_name} ${e.last_name}`, role });
+const toRecord = (e: EmployeeRow, role: RoleRecord | null): EmployeeRecord => ({
+  ...e,
+  status: e.status as EmployeeStatus,
+  name: `${e.first_name} ${e.last_name}`,
+  role,
+});
 
 export async function fetchDirectory(): Promise<Directory> {
   const [snapshot, session] = await Promise.all([employeesApi.getDirectory(), auth.getSession()]);
   const roleById = new Map(snapshot.roles.map((r) => [r.id, r]));
   const roleOf = new Map(snapshot.assignments.map((a) => [a.user_id, a.role_id]));
   const assignedCount: Record<string, number> = {};
-  for (const a of snapshot.assignments) assignedCount[a.role_id] = (assignedCount[a.role_id] ?? 0) + 1;
-  const employees = snapshot.employees.map((e) => toRecord(e, roleById.get(roleOf.get(e.id) ?? "") ?? null));
-  setRolePermissions(Object.fromEntries(snapshot.roles.map((r) => [r.name, r.permissions.filter(isPermission) as Permission[]])));
-  syncDirectory(session?.userId ?? "", employees.map((e) => ({ id: e.id, name: e.name, email: e.email, role: e.role?.name ?? "", status: e.status, directory: true })));
+  for (const a of snapshot.assignments)
+    assignedCount[a.role_id] = (assignedCount[a.role_id] ?? 0) + 1;
+  const employees = snapshot.employees.map((e) =>
+    toRecord(e, roleById.get(roleOf.get(e.id) ?? "") ?? null),
+  );
+  setRolePermissions(
+    Object.fromEntries(
+      snapshot.roles.map((r) => [r.name, r.permissions.filter(isPermission) as Permission[]]),
+    ),
+  );
+  syncDirectory(
+    session?.userId ?? "",
+    employees.map((e) => ({
+      id: e.id,
+      name: e.name,
+      email: e.email,
+      role: e.role?.name ?? "",
+      status: e.status,
+      directory: true,
+    })),
+  );
   return { employees, roles: snapshot.roles, assignedCount };
 }
 
-export const directoryQuery = queryOptions({ queryKey: ["directory"], queryFn: fetchDirectory, staleTime: 30_000 });
+export const directoryQuery = queryOptions({
+  queryKey: ["directory"],
+  queryFn: fetchDirectory,
+  staleTime: 30_000,
+});
 
 export const adminAuditQuery = (enabled: boolean) =>
   queryOptions({
@@ -57,7 +83,10 @@ export function rememberSession(remember: boolean) {
 
 /** True when the employee chose not to be remembered and this is a new browser session. */
 export function sessionExpiredByBrowserClose() {
-  return window.localStorage.getItem(REMEMBER_KEY) === "0" && window.sessionStorage.getItem(SESSION_KEY) !== "1";
+  return (
+    window.localStorage.getItem(REMEMBER_KEY) === "0" &&
+    window.sessionStorage.getItem(SESSION_KEY) !== "1"
+  );
 }
 
 export async function needsMfa() {
@@ -111,4 +140,5 @@ export async function landingPath() {
   return role?.landing_page ?? "/";
 }
 
-export const safeRedirect = (v: unknown) => (typeof v === "string" && v.startsWith("/") && !v.startsWith("//") ? v : undefined);
+export const safeRedirect = (v: unknown) =>
+  typeof v === "string" && v.startsWith("/") && !v.startsWith("//") ? v : undefined;

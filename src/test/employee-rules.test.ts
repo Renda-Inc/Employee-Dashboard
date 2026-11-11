@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-  assertKeepsAdministrator, generateTemporaryPassword, passwordIssues, resolveStatusChange, roleDeletionBlocker,
+  assertKeepsAdministrator,
+  generateTemporaryPassword,
+  passwordIssues,
+  resolveStatusChange,
+  roleDeletionBlocker,
 } from "@/services/employee-rules";
 import { can, setRolePermissions, ROLE_PERMISSIONS } from "@/services/permissions";
 
@@ -19,8 +23,20 @@ describe("employee status rules", () => {
     expect(resolveStatusChange("Inactive", true)).toBe("Inactive");
   });
   it("blocks removing the last active Administrator", () => {
-    expect(() => assertKeepsAdministrator({ targetIsActiveAdmin: true, remainsActiveAdmin: false, otherActiveAdmins: 0 })).toThrow();
-    expect(() => assertKeepsAdministrator({ targetIsActiveAdmin: true, remainsActiveAdmin: false, otherActiveAdmins: 1 })).not.toThrow();
+    expect(() =>
+      assertKeepsAdministrator({
+        targetIsActiveAdmin: true,
+        remainsActiveAdmin: false,
+        otherActiveAdmins: 0,
+      }),
+    ).toThrow();
+    expect(() =>
+      assertKeepsAdministrator({
+        targetIsActiveAdmin: true,
+        remainsActiveAdmin: false,
+        otherActiveAdmins: 1,
+      }),
+    ).not.toThrow();
   });
 });
 

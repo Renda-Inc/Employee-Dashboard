@@ -2,16 +2,39 @@
 // The current implementation is the browser-persisted demo workspace (`src/services/actions.ts`).
 // A backend implementation must enforce the same permissions and business rules and record audit events.
 import type {
-  CardDesign, CaseCategory, CaseLink, CasePriority, CaseStatus, Customer, DB, Plan, ReplacementReason, Settings,
+  CardDesign,
+  CaseCategory,
+  CaseLink,
+  CasePriority,
+  CaseStatus,
+  Customer,
+  DB,
+  Plan,
+  ReplacementReason,
+  Settings,
 } from "@/types/models";
 
 export const EDITABLE_FIELDS = [
-  "firstName", "lastName", "email", "phone", "address", "city", "province", "postalCode",
-  "maritalStatus", "employmentType", "occupation", "industry", "annualIncome",
+  "firstName",
+  "lastName",
+  "email",
+  "phone",
+  "address",
+  "city",
+  "province",
+  "postalCode",
+  "maritalStatus",
+  "employmentType",
+  "occupation",
+  "industry",
+  "annualIncome",
 ] as const;
 export type EditableField = (typeof EDITABLE_FIELDS)[number];
 
-export type PersonalSettings = Pick<Settings, "density" | "notifyKyc" | "notifySupport" | "notifyManufacturing">;
+export type PersonalSettings = Pick<
+  Settings,
+  "density" | "notifyKyc" | "notifySupport" | "notifyManufacturing"
+>;
 export type OperationalSettings = Omit<Settings, keyof PersonalSettings>;
 
 export interface NewSupportCase {
@@ -43,7 +66,11 @@ export interface OperationsService {
   // Customers & lifecycle
   updateCustomer(customerId: string, patch: Partial<Pick<Customer, EditableField>>): Promise<void>;
   escalateKyc(customerId: string, reason: string): Promise<void>;
-  recordKycDecision(customerId: string, decision: "Approved" | "Failed", reason: string): Promise<void>;
+  recordKycDecision(
+    customerId: string,
+    decision: "Approved" | "Failed",
+    reason: string,
+  ): Promise<void>;
   requestKycResubmission(customerId: string): Promise<void>;
   requestAccountIssuance(customerId: string): Promise<void>;
   simulateIssuanceResult(customerId: string, success: boolean): Promise<void>;

@@ -9,7 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ownAccess, rememberSession, safeRedirect, signOutEverywhere } from "@/services/directory";
 
 type Reason = "denied" | "expired";
@@ -18,7 +25,8 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   validateSearch: (s: Record<string, unknown>): { redirect?: string; reason?: Reason } => {
     const redirect = safeRedirect(s["redirect"]);
-    const reason = s["reason"] === "denied" || s["reason"] === "expired" ? (s["reason"] as Reason) : undefined;
+    const reason =
+      s["reason"] === "denied" || s["reason"] === "expired" ? (s["reason"] as Reason) : undefined;
     return { ...(redirect ? { redirect } : {}), ...(reason ? { reason } : {}) };
   },
   head: () => ({
@@ -35,8 +43,12 @@ export const Route = createFileRoute("/auth")({
 });
 
 const INVALID = "The email or password you entered is incorrect. Check your details and try again.";
-const DENIED = "This account can't access Renda Admin right now. Contact your administrator for help.";
-const REASONS: Record<Reason, string> = { denied: DENIED, expired: "Your session ended when the browser closed. Please sign in again." };
+const DENIED =
+  "This account can't access Renda Admin right now. Contact your administrator for help.";
+const REASONS: Record<Reason, string> = {
+  denied: DENIED,
+  expired: "Your session ended when the browser closed. Please sign in again.",
+};
 
 function SignIn() {
   const search = Route.useSearch();
@@ -65,7 +77,10 @@ function SignIn() {
       navigate({ to: "/set-password", replace: true });
       return;
     }
-    navigate({ href: search.redirect && search.redirect !== "/auth" ? search.redirect : role.landing_page, replace: true });
+    navigate({
+      href: search.redirect && search.redirect !== "/auth" ? search.redirect : role.landing_page,
+      replace: true,
+    });
   }
 
   useEffect(() => {
@@ -79,7 +94,9 @@ function SignIn() {
       }
       setStep("credentials");
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -95,7 +112,11 @@ function SignIn() {
     const result = await auth.login(email.trim(), password);
     if (!result.ok) {
       setBusy(false);
-      setError(result.error === "rate-limited" ? "Too many sign-in attempts. Wait a few minutes, then try again." : INVALID);
+      setError(
+        result.error === "rate-limited"
+          ? "Too many sign-in attempts. Wait a few minutes, then try again."
+          : INVALID,
+      );
       return;
     }
     if (result.session.mfaRequired) {
@@ -117,14 +138,22 @@ function SignIn() {
       setBusy(false);
       setCode("");
       if (!(await auth.getSession())) setStep("credentials");
-      return setError(err instanceof Error ? err.message : "That code didn't work. Check your authenticator app and try again.");
+      return setError(
+        err instanceof Error
+          ? err.message
+          : "That code didn't work. Check your authenticator app and try again.",
+      );
     }
     await finish();
   }
 
   return (
     <AuthLayout>
-      {step === "loading" && <div className="flex h-72 items-center justify-center text-muted-foreground"><Loader2 className="size-5 animate-spin" aria-label="Loading" /></div>}
+      {step === "loading" && (
+        <div className="flex h-72 items-center justify-center text-muted-foreground">
+          <Loader2 className="size-5 animate-spin" aria-label="Loading" />
+        </div>
+      )}
 
       {step === "credentials" && (
         <form onSubmit={onSubmit} noValidate className="space-y-5">
@@ -132,23 +161,57 @@ function SignIn() {
           <FormError>{error}</FormError>
           <div className="space-y-2">
             <Label htmlFor="email">Work email address</Label>
-            <Input id="email" type="email" autoComplete="username" placeholder="name@renda.ca" value={email} onChange={(e) => setEmail(e.target.value)} className="h-11" autoFocus />
+            <Input
+              id="email"
+              type="email"
+              autoComplete="username"
+              placeholder="name@renda.ca"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="h-11"
+              autoFocus
+            />
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
-              <button type="button" onClick={() => setForgotOpen(true)} className="text-[13px] font-medium text-foreground underline-offset-4 hover:underline">Forgot password?</button>
+              <button
+                type="button"
+                onClick={() => setForgotOpen(true)}
+                className="text-[13px] font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                Forgot password?
+              </button>
             </div>
             <div className="relative">
-              <Input id="password" type={show ? "text" : "password"} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="h-11 pr-11" />
-              <button type="button" onClick={() => setShow((s) => !s)} aria-label={show ? "Hide password" : "Show password"} aria-pressed={show} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-md text-muted-foreground hover:text-foreground">
+              <Input
+                id="password"
+                type={show ? "text" : "password"}
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-11 pr-11"
+              />
+              <button
+                type="button"
+                onClick={() => setShow((s) => !s)}
+                aria-label={show ? "Hide password" : "Show password"}
+                aria-pressed={show}
+                className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-md text-muted-foreground hover:text-foreground"
+              >
                 {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </button>
             </div>
           </div>
           <div className="flex items-center gap-2.5">
-            <Checkbox id="remember" checked={remember} onCheckedChange={(v) => setRemember(v === true)} />
-            <Label htmlFor="remember" className="font-normal text-muted-foreground">Keep me signed in on this device</Label>
+            <Checkbox
+              id="remember"
+              checked={remember}
+              onCheckedChange={(v) => setRemember(v === true)}
+            />
+            <Label htmlFor="remember" className="font-normal text-muted-foreground">
+              Keep me signed in on this device
+            </Label>
           </div>
           <Button type="submit" size="lg" className="h-11 w-full text-[15px]" disabled={busy}>
             {busy && <Loader2 className="size-4 animate-spin" />} Sign in
@@ -159,17 +222,41 @@ function SignIn() {
       {step === "mfa" && (
         <form onSubmit={onVerify} className="space-y-5">
           <div>
-            <h1 className="flex items-center gap-2 text-[22px] font-semibold leading-tight"><ShieldCheck className="size-5" strokeWidth={1.75} /> Verification code</h1>
-            <p className="mt-2 text-[14px] text-muted-foreground">Enter the 6-digit code from your authenticator app.</p>
+            <h1 className="flex items-center gap-2 text-[22px] font-semibold leading-tight">
+              <ShieldCheck className="size-5" strokeWidth={1.75} /> Verification code
+            </h1>
+            <p className="mt-2 text-[14px] text-muted-foreground">
+              Enter the 6-digit code from your authenticator app.
+            </p>
           </div>
           <FormError>{error}</FormError>
-          <InputOTP maxLength={6} value={code} onChange={setCode} onComplete={() => undefined} autoFocus aria-label="Verification code">
+          <InputOTP
+            maxLength={6}
+            value={code}
+            onChange={setCode}
+            onComplete={() => undefined}
+            autoFocus
+            aria-label="Verification code"
+          >
             <InputOTPGroup>
-              {[0, 1, 2, 3, 4, 5].map((i) => <InputOTPSlot key={i} index={i} className="h-11 w-11 text-[17px]" />)}
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <InputOTPSlot key={i} index={i} className="h-11 w-11 text-[17px]" />
+              ))}
             </InputOTPGroup>
           </InputOTP>
-          <Button type="submit" size="lg" className="h-11 w-full text-[15px]" disabled={busy}>{busy && <Loader2 className="size-4 animate-spin" />} Verify and continue</Button>
-          <button type="button" className="w-full text-center text-[14px] text-muted-foreground hover:text-foreground" onClick={async () => { await signOutEverywhere(queryClient); setCode(""); setError(null); setStep("credentials"); }}>
+          <Button type="submit" size="lg" className="h-11 w-full text-[15px]" disabled={busy}>
+            {busy && <Loader2 className="size-4 animate-spin" />} Verify and continue
+          </Button>
+          <button
+            type="button"
+            className="w-full text-center text-[14px] text-muted-foreground hover:text-foreground"
+            onClick={async () => {
+              await signOutEverywhere(queryClient);
+              setCode("");
+              setError(null);
+              setStep("credentials");
+            }}
+          >
             Use a different account
           </button>
         </form>
@@ -179,10 +266,17 @@ function SignIn() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Forgot your password?</DialogTitle>
-            <DialogDescription>For security, Renda Admin passwords can't be reset from the sign-in page.</DialogDescription>
+            <DialogDescription>
+              For security, Renda Admin passwords can't be reset from the sign-in page.
+            </DialogDescription>
           </DialogHeader>
-          <p className="text-[14px]">Contact your Renda Admin administrator. They'll issue a new temporary password, and you'll choose your own password the next time you sign in.</p>
-          <DialogFooter><Button onClick={() => setForgotOpen(false)}>Got it</Button></DialogFooter>
+          <p className="text-[14px]">
+            Contact your Renda Admin administrator. They'll issue a new temporary password, and
+            you'll choose your own password the next time you sign in.
+          </p>
+          <DialogFooter>
+            <Button onClick={() => setForgotOpen(false)}>Got it</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </AuthLayout>
