@@ -93,7 +93,7 @@ function Manufacturing() {
                     title="Create manufacturing batch"
                     description={`${sel.length} order(s) will be linked to a new draft batch. You can review it and generate the PDF next.`}
                     confirmLabel="Create batch"
-                    onConfirm={() => { const r = operations.createBatch(sel); setSel([]); navigate({ to: "/cards/manufacturing/$batchId", params: { batchId: r.id } }); }}
+                    onConfirm={async () => { const r = await operations.createBatch(sel); setSel([]); navigate({ to: "/cards/manufacturing/$batchId", params: { batchId: r.id } }); }}
                     success="Draft batch created"
                   />
                 </div>
@@ -105,7 +105,6 @@ function Manufacturing() {
         <DataTable key={tab} rows={batchRows} columns={batchCols} rowKey={(b) => b.id} defaultSort={{ key: "c", dir: "desc" }} onRowClick={(b) => navigate({ to: "/cards/manufacturing/$batchId", params: { batchId: b.id } })} emptyTitle="No batches" />
       )}
       {attention.length > 0 && <p className="mt-3 flex items-center gap-1 text-[13px] text-warning"><AlertTriangle className="size-3.5" />{attention.length} orders failed and require attention.</p>}
-      <span className="hidden">{String(run)}</span>
     </>
   );
 }

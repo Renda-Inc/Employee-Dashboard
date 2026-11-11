@@ -27,7 +27,7 @@ export function NewCaseDialog({ trigger, customerId, link, defaultCategory = "Ge
   const [assign, setAssign] = useState(true);
   const [err, setErr] = useState<Record<string, string>>({});
 
-  const submit = () => {
+  const submit = async () => {
     const e: Record<string, string> = {};
     if (!cid) e.cid = "Select a customer.";
     if (subject.trim().length < 4) e.subject = "Subject must be at least 4 characters.";
@@ -35,7 +35,7 @@ export function NewCaseDialog({ trigger, customerId, link, defaultCategory = "Ge
     setErr(e);
     if (Object.keys(e).length) return;
     let res: { id: string; ref: string } | undefined;
-    const ok = run(() => { res = operations.createSupportCase({ customerId: cid, subject, message, category, priority, links: link ? [link] : [], assignToMe: assign }); }, "Support case created");
+    const ok = await run(async () => { res = await operations.createSupportCase({ customerId: cid, subject, message, category, priority, links: link ? [link] : [], assignToMe: assign }); }, "Support case created");
     if (ok && res) {
       setOpen(false);
       navigate({ to: "/support/$caseId", params: { caseId: res.id } });

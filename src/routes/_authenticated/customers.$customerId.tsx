@@ -180,10 +180,10 @@ function PersonalTab({ c }: { c: Customer }) {
     setErrors(e);
     return !Object.keys(e).length;
   };
-  const save = () => {
+  const save = async () => {
     if (!validate()) return;
     const patch = { ...form, annualIncome: Number(form.annualIncome) };
-    if (run(() => operations.updateCustomer(c.id, patch), "Customer information updated — audit event recorded")) setEditing(false);
+    if (await run(() => operations.updateCustomer(c.id, patch), "Customer information updated — audit event recorded")) setEditing(false);
   };
 
   if (!editing) {

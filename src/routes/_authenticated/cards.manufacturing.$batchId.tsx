@@ -28,8 +28,8 @@ function BatchDetail() {
   orders.forEach((o) => (breakdown[o.requestedDesign] = (breakdown[o.requestedDesign] ?? 0) + 1));
 
   const generate = () =>
-    run(() => {
-      operations.recordPdfExport(b.id); // authorizes + audits first
+    run(async () => {
+      await operations.recordPdfExport(b.id); // authorizes + audits first
       buildBatchPdf(getState(), getState().batches.find((x) => x.id === b.id)!).save(`${b.batchReference}.pdf`);
     }, "Manufacturing PDF generated and downloaded");
   const download = () => run(() => buildBatchPdf(db, b).save(`${b.batchReference}.pdf`), "PDF downloaded");

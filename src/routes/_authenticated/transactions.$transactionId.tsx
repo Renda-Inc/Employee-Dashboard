@@ -57,7 +57,7 @@ function TxnDetail() {
             {canInv && (
               <div className="mb-3 space-y-2">
                 <Textarea rows={2} placeholder="Add an internal investigation note…" value={note} onChange={(e) => setNote(e.target.value)} />
-                <Button size="sm" onClick={() => run(() => operations.addTransactionNote(t.id, note), "Note added") && setNote("")}>Add note</Button>
+                <Button size="sm" onClick={async () => { if (await run(() => operations.addTransactionNote(t.id, note), "Note added")) setNote(""); }}>Add note</Button>
               </div>
             )}
             {t.notes.length ? t.notes.map((n) => <div key={n.id} className="border-t py-2 text-[14px]"><div>{n.text}</div><div className="text-[12px] text-muted-foreground">{L.empName(n.by)} · {fmtDateTime(n.at)}</div></div>) : <p className="text-muted-foreground">No notes.</p>}
@@ -68,7 +68,7 @@ function TxnDetail() {
           {canCase && openCustomerCases.length > 0 && (
             <div className="mt-4 flex gap-2 border-t pt-3">
               <SelectField aria-label="Existing case" value={linkTo} onChange={(e) => setLinkTo(e.target.value)} className="h-8 flex-1 rounded-md border bg-card px-2 text-[13px]"><option value="">Link existing case…</option>{openCustomerCases.map((s) => <option key={s.id} value={s.id}>{s.caseReference} · {s.subject}</option>)}</SelectField>
-              <Button size="sm" variant="outline" disabled={!linkTo} onClick={() => run(() => operations.linkCaseRecord(linkTo, { type: "transaction", id: t.id }), "Case linked") && setLinkTo("")}>Link</Button>
+              <Button size="sm" variant="outline" disabled={!linkTo} onClick={async () => { if (await run(() => operations.linkCaseRecord(linkTo, { type: "transaction", id: t.id }), "Case linked")) setLinkTo(""); }}>Link</Button>
             </div>
           )}
         </Panel>

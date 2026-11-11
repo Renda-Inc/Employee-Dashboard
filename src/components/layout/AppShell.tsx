@@ -257,14 +257,14 @@ function Notifications() {
       <PopoverContent align="end" className="w-[min(420px,calc(100vw-2rem))] p-0">
         <div className="flex items-center justify-between border-b px-3 py-2">
           <span className="text-[14px] font-semibold">Notifications</span>
-          {unread.length > 0 && <Button variant="ghost" className="text-[13px] text-muted-foreground hover:text-foreground" onClick={() => operations.markNotificationsRead(list.map((n) => n.id))}>Mark all read</Button>}
+          {unread.length > 0 && <Button variant="ghost" className="text-[13px] text-muted-foreground hover:text-foreground" onClick={() => void operations.markNotificationsRead(list.map((n) => n.id))}>Mark all read</Button>}
         </div>
         <div className="max-h-96 overflow-y-auto">
           {list.length === 0 && <div className="p-6 text-center text-[13px] text-muted-foreground">You're all caught up.</div>}
           {list.map((n) => {
             const isUnread = !db.readNotificationIds.includes(n.id);
             return (
-              <Button variant="ghost" key={n.id} onClick={() => { operations.markNotificationsRead([n.id]); navigate({ to: n.to, params: n.params }); }} className="flex h-auto w-full justify-start whitespace-normal gap-2.5 rounded-none border-b px-5 py-4 text-left last:border-0 hover:bg-secondary">
+              <Button variant="ghost" key={n.id} onClick={() => { void operations.markNotificationsRead([n.id]); navigate({ to: n.to, params: n.params }); }} className="flex h-auto w-full justify-start whitespace-normal gap-2.5 rounded-none border-b px-5 py-4 text-left last:border-0 hover:bg-secondary">
                 <span className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", isUnread ? "bg-primary" : "bg-transparent")} />
                 <span className="min-w-0 flex-1">
                   <span className="block text-[13px] font-medium">{n.type}</span>

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { useDB, resetDemo } from "@/services/store";
+import { useDB } from "@/services/store";
 import { currentEmployee } from "@/services/actions";
 import { operations } from "@/services/api";
 import { KV, PageHeader, Panel, run, usePermission } from "@/components/common";
@@ -39,12 +39,12 @@ function Settings() {
         <Panel title="Organization"><KV items={[["Organization", s.organizationName], ["Timezone", s.timezone], ["Currency", "CAD"], ["Environment", <StatusBadge status="Demo" tone="info" />]]} /></Panel>
         <Panel title="Employee preferences">
           <KV items={[["Signed in as", me.name], ["Role", me.role]]} />
-          <div className="mt-4 flex items-center justify-between"><Label htmlFor="dens">Compact table density</Label><Switch id="dens" checked={s.density === "compact"} onCheckedChange={(v) => operations.updatePreferences({ density: v ? "compact" : "comfortable" })} /></div>
+          <div className="mt-4 flex items-center justify-between"><Label htmlFor="dens">Compact table density</Label><Switch id="dens" checked={s.density === "compact"} onCheckedChange={(v) => void operations.updatePreferences({ density: v ? "compact" : "comfortable" })} /></div>
         </Panel>
         <TwoStepVerificationPanel />
         <Panel title="Notification preferences">
           {([["notifyKyc", "KYC & onboarding issues"], ["notifySupport", "Support cases & transaction investigations"], ["notifyManufacturing", "Card orders & manufacturing batches"]] as const).map(([k, l]) => (
-            <div key={k} className="flex items-center justify-between py-1.5"><Label htmlFor={k}>{l}</Label><Switch id={k} checked={s[k]} onCheckedChange={(v) => operations.updatePreferences({ [k]: v })} /></div>
+            <div key={k} className="flex items-center justify-between py-1.5"><Label htmlFor={k}>{l}</Label><Switch id={k} checked={s[k]} onCheckedChange={(v) => void operations.updatePreferences({ [k]: v })} /></div>
           ))}
           <p className="mt-2 text-[13px] text-muted-foreground">Controls the in-app notification bell. No emails are sent.</p>
         </Panel>
@@ -69,7 +69,7 @@ function Settings() {
         <Panel title="Demo environment" className="lg:col-span-2">
           <div className="flex items-center justify-between gap-3">
             <p className="text-[14px] text-muted-foreground">Data is stored in this browser. Resetting restores the original sample dataset.</p>
-            <ActionDialog trigger={<Button variant="outline" size="sm">Reset demo data</Button>} title="Reset demo data?" description="All changes made in this browser will be discarded." destructive confirmLabel="Reset" onConfirm={() => resetDemo()} success="Demo data reset" />
+            <ActionDialog trigger={<Button variant="outline" size="sm">Reset demo data</Button>} title="Reset demo data?" description="All changes made in this browser will be discarded." destructive confirmLabel="Reset" onConfirm={() => operations.resetDemoData()} success="Demo data reset" />
           </div>
         </Panel>
       </div>

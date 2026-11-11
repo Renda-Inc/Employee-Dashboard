@@ -106,10 +106,10 @@ export function NoAccess({ what }: { what: string }) {
   );
 }
 
-/** Runs an action, shows toast feedback, returns true on success. */
-export function run(fn: () => unknown, success: string) {
+/** Runs a (possibly async) action, shows toast feedback, resolves true on success. */
+export async function run(fn: () => unknown, success: string): Promise<boolean> {
   try {
-    fn();
+    await fn();
     toast.success(success);
     return true;
   } catch (e) {

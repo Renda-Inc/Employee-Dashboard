@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 import { SimulatedNote, run } from "@/components/common";
 
 /** Confirmation dialog with optional required reason. The action runs through `run` for toast feedback. */
@@ -17,7 +18,7 @@ export function ActionDialog({
   minReason?: number;
   simulated?: boolean | string;
   destructive?: boolean;
-  onConfirm: (reason: string) => void;
+  onConfirm: (reason: string) => unknown;
   success: string;
   children?: ReactNode;
   disabled?: boolean;
@@ -25,11 +26,12 @@ export function ActionDialog({
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [touched, setTouched] = useState(false);
+  const [busy, setBusy] = useState(false);
   const invalid = !!reasonLabel && reason.trim().length < minReason;
   return (
     <>
       <span onClick={() => !disabled && setOpen(true)} className="contents">{trigger}</span>
-      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setReason(""); setTouched(false); } }}>
+      <Dialog open={open} onOpenChange={(o) => { if (busy) return; setOpen(o); if (!o) { setReason(""); setTouched(false); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
@@ -47,15 +49,20 @@ export function ActionDialog({
             {simulated && <SimulatedNote>{typeof simulated === "string" ? simulated : undefined}</SimulatedNote>}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button variant="outline" disabled={busy} onClick={() => setOpen(false)}>Cancel</Button>
             <Button
               variant={destructive ? "destructive" : "default"}
-              onClick={() => {
+              disabled={busy}
+              onClick={async () => {
                 setTouched(true);
                 if (invalid) return;
-                if (run(() => onConfirm(reason), success)) setOpen(false);
+                setBusy(true);
+                const ok = await run(() => onConfirm(reason), success);
+                setBusy(false);
+                if (ok) setOpen(false);
               }}
             >
+              {busy && <Loader2 className="size-4 animate-spin" />}
               {confirmLabel}
             </Button>
           </DialogFooter>

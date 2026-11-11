@@ -47,9 +47,9 @@ function CardDetail() {
   const successor = card.replacedByCardId ? db.cards.find((x) => x.id === card.replacedByCardId) : undefined;
   const orders = db.cardOrders.filter((o) => o.customerId === c.id && o.orderType === "Replacement Card");
 
-  const submitReplacement = () => {
+  const submitReplacement = async () => {
     let id = "";
-    if (run(() => { id = operations.createReplacement({ cardId: card.id, design, reason, notes }); }, "Replacement request created")) {
+    if (await run(async () => { id = await operations.createReplacement({ cardId: card.id, design, reason, notes }); }, "Replacement request created")) {
       setOpen(false);
       navigate({ to: "/cards/$cardId", params: { cardId: id } });
     }
