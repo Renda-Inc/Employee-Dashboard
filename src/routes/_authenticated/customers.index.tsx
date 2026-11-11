@@ -9,15 +9,44 @@ import { DataTable, FilterSelect, SearchInput, type Column } from "@/components/
 import { StatusBadge, PlanBadge } from "@/components/status/StatusBadge";
 import { fmtDate, fullName } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { Customer } from "@/types/models";
 
 export const Route = createFileRoute("/_authenticated/customers/")({
-  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Customers — Renda Admin" }, { name: "description", content: "Search and manage Renda customer records." }, { property: "og:title", content: "Customers — Renda Admin" }, { property: "og:description", content: "Search and manage Renda customer records." }] }),
+  head: () => ({
+    meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { title: "Customers — Renda Admin" },
+      { name: "description", content: "Search and manage Renda customer records." },
+      { property: "og:title", content: "Customers — Renda Admin" },
+      { property: "og:description", content: "Search and manage Renda customer records." },
+    ],
+  }),
   component: Customers,
 });
 
-const STATUSES = ["Registered", "Email Verification Pending", "Email Verified", "Onboarding In Progress", "KYC Pending", "KYC Under Review", "KYC Failed", "KYC Approved", "Account Issuance Pending", "Account Issuance Failed", "Setup In Progress", "Active", "Restricted", "Closed"];
+const STATUSES = [
+  "Registered",
+  "Email Verification Pending",
+  "Email Verified",
+  "Onboarding In Progress",
+  "KYC Pending",
+  "KYC Under Review",
+  "KYC Failed",
+  "KYC Approved",
+  "Account Issuance Pending",
+  "Account Issuance Failed",
+  "Setup In Progress",
+  "Active",
+  "Restricted",
+  "Closed",
+];
 
 function Customers() {
   const db = useDB();
@@ -40,13 +69,18 @@ function Customers() {
   const rows = useMemo(() => {
     const t = q.trim().toLowerCase();
     return db.customers.filter((c) => {
-      if (t && ![fullName(c), c.userId, c.email, c.phone].some((v) => v.toLowerCase().includes(t))) return false;
+      if (t && ![fullName(c), c.userId, c.email, c.phone].some((v) => v.toLowerCase().includes(t)))
+        return false;
       if (status !== "all" && c.customerStatus !== status) return false;
       if (onb !== "all" && c.onboardingStatus !== onb) return false;
       if (kyc !== "all" && c.kycStatus !== kyc) return false;
       if (plan !== "all" && (planOf(c.id) ?? "None") !== plan) return false;
       if (bank !== "all" && bankOf(c) !== bank) return false;
-      if (reg !== "all" && Date.now() - new Date(c.registrationDate).getTime() > Number(reg) * 864e5) return false;
+      if (
+        reg !== "all" &&
+        Date.now() - new Date(c.registrationDate).getTime() > Number(reg) * 864e5
+      )
+        return false;
       return true;
     });
   }, [db, q, status, onb, kyc, plan, bank, reg]);
@@ -54,25 +88,89 @@ function Customers() {
   if (!allowed) return <NoAccess what="customer records" />;
 
   const cols: Column<Customer>[] = [
-    { key: "name", header: "Customer", cell: (c) => <CustomerCell customer={c} sub={c.customerStatus} />, sort: (c) => fullName(c) },
-    { key: "uid", header: "Renda User ID", cell: (c) => <Mono>{c.userId}</Mono>, sort: (c) => c.userId },
-    { key: "email", header: "Email", cell: (c) => <span className="text-muted-foreground">{c.email}</span> },
-    { key: "phone", header: "Phone", cell: (c) => <span className="tabular text-muted-foreground">{c.phone}</span> },
-    { key: "onb", header: "Onboarding", cell: (c) => <StatusBadge status={c.onboardingStatus} />, sort: (c) => c.onboardingStatus },
-    { key: "kyc", header: "KYC", cell: (c) => <StatusBadge status={c.kycStatus} />, sort: (c) => c.kycStatus },
+    {
+      key: "name",
+      header: "Customer",
+      cell: (c) => <CustomerCell customer={c} sub={c.customerStatus} />,
+      sort: (c) => fullName(c),
+    },
+    {
+      key: "uid",
+      header: "Renda User ID",
+      cell: (c) => <Mono>{c.userId}</Mono>,
+      sort: (c) => c.userId,
+    },
+    {
+      key: "email",
+      header: "Email",
+      cell: (c) => <span className="text-muted-foreground">{c.email}</span>,
+    },
+    {
+      key: "phone",
+      header: "Phone",
+      cell: (c) => <span className="tabular text-muted-foreground">{c.phone}</span>,
+    },
+    {
+      key: "onb",
+      header: "Onboarding",
+      cell: (c) => <StatusBadge status={c.onboardingStatus} />,
+      sort: (c) => c.onboardingStatus,
+    },
+    {
+      key: "kyc",
+      header: "KYC",
+      cell: (c) => <StatusBadge status={c.kycStatus} />,
+      sort: (c) => c.kycStatus,
+    },
     { key: "bank", header: "Banking", cell: (c) => <StatusBadge status={bankOf(c)} /> },
     { key: "plan", header: "Plan", cell: (c) => <PlanBadge plan={planOf(c.id)} /> },
-    { key: "reg", header: "Registered", cell: (c) => fmtDate(c.registrationDate), sort: (c) => c.registrationDate },
     {
-      key: "act", header: <span className="sr-only">Actions</span>, className: "text-right", cell: (c) => (
+      key: "reg",
+      header: "Registered",
+      cell: (c) => fmtDate(c.registrationDate),
+      sort: (c) => c.registrationDate,
+    },
+    {
+      key: "act",
+      header: <span className="sr-only">Actions</span>,
+      className: "text-right",
+      cell: (c) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <Button variant="ghost" aria-label="Customer actions" className="rounded p-1 hover:bg-secondary"><MoreHorizontal className="size-4" /></Button>
+            <Button
+              variant="ghost"
+              aria-label="Customer actions"
+              className="rounded p-1 hover:bg-secondary"
+            >
+              <MoreHorizontal className="size-4" />
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-            <DropdownMenuItem onClick={() => navigate({ to: "/customers/$customerId", params: { customerId: c.id } })}>Open profile</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate({ to: "/customers/$customerId", params: { customerId: c.id }, search: { tab: "Transactions" } })}>Review transactions</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate({ to: "/onboarding/$customerId", params: { customerId: c.id } })}>Verification case</DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                navigate({ to: "/customers/$customerId", params: { customerId: c.id } })
+              }
+            >
+              Open profile
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                navigate({
+                  to: "/customers/$customerId",
+                  params: { customerId: c.id },
+                  search: { tab: "Transactions" },
+                })
+              }
+            >
+              Review transactions
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                navigate({ to: "/onboarding/$customerId", params: { customerId: c.id } })
+              }
+            >
+              Verification case
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
@@ -81,7 +179,13 @@ function Customers() {
 
   const exportCsv = () => {
     const chosen = db.customers.filter((c) => selected.includes(c.id));
-    const csv = ["Name,User ID,Status,KYC,Plan", ...chosen.map((c) => `"${fullName(c)}",${c.userId},${c.customerStatus},${c.kycStatus},${planOf(c.id) ?? ""}`)].join("\n");
+    const csv = [
+      "Name,User ID,Status,KYC,Plan",
+      ...chosen.map(
+        (c) =>
+          `"${fullName(c)}",${c.userId},${c.customerStatus},${c.kycStatus},${planOf(c.id) ?? ""}`,
+      ),
+    ].join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
     const a = document.createElement("a");
     a.href = url;
@@ -106,13 +210,49 @@ function Customers() {
         emptyTitle="No customers match"
         toolbar={
           <>
-            <SearchInput value={q} onChange={setQ} placeholder="Search name, user ID, email, phone" />
+            <SearchInput
+              value={q}
+              onChange={setQ}
+              placeholder="Search name, user ID, email, phone"
+            />
             <FilterSelect label="Status" value={status} onChange={setStatus} options={STATUSES} />
-            <FilterSelect label="Onboarding" value={onb} onChange={setOnb} options={["Not Started", "In Progress", "Completed", "Blocked"]} />
-            <FilterSelect label="KYC" value={kyc} onChange={setKyc} options={["Not Started", "Pending", "Under Review", "Approved", "Failed"]} />
-            <FilterSelect label="Plan" value={plan} onChange={setPlan} options={["Everyday", "Plus", "None"]} />
-            <FilterSelect label="Account" value={bank} onChange={setBank} options={["Not Issued", "Pending Issuance", "Issuance Failed", "Active", "Restricted", "Closed"]} />
-            <SelectField aria-label="Registration date" value={reg} onChange={(e) => setReg(e.target.value)} className="h-10 w-auto max-w-full rounded-md border bg-card px-3 text-[13px]">
+            <FilterSelect
+              label="Onboarding"
+              value={onb}
+              onChange={setOnb}
+              options={["Not Started", "In Progress", "Completed", "Blocked"]}
+            />
+            <FilterSelect
+              label="KYC"
+              value={kyc}
+              onChange={setKyc}
+              options={["Not Started", "Pending", "Under Review", "Approved", "Failed"]}
+            />
+            <FilterSelect
+              label="Plan"
+              value={plan}
+              onChange={setPlan}
+              options={["Everyday", "Plus", "None"]}
+            />
+            <FilterSelect
+              label="Account"
+              value={bank}
+              onChange={setBank}
+              options={[
+                "Not Issued",
+                "Pending Issuance",
+                "Issuance Failed",
+                "Active",
+                "Restricted",
+                "Closed",
+              ]}
+            />
+            <SelectField
+              aria-label="Registration date"
+              value={reg}
+              onChange={(e) => setReg(e.target.value)}
+              className="h-10 w-auto max-w-full rounded-md border bg-card px-3 text-[13px]"
+            >
               <option value="all">Registered: Any time</option>
               <option value="7">Last 7 days</option>
               <option value="30">Last 30 days</option>
@@ -120,9 +260,15 @@ function Customers() {
             </SelectField>
             {selected.length > 0 && (
               <div className="ml-auto flex items-center gap-2">
-                <span className="text-[13px] text-muted-foreground">{selected.length} selected</span>
-                <Button size="sm" variant="outline" onClick={exportCsv}><Download /> Export CSV</Button>
-                <Button size="sm" variant="ghost" onClick={() => setSelected([])}>Clear</Button>
+                <span className="text-[13px] text-muted-foreground">
+                  {selected.length} selected
+                </span>
+                <Button size="sm" variant="outline" onClick={exportCsv}>
+                  <Download /> Export CSV
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setSelected([])}>
+                  Clear
+                </Button>
               </div>
             )}
           </>

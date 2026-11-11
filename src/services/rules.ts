@@ -14,14 +14,19 @@ export function nextFriday(from: Date = new Date()): Date {
 
 /** Returns null when the customer can be activated, otherwise the blocking reason. */
 export function activationBlocker(c: Customer, accounts: Account[]): string | null {
-  if (!c.emailVerified) return "This customer cannot be activated because the email address has not been verified.";
-  if (!c.phoneVerified) return "This customer cannot be activated because the phone number has not been verified.";
-  if (c.kycStatus !== "Approved") return "This customer cannot be activated because KYC verification has not been completed.";
-  if (c.accountIssuanceStatus !== "Issued") return "This customer cannot be activated because their banking accounts have not been issued.";
+  if (!c.emailVerified)
+    return "This customer cannot be activated because the email address has not been verified.";
+  if (!c.phoneVerified)
+    return "This customer cannot be activated because the phone number has not been verified.";
+  if (c.kycStatus !== "Approved")
+    return "This customer cannot be activated because KYC verification has not been completed.";
+  if (c.accountIssuanceStatus !== "Issued")
+    return "This customer cannot be activated because their banking accounts have not been issued.";
   const mine = accounts.filter((a) => a.customerId === c.id);
   if (!mine.some((a) => a.accountType === "Smart Spend" && a.accountStatus === "Active"))
     return "This customer cannot be activated because no active Smart Spend account exists.";
-  if (c.customerStatus !== "Setup In Progress") return `Activation is only possible from Setup In Progress (current: ${c.customerStatus}).`;
+  if (c.customerStatus !== "Setup In Progress")
+    return `Activation is only possible from Setup In Progress (current: ${c.customerStatus}).`;
   return null;
 }
 
@@ -29,7 +34,8 @@ export function activationBlocker(c: Customer, accounts: Account[]): string | nu
 export function batchIneligibility(o: CardOrder): string | null {
   if (o.orderStatus === "Submitted" || o.orderStatus === "Delivered")
     return "This card order has already been included in a submitted manufacturing batch.";
-  if (o.manufacturingBatchId) return "This card order is already part of another manufacturing batch.";
+  if (o.manufacturingBatchId)
+    return "This card order is already part of another manufacturing batch.";
   if (o.orderStatus !== "Eligible") return `Orders with status ${o.orderStatus} cannot be batched.`;
   return null;
 }

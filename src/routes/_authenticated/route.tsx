@@ -8,7 +8,10 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ context, location }) => {
     const access = await resolveAccess(context.queryClient);
     if (access.kind === "signin") {
-      throw redirect({ to: "/auth", search: { redirect: location.href, ...(access.reason ? { reason: access.reason } : {}) } });
+      throw redirect({
+        to: "/auth",
+        search: { redirect: location.href, ...(access.reason ? { reason: access.reason } : {}) },
+      });
     }
     if (access.kind === "mfa") throw redirect({ to: "/auth", search: { redirect: location.href } });
     if (access.kind === "set-password") throw redirect({ to: "/set-password" });

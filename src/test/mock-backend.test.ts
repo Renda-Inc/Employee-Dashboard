@@ -32,7 +32,13 @@ describe("mock auth & employee admin", () => {
 
   it("creates employees as Invitation Pending with a system-generated password they must replace", async () => {
     await signInAsDemoAdmin();
-    const created = await api.createEmployee({ firstName: "Ada", lastName: "Lovelace", email: "Ada@Renda.ca", department: "Customer Support", roleId: await supportRoleId() });
+    const created = await api.createEmployee({
+      firstName: "Ada",
+      lastName: "Lovelace",
+      email: "Ada@Renda.ca",
+      department: "Customer Support",
+      roleId: await supportRoleId(),
+    });
     expect(created.employeeCode).toMatch(/^EMP-\d+$/);
     expect(created.temporaryPassword).toHaveLength(16);
 
@@ -49,7 +55,13 @@ describe("mock auth & employee admin", () => {
 
   it("does not let a suspended employee sign in as themselves", async () => {
     await signInAsDemoAdmin();
-    const created = await api.createEmployee({ firstName: "Sam", lastName: "Lee", email: "sam@renda.ca", department: "Compliance", roleId: await supportRoleId() });
+    const created = await api.createEmployee({
+      firstName: "Sam",
+      lastName: "Lee",
+      email: "sam@renda.ca",
+      department: "Compliance",
+      roleId: await supportRoleId(),
+    });
     await api.updateEmployee({ id: created.id, status: "Suspended" });
     await auth.logout();
     const res = await auth.login("sam@renda.ca", created.temporaryPassword);
@@ -58,21 +70,44 @@ describe("mock auth & employee admin", () => {
 
   it("rejects employee management for roles without employees.manage", async () => {
     await signInAsDemoAdmin();
-    const created = await api.createEmployee({ firstName: "Kim", lastName: "Ng", email: "kim@renda.ca", department: "Customer Support", roleId: await supportRoleId() });
+    const created = await api.createEmployee({
+      firstName: "Kim",
+      lastName: "Ng",
+      email: "kim@renda.ca",
+      department: "Customer Support",
+      roleId: await supportRoleId(),
+    });
     await auth.logout();
     await auth.login("kim@renda.ca", created.temporaryPassword);
     await auth.completePasswordSetup("CorrectHorse42Battery");
-    await expect(api.createEmployee({ firstName: "X", lastName: "Y", email: "x@renda.ca", department: "Finance", roleId: await supportRoleId() })).rejects.toThrow("Your role doesn't allow this action.");
+    await expect(
+      api.createEmployee({
+        firstName: "X",
+        lastName: "Y",
+        email: "x@renda.ca",
+        department: "Finance",
+        roleId: await supportRoleId(),
+      }),
+    ).rejects.toThrow("Your role doesn't allow this action.");
   });
 
   it("requires a two-step code after enrolment", async () => {
     await signInAsDemoAdmin();
-    const created = await api.createEmployee({ firstName: "Ola", lastName: "Ade", email: "ola@renda.ca", department: "Customer Support", roleId: await supportRoleId() });
+    const created = await api.createEmployee({
+      firstName: "Ola",
+      lastName: "Ade",
+      email: "ola@renda.ca",
+      department: "Customer Support",
+      roleId: await supportRoleId(),
+    });
     await auth.logout();
     await auth.login("ola@renda.ca", created.temporaryPassword);
     await auth.completePasswordSetup("CorrectHorse42Battery");
     const enrol = await auth.mfa.startEnrollment();
-    await auth.mfa.confirmEnrollment(enrol.enrollmentId, await totpCode(enrol.secret, Math.floor(Date.now() / 30_000)));
+    await auth.mfa.confirmEnrollment(
+      enrol.enrollmentId,
+      await totpCode(enrol.secret, Math.floor(Date.now() / 30_000)),
+    );
     await auth.logout();
 
     const res = await auth.login("ola@renda.ca", "CorrectHorse42Battery");

@@ -39,14 +39,24 @@ export function generateTotpSecret(byteLength = 20): string {
 }
 
 export async function totpCode(secret: string, counter: number): Promise<string> {
-  const key = await crypto.subtle.importKey("raw", base32Decode(secret), { name: "HMAC", hash: "SHA-1" }, false, ["sign"]);
+  const key = await crypto.subtle.importKey(
+    "raw",
+    base32Decode(secret),
+    { name: "HMAC", hash: "SHA-1" },
+    false,
+    ["sign"],
+  );
   const msg = new ArrayBuffer(8);
   const view = new DataView(msg);
   view.setUint32(0, Math.floor(counter / 2 ** 32));
   view.setUint32(4, counter >>> 0);
   const h = new Uint8Array(await crypto.subtle.sign("HMAC", key, msg));
   const offset = (h[h.length - 1] ?? 0) & 15;
-  const bin = (((h[offset] ?? 0) & 127) << 24) | ((h[offset + 1] ?? 0) << 16) | ((h[offset + 2] ?? 0) << 8) | (h[offset + 3] ?? 0);
+  const bin =
+    (((h[offset] ?? 0) & 127) << 24) |
+    ((h[offset + 1] ?? 0) << 16) |
+    ((h[offset + 2] ?? 0) << 8) |
+    (h[offset + 3] ?? 0);
   return String(bin % 1_000_000).padStart(6, "0");
 }
 

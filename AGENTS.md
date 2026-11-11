@@ -1,4 +1,5 @@
 <!-- LOVABLE:BEGIN -->
+
 > [!IMPORTANT]
 > This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
 > published git history — force pushing, or rebasing/amending/squashing commits
@@ -7,14 +8,17 @@
 >
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
+
 <!-- LOVABLE:END -->
 
 ## UI architecture
+
 - Use the shared semantic tokens, Button, PageHeader, Panel and table controls for every employee module; visual refinements must not modify service rules or data relationships.
 - Keep customer overview sections in the shared unboxed summary workspace and preserve URL-backed profile tabs, so detailed records remain accessible without fragmented containers.
 - Use SelectField to restyle existing select fields while retaining their option values and event handlers; shared dropdown presentation prevents inconsistent native controls.
 
 ## Employee access
+
 - Every dashboard page lives under `src/routes/_authenticated/`, whose gate (`resolveAccess` in `src/services/directory.ts`) requires an Active employee with a role, completed MFA when enrolled, and a non-temporary password; this keeps sign-in, MFA and first-password rules in one place.
 - All backend access goes through the contracts in `src/services/contracts/` (`AuthService`, `EmployeeAdminApi`, `OperationsService`, `OperationsRepository`), wired in one place, `src/services/api.ts`; pages never import an implementation, so a real backend replaces the in-browser mocks in `src/services/mock/` without UI changes.
 - Employee writes must check the caller's permission and the rules in `employee-rules.ts` inside the service implementation (the mock does this in `src/services/mock/employees.ts`), so business rules (last Administrator, self-changes, automatic Invitation Pending) can't be bypassed from the UI.

@@ -4,7 +4,8 @@ import { z } from "zod";
 import type { EmployeeStatus } from "@/types/models";
 import { DEPARTMENTS, LANDING_PAGES, isPermission } from "../permissions";
 
-export type JsonValue = string | number | boolean | null | { [key: string]: JsonValue | undefined } | JsonValue[];
+export type JsonValue =
+  string | number | boolean | null | { [key: string]: JsonValue | undefined } | JsonValue[];
 
 export interface RoleRecord {
   id: string;
@@ -69,7 +70,13 @@ export interface DirectorySnapshot {
 
 /* ---------------- Inputs (validate on the backend too) ---------------- */
 
-const optionalText = (max: number) => z.string().trim().max(max).optional().transform((v) => (v ? v : null));
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .optional()
+    .transform((v) => (v ? v : null));
 const phonePattern = /^[0-9+()\-.\s]*$/;
 
 export const CreateEmployeeInput = z.object({
@@ -79,7 +86,13 @@ export const CreateEmployeeInput = z.object({
   department: z.enum(DEPARTMENTS),
   roleId: z.string().min(1, "Choose a role."),
   jobTitle: optionalText(80),
-  phone: z.string().trim().max(30).regex(phonePattern, "Use digits, spaces and + ( ) - only.").optional().transform((v) => (v ? v : null)),
+  phone: z
+    .string()
+    .trim()
+    .max(30)
+    .regex(phonePattern, "Use digits, spaces and + ( ) - only.")
+    .optional()
+    .transform((v) => (v ? v : null)),
 });
 
 export const UpdateEmployeeInput = z.object({
@@ -100,8 +113,12 @@ export const RoleInput = z.object({
   name: z.string().trim().min(2, "Role name needs at least 2 characters.").max(50),
   description: z.string().trim().max(300).default(""),
   department: z.enum(DEPARTMENTS).nullable().default(null),
-  landingPage: z.string().refine((v) => LANDING_PAGES.some((l) => l.to === v), "Choose a landing page."),
-  permissions: z.array(z.string()).transform((list) => Array.from(new Set(list.filter(isPermission)))),
+  landingPage: z
+    .string()
+    .refine((v) => LANDING_PAGES.some((l) => l.to === v), "Choose a landing page."),
+  permissions: z
+    .array(z.string())
+    .transform((list) => Array.from(new Set(list.filter(isPermission)))),
 });
 
 export const UpdateRoleInput = RoleInput.extend({ id: z.string().min(1) });
@@ -124,7 +141,9 @@ export interface EmployeeAdminApi {
   /** Most recent administration events first. Requires `audit.view`. */
   listAuditEvents(): Promise<AdminAuditRecord[]>;
   /** Creates an Invitation Pending account with a system-generated temporary password. */
-  createEmployee(input: CreateEmployeeInput): Promise<{ id: string; employeeCode: string; temporaryPassword: string }>;
+  createEmployee(
+    input: CreateEmployeeInput,
+  ): Promise<{ id: string; employeeCode: string; temporaryPassword: string }>;
   /** Updates details, role or status. Returns the resulting status. */
   updateEmployee(input: UpdateEmployeeInput): Promise<{ status: EmployeeStatus }>;
   /** Issues a new temporary password; the employee must choose a new one at next sign-in. */

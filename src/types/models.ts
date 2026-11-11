@@ -50,7 +50,8 @@ export interface Customer {
 }
 
 export type AccountType = "Smart Spend" | "Sense Save";
-export type AccountStatus = "Pending Issuance" | "Issuance Failed" | "Active" | "Restricted" | "Closed";
+export type AccountStatus =
+  "Pending Issuance" | "Issuance Failed" | "Active" | "Restricted" | "Closed";
 
 export interface Account {
   id: string;
@@ -125,7 +126,8 @@ export interface Transfer {
 
 export type CardDesign = "Classic" | "Blue Nova" | "Aqua Aura" | "Pearl Ivory";
 export const CARD_DESIGNS: CardDesign[] = ["Classic", "Blue Nova", "Aqua Aura", "Pearl Ivory"];
-export type CardStatus = "Active" | "Locked" | "Awaiting Manufacturing" | "In Production" | "Replaced" | "Canceled";
+export type CardStatus =
+  "Active" | "Locked" | "Awaiting Manufacturing" | "In Production" | "Replaced" | "Canceled";
 
 export interface Card {
   id: string;
@@ -143,7 +145,8 @@ export interface Card {
   notes: Note[];
 }
 
-export type OrderStatus = "Eligible" | "Batched" | "Submitted" | "Delivered" | "Canceled" | "Failed";
+export type OrderStatus =
+  "Eligible" | "Batched" | "Submitted" | "Delivered" | "Canceled" | "Failed";
 export type OrderType = "Initial Plus Card" | "Replacement Card";
 export type ReplacementReason =
   | "Lost card"
@@ -236,7 +239,8 @@ export interface SavingsGoal {
   targetDate: string | null;
 }
 
-export type CaseStatus = "Open" | "In Progress" | "Awaiting Customer" | "Escalated" | "Resolved" | "Closed";
+export type CaseStatus =
+  "Open" | "In Progress" | "Awaiting Customer" | "Escalated" | "Resolved" | "Closed";
 export type CasePriority = "Low" | "Normal" | "High" | "Urgent";
 export type CaseCategory =
   | "Account Access"
@@ -347,7 +351,12 @@ export interface ActivityEvent {
 export interface AlfieEvent {
   id: string;
   timestamp: string;
-  workflow: "Savings Goals" | "Subscription Analysis" | "Spending Insights" | "Conversation" | "Integration";
+  workflow:
+    | "Savings Goals"
+    | "Subscription Analysis"
+    | "Spending Insights"
+    | "Conversation"
+    | "Integration";
   description: string;
   severity: "Info" | "Warning" | "Error";
   status: "Open" | "Resolved";
