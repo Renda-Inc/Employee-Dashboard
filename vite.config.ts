@@ -7,9 +7,15 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  // Static-hosting builds (GitHub Pages) set RENDA_EMP_SPA=1 and RENDA_EMP_BASE
+  // to the deployment subpath; local dev and server builds leave both unset.
+  vite: {
+    base: process.env.RENDA_EMP_BASE ?? "/",
+  },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
+    ...(process.env.RENDA_EMP_SPA === "1" ? { spa: { enabled: true } } : {}),
   },
 });
