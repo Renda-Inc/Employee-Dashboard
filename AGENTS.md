@@ -1,15 +1,14 @@
-<!-- LOVABLE:BEGIN -->
+# AGENTS.md
 
-> [!IMPORTANT]
-> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
-> published git history — force pushing, or rebasing/amending/squashing commits
-> that are already pushed — as it rewrites history on Lovable's side and the
-> user will likely lose their project history.
->
-> Commits you push to the connected branch sync back to Lovable and show up in
-> the editor, so keep the branch in a working state.
+Working notes for anyone building on this project.
 
-<!-- LOVABLE:END -->
+## History
+
+This project was started in a hosted editor and moved to standalone
+development on 2026-11-15. The editor is disconnected: nothing in the repo
+depends on it, and the build runs on the plain Vite config in
+`vite.config.ts`. Work happens directly on the `main` branch, which
+auto-deploys to GitHub Pages.
 
 ## UI architecture
 
@@ -26,4 +25,4 @@
 - `docs/schema.sql` is the reference schema for employee tables and must stay in step with `src/services/contracts/employees.ts`.
 - The operations dataset is a synchronous React snapshot (`useDB`) loaded through `OperationsRepository` by the workspace gate (`loadOperations`); writes before it loads are never persisted, so stale state can't overwrite saved records.
 - The demo operations dataset reads permissions through the live role registry (`setRolePermissions`) and mirrors directory employees into the local store, so custom roles apply to every existing module without changing module code.
-- Sign-in temporarily falls back to one shared demo Administrator when credentials don't match a real employee (`OPEN_SIGN_IN` in `src/services/mock/auth.ts`); one flag turns it off, and real employee logins still take priority.
+- There is no shared or fallback account. When no employee accounts exist at all, sign-in offers a one-time first-administrator setup (`needsInitialSetup` / `setupInitialAdmin` in the AuthService contract, implemented in `src/services/mock/auth.ts`); it closes permanently once the first account exists. Failed sign-ins are rate-limited per email in the mock auth service, returning the contract's "rate-limited" error the sign-in page already handles.

@@ -61,6 +61,14 @@ const ChartContainer = React.forwardRef<
 });
 ChartContainer.displayName = "Chart";
 
+// Chart colors are interpolated into a <style> element below, so only plain
+// CSS color values are allowed through: hex, rgb/hsl/oklch functions, var()
+// references and named colors. Anything else is dropped instead of rendered.
+const SAFE_COLOR =
+  /^(#[0-9a-fA-F]{3,8}|[a-zA-Z]+|var\(--[a-zA-Z0-9-]+\)|(rgb|rgba|hsl|hsla|oklch|oklab)\([0-9a-zA-Z\s.,%/-]+\))$/;
+const safeColor = (value: string | undefined) =>
+  value && SAFE_COLOR.test(value.trim()) ? value.trim() : undefined;
+
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(([, config]) => config.theme || config.color);
 
@@ -68,16 +76,19 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null;
   }
 
+  const safeId = id.replace(/[^a-zA-Z0-9-_]/g, "");
   return (
     <style
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)
           .map(
             ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
+${prefix} [data-chart=${safeId}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
-    const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
+    const color = safeColor(
+      itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color,
+    );
     return color ? `  --color-${key}: ${color};` : null;
   })
   .join("\n")}

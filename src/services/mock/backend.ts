@@ -9,7 +9,6 @@ import type {
   RoleRecord,
 } from "../contracts/employees";
 import { ROLE_PERMISSIONS } from "../permissions";
-import { generateTemporaryPassword } from "../employee-rules";
 
 export const ADMIN_ROLE = "Administrator";
 
@@ -39,12 +38,6 @@ export interface MockSession {
 
 const TABLES_KEY = "renda-admin-mock-backend-v1";
 const SESSION_KEY = "renda-admin-mock-session-v1";
-
-export const DEMO_ADMIN = {
-  email: "demo.admin@example.com",
-  firstName: "Demo",
-  lastName: "Administrator",
-};
 
 const SYSTEM_ROLES: {
   name: keyof typeof ROLE_PERMISSIONS;
@@ -248,42 +241,4 @@ export function requirePermission(t: MockTables, permission: string): EmployeeRo
   if (!me || !roleOf(t, me.id)?.permissions.includes(permission))
     throw new Error("Your role doesn't allow this action.");
   return me;
-}
-
-/** Creates (or restores) the shared demo Administrator used by open sign-in. */
-export function ensureDemoAdmin(t: MockTables): string {
-  const role = t.roles.find((r) => r.name === ADMIN_ROLE);
-  if (!role) throw new Error("The Administrator role is missing.");
-  let emp = t.employees.find((e) => e.email === DEMO_ADMIN.email);
-  if (!emp) {
-    const at = nowIso();
-    emp = {
-      id: newId(),
-      employee_code: `EMP-${t.nextEmployeeNumber++}`,
-      first_name: DEMO_ADMIN.firstName,
-      last_name: DEMO_ADMIN.lastName,
-      email: DEMO_ADMIN.email,
-      department: "Executive",
-      job_title: "Administrator",
-      phone: null,
-      status: "Active",
-      must_change_password: false,
-      last_login_at: null,
-      created_by: null,
-      created_at: at,
-      updated_at: at,
-    };
-    t.employees.push(emp);
-    // Unknown random password: the account is only reachable through open sign-in.
-    t.credentials[emp.id] = generateTemporaryPassword(32);
-  }
-  // Keep the shared account usable: active, Administrator, no forced password change, no two-step verification.
-  emp.status = "Active";
-  emp.must_change_password = false;
-  t.assignments = [
-    ...t.assignments.filter((a) => a.user_id !== emp.id),
-    { user_id: emp.id, role_id: role.id, assigned_at: nowIso() },
-  ];
-  delete t.factors[emp.id];
-  return emp.id;
 }

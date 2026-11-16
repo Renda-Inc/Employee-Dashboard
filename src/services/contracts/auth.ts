@@ -22,6 +22,14 @@ export interface CurrentEmployee {
 
 export type AuthEvent = "SIGNED_IN" | "SIGNED_OUT" | "USER_UPDATED";
 
+export interface InitialAdminInput {
+  firstName: string;
+  lastName: string;
+  email: string;
+  /** A password the first administrator chooses themselves; it must meet `passwordIssues`. */
+  password: string;
+}
+
 export interface MfaEnrollment {
   enrollmentId: string;
   /** Base32 key for manual entry in an authenticator app. */
@@ -48,6 +56,15 @@ export interface MfaService {
  */
 export interface AuthService {
   login(email: string, password: string): Promise<LoginResult>;
+  /** True only when no employee accounts exist at all (a fresh workspace). */
+  needsInitialSetup(): Promise<boolean>;
+  /**
+   * One-time first-run setup: creates the first employee as an Active
+   * Administrator with a password they choose, and signs them in. Must
+   * refuse once any employee account exists. There is no default, shared
+   * or fallback account anywhere in the system.
+   */
+  setupInitialAdmin(input: InitialAdminInput): Promise<LoginResult>;
   /** Completes a sign-in that requires two-step verification. Throws on a wrong code. */
   verifyMfa(code: string): Promise<void>;
   logout(): Promise<void>;

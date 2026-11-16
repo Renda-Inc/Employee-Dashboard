@@ -3,8 +3,8 @@ import QRCode from "qrcode";
 import type { AuthEvent, AuthService, AuthSession } from "../contracts/auth";
 import { isBlockedStatus, passwordIssues } from "../employee-rules";
 import {
+  ADMIN_ROLE,
   audit,
-  ensureDemoAdmin,
   findEmployee,
   fullName,
   hasVerifiedFactor,
@@ -21,13 +21,72 @@ import {
 } from "./backend";
 import { generateTotpSecret, otpauthUri, verifyTotp } from "./totp";
 
-/**
- * TEMPORARY: while true, any email/password that doesn't match an employee login signs in to one
- * shared demo Administrator account. Set to false to require real credentials.
- */
-export const OPEN_SIGN_IN = true;
-
 const listeners = new Set<(event: AuthEvent) => void>();
+
+/* ---------------- Sign-in rate limiting ----------------
+ * Failed attempts are counted per email in this browser. After
+ * MAX_FAILED_ATTEMPTS failures inside the window, further attempts for
+ * that email are refused as "rate-limited" until the lock expires. A real
+ * backend must enforce the same limit server-side. */
+const ATTEMPTS_KEY = "renda-admin-signin-attempts-v1";
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCK_MS = 5 * 60_000;
+
+interface AttemptRecord {
+  count: number;
+  lockedUntil: number;
+}
+
+function readAttempts(): Record<string, AttemptRecord> {
+  try {
+    return JSON.parse(window.localStorage.getItem(ATTEMPTS_KEY) ?? "{}") as Record<
+      string,
+      AttemptRecord
+    >;
+  } catch {
+    return {};
+  }
+}
+
+function writeAttempts(a: Record<string, AttemptRecord>) {
+  try {
+    window.localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(a));
+  } catch {
+    /* storage unavailable; limiting stays in-memory best effort */
+  }
+}
+
+function isLocked(email: string): boolean {
+  const rec = readAttempts()[email];
+  return !!rec && rec.lockedUntil > Date.now();
+}
+
+function recordFailure(email: string) {
+  const all = readAttempts();
+  const rec = all[email] ?? { count: 0, lockedUntil: 0 };
+  rec.count += 1;
+  if (rec.count >= MAX_FAILED_ATTEMPTS) {
+    rec.lockedUntil = Date.now() + LOCK_MS;
+    rec.count = 0;
+  }
+  all[email] = rec;
+  writeAttempts(all);
+}
+
+function clearFailures(email: string) {
+  const all = readAttempts();
+  delete all[email];
+  writeAttempts(all);
+}
+
+/** Test helper: forget all sign-in attempt counters. */
+export function resetSignInAttempts() {
+  try {
+    window.localStorage.removeItem(ATTEMPTS_KEY);
+  } catch {
+    /* ignore */
+  }
+}
 const emit = (event: AuthEvent) => listeners.forEach((l) => l(event));
 
 function toSession(t: MockTables, s: MockSession | null): AuthSession | null {
@@ -61,10 +120,22 @@ function requireSession() {
   return s;
 }
 
+function startSession(userId: string) {
+  const session: MockSession = { userId, assurance: "aal1", issuedAt: nowIso() };
+  writeSession(session);
+  const view = toSession(readTables(), session);
+  if (!view) return null;
+  if (!view.mfaRequired) writeTables((x) => recordSignIn(x, userId));
+  emit("SIGNED_IN");
+  return view;
+}
+
 export const mockAuthService: AuthService = {
   async login(email, password) {
+    const normalized = email.trim().toLowerCase();
+    if (isLocked(normalized)) return { ok: false, error: "rate-limited" };
     const t = readTables();
-    const emp = t.employees.find((e) => e.email === email.trim().toLowerCase());
+    const emp = t.employees.find((e) => e.email === normalized);
     let userId: string | null = null;
     if (
       emp &&
@@ -72,15 +143,67 @@ export const mockAuthService: AuthService = {
       t.credentials[emp.id] === (await hashPassword(emp.id, password))
     )
       userId = emp.id;
-    if (!userId && OPEN_SIGN_IN) userId = writeTables(ensureDemoAdmin);
-    if (!userId) return { ok: false, error: "invalid" };
-
-    const session: MockSession = { userId, assurance: "aal1", issuedAt: nowIso() };
-    writeSession(session);
-    const view = toSession(readTables(), session);
+    if (!userId) {
+      recordFailure(normalized);
+      return { ok: false, error: isLocked(normalized) ? "rate-limited" : "invalid" };
+    }
+    clearFailures(normalized);
+    const view = startSession(userId);
     if (!view) return { ok: false, error: "invalid" };
-    if (!view.mfaRequired) writeTables((x) => recordSignIn(x, userId));
-    emit("SIGNED_IN");
+    return { ok: true, session: view };
+  },
+
+  async needsInitialSetup() {
+    return readTables().employees.length === 0;
+  },
+
+  async setupInitialAdmin(input) {
+    const firstName = input.firstName.trim();
+    const lastName = input.lastName.trim();
+    const email = input.email.trim().toLowerCase();
+    if (!firstName || !lastName) throw new Error("Enter the first administrator's name.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid work email.");
+    const issues = passwordIssues(input.password);
+    if (issues.length) throw new Error(`Your password needs: ${issues.join(", ").toLowerCase()}.`);
+    const id = newId();
+    const hash = await hashPassword(id, input.password);
+    const created = writeTables((t) => {
+      // One-time only: refuse once any employee account exists, so this
+      // can never be used to create a backdoor administrator later.
+      if (t.employees.length > 0) return false;
+      const role = t.roles.find((r) => r.name === ADMIN_ROLE);
+      if (!role) throw new Error("The Administrator role is missing.");
+      const at = nowIso();
+      t.employees.push({
+        id,
+        employee_code: `EMP-${t.nextEmployeeNumber++}`,
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        department: "Executive",
+        job_title: "Administrator",
+        phone: null,
+        status: "Active",
+        must_change_password: false,
+        last_login_at: null,
+        created_by: null,
+        created_at: at,
+        updated_at: at,
+      });
+      t.credentials[id] = hash;
+      t.assignments.push({ user_id: id, role_id: role.id, assigned_at: at });
+      audit(t, id, {
+        action: "Initial administrator created",
+        module: "Authentication",
+        entityType: "Employee",
+        entityId: id,
+        entityLabel: `${firstName} ${lastName}`,
+      });
+      return true;
+    });
+    if (!created) throw new Error("Setup is already complete. Sign in instead.");
+    const view = startSession(id);
+    if (!view) return { ok: false, error: "invalid" };
     return { ok: true, session: view };
   },
 

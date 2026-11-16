@@ -1,13 +1,27 @@
 // Rules the mock backend must keep until a real backend replaces it.
 import { beforeEach, describe, expect, it } from "vitest";
-import { mockAuthService as auth, OPEN_SIGN_IN } from "@/services/mock/auth";
+import { mockAuthService as auth, resetSignInAttempts } from "@/services/mock/auth";
 import { mockEmployeeAdminApi as api } from "@/services/mock/employees";
-import { DEMO_ADMIN, resetMockBackend } from "@/services/mock/backend";
+import { resetMockBackend } from "@/services/mock/backend";
 import { totpCode, verifyTotp } from "@/services/mock/totp";
 
+const FIRST_ADMIN = {
+  firstName: "First",
+  lastName: "Administrator",
+  email: "first.admin@renda.ca",
+  password: "CorrectHorse42Battery",
+};
+
 async function signInAsDemoAdmin() {
-  const res = await auth.login("anyone@example.com", "any password");
-  if (!res.ok) throw new Error("open sign-in failed");
+  // First-run setup is the only bootstrap: it creates the first
+  // Administrator and signs them in. Later calls sign in normally.
+  if (await auth.needsInitialSetup()) {
+    const res = await auth.setupInitialAdmin(FIRST_ADMIN);
+    if (!res.ok) throw new Error("initial setup failed");
+    return res.session;
+  }
+  const res = await auth.login(FIRST_ADMIN.email, FIRST_ADMIN.password);
+  if (!res.ok) throw new Error("admin sign-in failed");
   return res.session;
 }
 
@@ -19,15 +33,39 @@ async function supportRoleId() {
 describe("mock auth & employee admin", () => {
   beforeEach(() => {
     resetMockBackend();
+    resetSignInAttempts();
     window.localStorage.clear();
+    resetMockBackend();
+    resetSignInAttempts();
   });
 
-  it("signs unknown credentials in as the shared demo Administrator while open sign-in is on", async () => {
-    expect(OPEN_SIGN_IN).toBe(true);
+  it("rejects unknown credentials: there is no shared or fallback account", async () => {
+    const res = await auth.login("anyone@example.com", "any password");
+    expect(res.ok).toBe(false);
+    expect(await auth.getSession()).toBeNull();
+  });
+
+  it("creates the first Administrator only through one-time setup", async () => {
+    expect(await auth.needsInitialSetup()).toBe(true);
     const session = await signInAsDemoAdmin();
-    expect(session.email).toBe(DEMO_ADMIN.email);
+    expect(session.email).toBe(FIRST_ADMIN.email);
     const { role } = await auth.getCurrentEmployee();
     expect(role?.name).toBe("Administrator");
+    expect(await auth.needsInitialSetup()).toBe(false);
+    await expect(
+      auth.setupInitialAdmin({ ...FIRST_ADMIN, email: "second@renda.ca" }),
+    ).rejects.toThrow("Setup is already complete");
+  });
+
+  it("rate-limits repeated failed sign-ins for the same email", async () => {
+    await signInAsDemoAdmin();
+    await auth.logout();
+    for (let i = 0; i < 5; i++) {
+      const attempt = await auth.login(FIRST_ADMIN.email, "wrong password");
+      expect(attempt.ok).toBe(false);
+    }
+    const locked = await auth.login(FIRST_ADMIN.email, FIRST_ADMIN.password);
+    expect(locked).toEqual({ ok: false, error: "rate-limited" });
   });
 
   it("creates employees as Invitation Pending with a system-generated password they must replace", async () => {
@@ -65,7 +103,7 @@ describe("mock auth & employee admin", () => {
     await api.updateEmployee({ id: created.id, status: "Suspended" });
     await auth.logout();
     const res = await auth.login("sam@renda.ca", created.temporaryPassword);
-    expect(res.ok && res.session.email).not.toBe("sam@renda.ca");
+    expect(res.ok).toBe(false);
   });
 
   it("rejects employee management for roles without employees.manage", async () => {

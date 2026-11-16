@@ -18,6 +18,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ownAccess, rememberSession, safeRedirect, signOutEverywhere } from "@/services/directory";
+import { PasswordFields } from "@/components/auth/PasswordFields";
+import { passwordIssues } from "@/services/employee-rules";
 
 type Reason = "denied" | "expired";
 
@@ -54,9 +56,13 @@ function SignIn() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [step, setStep] = useState<"loading" | "credentials" | "mfa">("loading");
+  const [step, setStep] = useState<"loading" | "credentials" | "mfa" | "setup">("loading");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [setupPassword, setSetupPassword] = useState("");
+  const [setupConfirm, setSetupConfirm] = useState("");
   const [show, setShow] = useState(false);
   const [remember, setRemember] = useState(true);
   const [code, setCode] = useState("");
@@ -92,6 +98,7 @@ function SignIn() {
         if (session.mfaRequired) return setStep("mfa");
         return finish();
       }
+      if (await auth.needsInitialSetup()) return setStep("setup");
       setStep("credentials");
     })();
     return () => {
@@ -127,6 +134,34 @@ function SignIn() {
     await finish();
   }
 
+  async function onSetup(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!firstName.trim() || !lastName.trim()) return setError("Enter your first and last name.");
+    if (!email.trim()) return setError("Enter your work email.");
+    const issues = passwordIssues(setupPassword);
+    if (issues.length) return setError(`Your password needs: ${issues.join(", ").toLowerCase()}.`);
+    if (setupPassword !== setupConfirm) return setError("Passwords don't match.");
+    setBusy(true);
+    rememberSession(true);
+    try {
+      const result = await auth.setupInitialAdmin({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim(),
+        password: setupPassword,
+      });
+      if (!result.ok) {
+        setBusy(false);
+        return setError("Setup couldn't be completed. Sign in instead.");
+      }
+    } catch (err) {
+      setBusy(false);
+      return setError(err instanceof Error ? err.message : "Setup couldn't be completed.");
+    }
+    await finish();
+  }
+
   async function onVerify(e?: FormEvent) {
     e?.preventDefault();
     if (code.length !== 6) return setError("Enter the 6-digit code from your authenticator app.");
@@ -153,6 +188,63 @@ function SignIn() {
         <div className="flex h-72 items-center justify-center text-muted-foreground">
           <Loader2 className="size-5 animate-spin" aria-label="Loading" />
         </div>
+      )}
+
+      {step === "setup" && (
+        <form onSubmit={onSetup} noValidate className="space-y-5">
+          <div>
+            <h1 className="text-[22px] font-semibold leading-tight">Set up Renda Admin</h1>
+            <p className="mt-2 text-[14px] text-muted-foreground">
+              No employee accounts exist yet. Create the first Administrator account with a password
+              you choose. This setup closes as soon as the account is created.
+            </p>
+          </div>
+          <FormError>{error}</FormError>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="first-name">First name</Label>
+              <Input
+                id="first-name"
+                autoComplete="given-name"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="h-11"
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="last-name">Last name</Label>
+              <Input
+                id="last-name"
+                autoComplete="family-name"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="h-11"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="setup-email">Work email address</Label>
+            <Input
+              id="setup-email"
+              type="email"
+              autoComplete="username"
+              placeholder="name@renda.ca"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="h-11"
+            />
+          </div>
+          <PasswordFields
+            password={setupPassword}
+            confirm={setupConfirm}
+            onPassword={setSetupPassword}
+            onConfirm={setSetupConfirm}
+          />
+          <Button type="submit" size="lg" className="h-11 w-full text-[15px]" disabled={busy}>
+            {busy && <Loader2 className="size-4 animate-spin" />} Create administrator and continue
+          </Button>
+        </form>
       )}
 
       {step === "credentials" && (
