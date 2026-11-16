@@ -4,7 +4,9 @@ import type { AuthEvent, AuthService, AuthSession } from "../contracts/auth";
 import { isBlockedStatus, passwordIssues } from "../employee-rules";
 import {
   ADMIN_ROLE,
+  TEST_ADMIN_ID,
   audit,
+  ensureTestAdmin,
   findEmployee,
   fullName,
   hasVerifiedFactor,
@@ -87,6 +89,19 @@ export function resetSignInAttempts() {
     /* ignore */
   }
 }
+/* ---------------- Open sign-in (temporary testing mode) ----------------
+ * Turned ON at the team's request on 2026-11-15 so testers can sign in
+ * with anything while the dashboard is being exercised. Any email and
+ * password that do not match a real employee sign in as the ephemeral
+ * Test Administrator (see backend.ts): the typed credentials are never
+ * stored, no account is created from them, and the session lives in
+ * memory only, so a page reload signs it out. Real employee accounts
+ * still sign in with their own credentials exactly as before, and their
+ * sessions persist normally. Set this to false before any real use: that
+ * restores strict sign-in, per-email rate limiting and the one-time
+ * first-administrator setup screen. */
+export const OPEN_SIGN_IN = true;
+
 const emit = (event: AuthEvent) => listeners.forEach((l) => l(event));
 
 function toSession(t: MockTables, s: MockSession | null): AuthSession | null {
@@ -101,6 +116,9 @@ function toSession(t: MockTables, s: MockSession | null): AuthSession | null {
 }
 
 function recordSignIn(t: MockTables, userId: string) {
+  // The test administrator leaves no audit trail and no last-login stamp:
+  // nothing about a testing sign-in is recorded.
+  if (userId === TEST_ADMIN_ID) return;
   const me = findEmployee(t, userId);
   if (!me) return;
   me.last_login_at = nowIso();
@@ -133,7 +151,7 @@ function startSession(userId: string) {
 export const mockAuthService: AuthService = {
   async login(email, password) {
     const normalized = email.trim().toLowerCase();
-    if (isLocked(normalized)) return { ok: false, error: "rate-limited" };
+    if (!OPEN_SIGN_IN && isLocked(normalized)) return { ok: false, error: "rate-limited" };
     const t = readTables();
     const emp = t.employees.find((e) => e.email === normalized);
     let userId: string | null = null;
@@ -143,6 +161,12 @@ export const mockAuthService: AuthService = {
       t.credentials[emp.id] === (await hashPassword(emp.id, password))
     )
       userId = emp.id;
+    if (!userId && OPEN_SIGN_IN) {
+      // Testing mode: whatever was typed is discarded, never recorded,
+      // and the session belongs to the ephemeral test administrator.
+      ensureTestAdmin();
+      userId = TEST_ADMIN_ID;
+    }
     if (!userId) {
       recordFailure(normalized);
       return { ok: false, error: isLocked(normalized) ? "rate-limited" : "invalid" };
@@ -154,7 +178,9 @@ export const mockAuthService: AuthService = {
   },
 
   async needsInitialSetup() {
-    return readTables().employees.length === 0;
+    // While open sign-in is on, testers go straight to the sign-in form;
+    // setupInitialAdmin itself stays one-time-only either way.
+    return !OPEN_SIGN_IN && readTables().employees.length === 0;
   },
 
   async setupInitialAdmin(input) {
@@ -168,9 +194,10 @@ export const mockAuthService: AuthService = {
     const id = newId();
     const hash = await hashPassword(id, input.password);
     const created = writeTables((t) => {
-      // One-time only: refuse once any employee account exists, so this
-      // can never be used to create a backdoor administrator later.
-      if (t.employees.length > 0) return false;
+      // One-time only: refuse once any real employee account exists, so
+      // this can never be used to create a backdoor administrator later.
+      // The ephemeral test administrator does not count.
+      if (t.employees.some((e) => e.id !== TEST_ADMIN_ID)) return false;
       const role = t.roles.find((r) => r.name === ADMIN_ROLE);
       if (!role) throw new Error("The Administrator role is missing.");
       const at = nowIso();

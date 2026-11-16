@@ -39,6 +39,58 @@ export interface MockSession {
 const TABLES_KEY = "renda-admin-mock-backend-v1";
 const SESSION_KEY = "renda-admin-mock-session-v1";
 
+/* ---------------- Ephemeral test administrator ----------------
+ * Backs OPEN_SIGN_IN in mock/auth.ts (temporary testing mode). This is a
+ * fixed, generic identity that exists only in memory: it is never written
+ * to localStorage, it has no credential, and its session is memory-only,
+ * so a page reload ends it. The email and password typed at sign-in are
+ * never attached to it and never stored anywhere. */
+export const TEST_ADMIN_ID = "test-administrator";
+export const TEST_ADMIN_EMAIL = "test@renda.local";
+
+/** Ensures the in-memory test administrator exists in the table cache. Never persists anything. */
+export function ensureTestAdmin(): EmployeeRow {
+  const t = readTables();
+  const existing = findEmployee(t, TEST_ADMIN_ID);
+  if (existing) return existing;
+  const role = t.roles.find((r) => r.name === ADMIN_ROLE);
+  if (!role) throw new Error("The Administrator role is missing.");
+  const at = nowIso();
+  const emp: EmployeeRow = {
+    id: TEST_ADMIN_ID,
+    employee_code: "TEST-001",
+    first_name: "Test",
+    last_name: "Administrator",
+    email: TEST_ADMIN_EMAIL,
+    department: "Executive",
+    job_title: "Administrator (testing)",
+    phone: null,
+    status: "Active",
+    must_change_password: false,
+    last_login_at: null,
+    created_by: null,
+    created_at: at,
+    updated_at: at,
+  };
+  // Mutate the in-memory cache directly, deliberately bypassing
+  // writeTables so nothing about this identity reaches localStorage.
+  t.employees.push(emp);
+  t.assignments.push({ user_id: TEST_ADMIN_ID, role_id: role.id, assigned_at: at });
+  return emp;
+}
+
+/** Removes every trace of the test administrator from a tables snapshot before it is persisted. */
+function forPersistence(t: MockTables): MockTables {
+  if (!t.employees.some((e) => e.id === TEST_ADMIN_ID)) return t;
+  const clean = structuredClone(t);
+  clean.employees = clean.employees.filter((e) => e.id !== TEST_ADMIN_ID);
+  clean.assignments = clean.assignments.filter((a) => a.user_id !== TEST_ADMIN_ID);
+  delete clean.credentials[TEST_ADMIN_ID];
+  delete clean.factors[TEST_ADMIN_ID];
+  clean.audit = clean.audit.filter((a) => a.actor_id !== TEST_ADMIN_ID);
+  return clean;
+}
+
 const SYSTEM_ROLES: {
   name: keyof typeof ROLE_PERMISSIONS;
   description: string;
@@ -139,7 +191,9 @@ export function writeTables<T>(mutate: (t: MockTables) => T): T {
   const result = mutate(draft);
   cache = draft;
   try {
-    window.localStorage.setItem(TABLES_KEY, JSON.stringify(draft));
+    // The in-memory cache keeps the ephemeral test administrator; the
+    // persisted copy never does.
+    window.localStorage.setItem(TABLES_KEY, JSON.stringify(forPersistence(draft)));
   } catch {
     /* storage full, keep in memory */
   }
@@ -149,13 +203,19 @@ export function writeTables<T>(mutate: (t: MockTables) => T): T {
 /** Test helper: forget all mock data. */
 export function resetMockBackend() {
   cache = null;
+  memorySession = null;
   window.localStorage.removeItem(TABLES_KEY);
   window.localStorage.removeItem(SESSION_KEY);
 }
 
-/* ---------------- Session ---------------- */
+/* ---------------- Session ----------------
+ * Real employees' sessions persist in localStorage. The test
+ * administrator's session is memory-only: it is never written to storage,
+ * so reloading the page signs the test administrator out. */
+let memorySession: MockSession | null = null;
 
 export function readSession(): MockSession | null {
+  if (memorySession) return memorySession;
   try {
     const raw = window.localStorage.getItem(SESSION_KEY);
     return raw ? (JSON.parse(raw) as MockSession) : null;
@@ -165,6 +225,12 @@ export function readSession(): MockSession | null {
 }
 
 export function writeSession(session: MockSession | null) {
+  if (session?.userId === TEST_ADMIN_ID) {
+    memorySession = session;
+    window.localStorage.removeItem(SESSION_KEY);
+    return;
+  }
+  memorySession = null;
   if (session) window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   else window.localStorage.removeItem(SESSION_KEY);
 }
@@ -189,6 +255,8 @@ export function otherActiveAdmins(t: MockTables, excludeId: string) {
     (a) =>
       a.role_id === admin.id &&
       a.user_id !== excludeId &&
+      // The ephemeral test administrator is not a real safeguard admin.
+      a.user_id !== TEST_ADMIN_ID &&
       findEmployee(t, a.user_id)?.status === "Active",
   ).length;
 }

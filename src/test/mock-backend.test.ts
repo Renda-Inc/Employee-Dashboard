@@ -1,8 +1,8 @@
 // Rules the mock backend must keep until a real backend replaces it.
 import { beforeEach, describe, expect, it } from "vitest";
-import { mockAuthService as auth, resetSignInAttempts } from "@/services/mock/auth";
+import { mockAuthService as auth, OPEN_SIGN_IN, resetSignInAttempts } from "@/services/mock/auth";
 import { mockEmployeeAdminApi as api } from "@/services/mock/employees";
-import { resetMockBackend } from "@/services/mock/backend";
+import { resetMockBackend, TEST_ADMIN_EMAIL } from "@/services/mock/backend";
 import { totpCode, verifyTotp } from "@/services/mock/totp";
 
 const FIRST_ADMIN = {
@@ -13,15 +13,10 @@ const FIRST_ADMIN = {
 };
 
 async function signInAsDemoAdmin() {
-  // First-run setup is the only bootstrap: it creates the first
-  // Administrator and signs them in. Later calls sign in normally.
-  if (await auth.needsInitialSetup()) {
-    const res = await auth.setupInitialAdmin(FIRST_ADMIN);
-    if (!res.ok) throw new Error("initial setup failed");
-    return res.session;
-  }
-  const res = await auth.login(FIRST_ADMIN.email, FIRST_ADMIN.password);
-  if (!res.ok) throw new Error("admin sign-in failed");
+  // Testing mode bootstrap: with OPEN_SIGN_IN on, any credentials sign in
+  // as the ephemeral test administrator, who holds the Administrator role.
+  const res = await auth.login("tester@renda.ca", "anything at all");
+  if (!res.ok) throw new Error("test admin sign-in failed");
   return res.session;
 }
 
@@ -39,33 +34,61 @@ describe("mock auth & employee admin", () => {
     resetSignInAttempts();
   });
 
-  it("rejects unknown credentials: there is no shared or fallback account", async () => {
+  it("open sign-in: any credentials sign in as the ephemeral test administrator", async () => {
+    expect(OPEN_SIGN_IN).toBe(true);
     const res = await auth.login("anyone@example.com", "any password");
-    expect(res.ok).toBe(false);
-    expect(await auth.getSession()).toBeNull();
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.session.email).toBe(TEST_ADMIN_EMAIL);
+    const { employee, role } = await auth.getCurrentEmployee();
+    expect(employee?.first_name).toBe("Test");
+    expect(role?.name).toBe("Administrator");
+  });
+
+  it("open sign-in never saves the credentials that were typed", async () => {
+    await auth.login("anyone@example.com", "any password");
+    // Force a tables write (MFA enrolment writes one); the persisted copy
+    // must still hold no trace of the typed email or password, no account
+    // for them, and not even the test administrator itself.
+    await auth.mfa.startEnrollment();
+    const { employees } = await api.getDirectory();
+    expect(employees.some((e) => e.email === "anyone@example.com")).toBe(false);
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i)!;
+      const value = window.localStorage.getItem(key) ?? "";
+      expect(value).not.toContain("anyone@example.com");
+      expect(value).not.toContain("any password");
+      expect(value).not.toContain(TEST_ADMIN_EMAIL);
+    }
+    // The test administrator's session is memory-only, never persisted.
+    expect(window.localStorage.getItem("renda-admin-mock-session-v1")).toBeNull();
   });
 
   it("creates the first Administrator only through one-time setup", async () => {
-    expect(await auth.needsInitialSetup()).toBe(true);
-    const session = await signInAsDemoAdmin();
-    expect(session.email).toBe(FIRST_ADMIN.email);
+    // While open sign-in is on, the setup screen is skipped...
+    expect(await auth.needsInitialSetup()).toBe(false);
+    // ...but the one-time setup itself still works before any real
+    // account exists, and refuses permanently afterwards.
+    const res = await auth.setupInitialAdmin(FIRST_ADMIN);
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.session.email).toBe(FIRST_ADMIN.email);
     const { role } = await auth.getCurrentEmployee();
     expect(role?.name).toBe("Administrator");
-    expect(await auth.needsInitialSetup()).toBe(false);
     await expect(
       auth.setupInitialAdmin({ ...FIRST_ADMIN, email: "second@renda.ca" }),
     ).rejects.toThrow("Setup is already complete");
   });
 
-  it("rate-limits repeated failed sign-ins for the same email", async () => {
-    await signInAsDemoAdmin();
+  it("open sign-in bypasses failed-attempt limiting, real credentials still win", async () => {
+    await auth.setupInitialAdmin(FIRST_ADMIN);
     await auth.logout();
     for (let i = 0; i < 5; i++) {
       const attempt = await auth.login(FIRST_ADMIN.email, "wrong password");
-      expect(attempt.ok).toBe(false);
+      expect(attempt.ok).toBe(true);
+      await auth.logout();
     }
-    const locked = await auth.login(FIRST_ADMIN.email, FIRST_ADMIN.password);
-    expect(locked).toEqual({ ok: false, error: "rate-limited" });
+    const real = await auth.login(FIRST_ADMIN.email, FIRST_ADMIN.password);
+    expect(real.ok).toBe(true);
+    if (real.ok) expect(real.session.email).toBe(FIRST_ADMIN.email);
   });
 
   it("creates employees as Invitation Pending with a system-generated password they must replace", async () => {
@@ -103,7 +126,11 @@ describe("mock auth & employee admin", () => {
     await api.updateEmployee({ id: created.id, status: "Suspended" });
     await auth.logout();
     const res = await auth.login("sam@renda.ca", created.temporaryPassword);
-    expect(res.ok).toBe(false);
+    // Open sign-in lands on the test administrator, never on Sam's own
+    // suspended account.
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.session.email).toBe(TEST_ADMIN_EMAIL);
+    expect((await auth.getCurrentEmployee()).employee?.id).not.toBe(created.id);
   });
 
   it("rejects employee management for roles without employees.manage", async () => {

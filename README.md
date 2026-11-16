@@ -20,15 +20,24 @@ bun run build
 
 ## First sign-in
 
-There is no default or shared account. On a fresh workspace (no employee
-accounts at all), the sign-in page offers a one-time setup: the first person
-creates their own Administrator account with a password they choose. Setup
-closes permanently as soon as that account exists. After that, an
-administrator adds employees from Employees, each with a system-generated
-temporary password they must replace at first sign-in.
+**Temporary testing mode is ON** (`OPEN_SIGN_IN` in
+`src/services/mock/auth.ts`, enabled 2026-11-15 while the team tests the
+dashboard): any email and password sign you in as an ephemeral Test
+Administrator with full access. The credentials you type are never saved:
+no account is created from them, no password is stored, the test identity
+is a fixed generic one held in memory only, and reloading the page signs
+it out. Real employee accounts still sign in with their own credentials
+exactly as below.
 
-Sign-in attempts are rate-limited per email in the mock backend: repeated
-failures lock further attempts for a few minutes.
+Set `OPEN_SIGN_IN` to `false` before any real use. Strict mode has no
+default or shared account: on a fresh workspace (no employee accounts at
+all), the sign-in page offers a one-time setup where the first person
+creates their own Administrator account with a password they choose, and
+setup closes permanently as soon as that account exists. An administrator
+then adds employees from Employees, each with a system-generated temporary
+password they must replace at first sign-in. Sign-in attempts are
+rate-limited per email in strict mode: repeated failures lock further
+attempts for a few minutes.
 
 ## Backend integration
 
