@@ -136,10 +136,15 @@ function updateCustomer(id: string, patch: Partial<Pick<Customer, EditableField>
   setState((d) => {
     const x = d.customers.find((y) => y.id === id)!;
     Object.assign(x, after);
-    // Changing contact details requires re-verification.
-    if ("email" in after) x.emailVerified = false;
-    if ("phone" in after) x.phoneVerified = false;
+    // Product rule (user, 2026-11-17): contact details verified at sign-up
+    // (email) and during onboarding KYC (phone) stay verified when they
+    // change. Customers update them in the app with OTP, or support updates
+    // them after the customer passes identity verification on the call or
+    // chat. A support change therefore keeps the verified flags, and no
+    // re-KYC is required. The sign-up email is kept on record separately
+    // (signupEmail) and never overwritten.
     x.updatedAt = now();
+    const contactChanged = "email" in after || "phone" in after;
     pushAudit(d, {
       action: "Customer information updated",
       module: "Customers",
@@ -147,7 +152,11 @@ function updateCustomer(id: string, patch: Partial<Pick<Customer, EditableField>
       entityId: id,
       entityLabel: name(x),
       outcome: "Success",
-      details: Object.keys(after).join(", "),
+      details:
+        Object.keys(after).join(", ") +
+        (contactChanged
+          ? ". Contact change made by support after identity verification; verified status retained, no re-KYC required."
+          : ""),
       before,
       after,
     });
@@ -463,6 +472,328 @@ function addTransactionNote(txId: string, text: string) {
       entityLabel: t.transactionReference,
       outcome: "Success",
       details: "Internal note recorded",
+    });
+  });
+}
+
+/* ---------------- Transfers ---------------- */
+
+/** RenPay follows the Revolut model for internal transfers (product rule,
+ * user, 2026-11-17): a completed transfer is instant and can never be
+ * cancelled or reversed by Renda. What Renda can do is ask the recipient
+ * to return the funds on the sender's behalf. The money moves only if the
+ * recipient agrees. */
+function requestTransferReturn(transferId: string, note: string) {
+  const db = getState();
+  const tr = db.transfers.find((x) => x.id === transferId);
+  if (!tr) throw new RuleError("Transfer not found.");
+  getCustomer(tr.senderCustomerId);
+  authorize(
+    "transactions.investigate",
+    "Request return of RenPay transfer",
+    "Payments & Transfers",
+    "Transfer",
+    transferId,
+    tr.transactionReference,
+  );
+  if (tr.transferType !== "P2P")
+    throw new RuleError("Return requests apply to RenPay transfers only.");
+  if (tr.status !== "Completed")
+    throw new RuleError("Only a completed RenPay transfer can have a return requested.");
+  if (!tr.recipientCustomerId) throw new RuleError("This transfer has no Renda recipient to ask.");
+  if (tr.returnRequest && tr.returnRequest.status === "Requested")
+    throw new RuleError("A return request is already open for this transfer.");
+  if (note.trim().length < 5)
+    throw new RuleError("Say why the return is being requested (at least 5 characters).");
+  setState((d) => {
+    const t = d.transfers.find((x) => x.id === transferId)!;
+    t.returnRequest = {
+      status: "Requested",
+      requestedAt: now(),
+      requestedBy: d.currentEmployeeId,
+      note: note.trim(),
+      resolvedAt: null,
+      resolutionNote: null,
+    };
+    pushAudit(d, {
+      action: "RenPay return requested",
+      module: "Payments & Transfers",
+      entityType: "Transfer",
+      entityId: transferId,
+      entityLabel: tr.transactionReference,
+      outcome: "Success",
+      details: `Renda will ask the recipient to return $${tr.amount.toFixed(2)} on the sender's behalf. A completed RenPay transfer cannot be cancelled or reversed; the funds move only with the recipient's consent. Reason: ${note.trim()}`,
+    });
+    activity(
+      d,
+      tr.senderCustomerId,
+      "Transfers",
+      `Return of RenPay payment ${tr.transactionReference} requested: Renda is contacting the recipient`,
+    );
+    if (tr.recipientCustomerId)
+      activity(
+        d,
+        tr.recipientCustomerId,
+        "Transfers",
+        `Renda requested the return of RenPay payment ${tr.transactionReference} on the sender's behalf`,
+      );
+  });
+}
+
+/** Records how a RenPay return request ended. "Returned" posts the
+ * offsetting movement: the recipient sends the money back as a new
+ * transfer, which is the only way funds move in this model. */
+function recordReturnOutcome(
+  transferId: string,
+  outcome: "Returned" | "Declined" | "No Response",
+  note: string,
+) {
+  const db = getState();
+  const tr = db.transfers.find((x) => x.id === transferId);
+  if (!tr) throw new RuleError("Transfer not found.");
+  authorize(
+    "transactions.investigate",
+    "Record RenPay return outcome",
+    "Payments & Transfers",
+    "Transfer",
+    transferId,
+    tr.transactionReference,
+  );
+  if (!tr.returnRequest || tr.returnRequest.status !== "Requested")
+    throw new RuleError("There is no open return request for this transfer.");
+  if (note.trim().length < 5)
+    throw new RuleError("Record how the request ended (at least 5 characters).");
+  if (outcome === "Returned") {
+    const recipientAcc = db.accounts.find(
+      (a) =>
+        a.customerId === tr.recipientCustomerId &&
+        a.accountType === "Smart Spend" &&
+        a.accountStatus === "Active",
+    );
+    if (!recipientAcc || (recipientAcc.availableBalance ?? 0) < tr.amount)
+      throw new RuleError(
+        "The recipient's Smart Spend cannot cover the return in full, so a full return cannot be recorded. Record the actual outcome instead.",
+      );
+  }
+  setState((d) => {
+    const t = d.transfers.find((x) => x.id === transferId)!;
+    t.returnRequest = {
+      ...t.returnRequest!,
+      status: outcome,
+      resolvedAt: now(),
+      resolutionNote: note.trim(),
+    };
+    if (outcome === "Returned" && t.recipientCustomerId) {
+      const fromAcc = d.accounts.find(
+        (a) =>
+          a.customerId === t.recipientCustomerId &&
+          a.accountType === "Smart Spend" &&
+          a.accountStatus === "Active",
+      )!;
+      const toAcc = d.accounts.find(
+        (a) =>
+          a.customerId === t.senderCustomerId &&
+          a.accountType === "Smart Spend" &&
+          a.accountStatus === "Active",
+      );
+      fromAcc.availableBalance = (fromAcc.availableBalance ?? 0) - t.amount;
+      fromAcc.ledgerBalance = (fromAcc.ledgerBalance ?? 0) - t.amount;
+      if (toAcc) {
+        toAcc.availableBalance = (toAcc.availableBalance ?? 0) + t.amount;
+        toAcc.ledgerBalance = (toAcc.ledgerBalance ?? 0) + t.amount;
+      }
+      const ref = `TR-${Math.floor(510000 + Math.random() * 389999)}`;
+      const returnTransferId = uid("trf");
+      d.transfers.unshift({
+        id: returnTransferId,
+        transferType: "P2P",
+        senderCustomerId: t.recipientCustomerId,
+        recipientCustomerId: t.senderCustomerId,
+        amount: t.amount,
+        currency: "CAD",
+        status: "Completed",
+        createdAt: now(),
+        providerReference: `P2P-${Math.floor(10000000 + Math.random() * 89999999)}`,
+        transactionReference: ref,
+        returnRequest: null,
+      });
+      d.transactions.unshift({
+        id: uid("txn"),
+        customerId: t.recipientCustomerId,
+        accountId: fromAcc.id,
+        transactionReference: ref,
+        transactionType: "P2P Sent",
+        description: `Return of RenPay payment ${t.transactionReference}`,
+        direction: "debit",
+        amount: t.amount,
+        currency: "CAD",
+        status: "Completed",
+        timestamp: now(),
+        completedAt: now(),
+        providerReference: `P2P-${Math.floor(10000000 + Math.random() * 89999999)}`,
+        paymentRail: "Internal Ledger",
+        transferId: returnTransferId,
+        notes: [],
+      });
+      if (toAcc)
+        d.transactions.unshift({
+          id: uid("txn"),
+          customerId: t.senderCustomerId,
+          accountId: toAcc.id,
+          transactionReference: ref,
+          transactionType: "P2P Received",
+          description: `Returned RenPay payment ${t.transactionReference}`,
+          direction: "credit",
+          amount: t.amount,
+          currency: "CAD",
+          status: "Completed",
+          timestamp: now(),
+          completedAt: now(),
+          providerReference: `P2P-${Math.floor(10000000 + Math.random() * 89999999)}`,
+          paymentRail: "Internal Ledger",
+          transferId: returnTransferId,
+          notes: [],
+        });
+    }
+    pushAudit(d, {
+      action: `RenPay return ${outcome.toLowerCase()}`,
+      module: "Payments & Transfers",
+      entityType: "Transfer",
+      entityId: transferId,
+      entityLabel: tr.transactionReference,
+      outcome: "Success",
+      details:
+        outcome === "Returned"
+          ? `Recipient agreed and returned $${tr.amount.toFixed(2)} as a new RenPay transfer. ${note.trim()}`
+          : `Return request closed without the funds moving: ${outcome}. ${note.trim()}`,
+    });
+    activity(
+      d,
+      tr.senderCustomerId,
+      "Transfers",
+      outcome === "Returned"
+        ? `RenPay payment ${tr.transactionReference} was returned by the recipient`
+        : `Return request for RenPay payment ${tr.transactionReference} closed: ${outcome}`,
+    );
+  });
+}
+
+/** Interac e-Transfers can be cancelled while they are still pending
+ * (not yet accepted or deposited); that is a real Interac capability and
+ * the one cancellation that exists in this model. Once an Interac
+ * transfer completes, it is final like everything else. */
+function cancelInteracTransfer(transferId: string, reason: string) {
+  const db = getState();
+  const tr = db.transfers.find((x) => x.id === transferId);
+  if (!tr) throw new RuleError("Transfer not found.");
+  authorize(
+    "transactions.investigate",
+    "Cancel pending Interac transfer",
+    "Payments & Transfers",
+    "Transfer",
+    transferId,
+    tr.transactionReference,
+  );
+  if (tr.transferType !== "Interac")
+    throw new RuleError("Only Interac transfers can be cancelled, and only while pending.");
+  if (tr.status !== "Pending")
+    throw new RuleError(
+      `This Interac transfer is ${tr.status.toLowerCase()} and can no longer be cancelled.`,
+    );
+  if (reason.trim().length < 5)
+    throw new RuleError("Provide a reason for the cancellation (at least 5 characters).");
+  setState((d) => {
+    const t = d.transfers.find((x) => x.id === transferId)!;
+    t.status = "Canceled";
+    for (const tx of d.transactions) {
+      if (tx.transferId === transferId && tx.status === "Pending") tx.status = "Canceled";
+    }
+    pushAudit(d, {
+      action: "Pending Interac transfer cancelled",
+      module: "Payments & Transfers",
+      entityType: "Transfer",
+      entityId: transferId,
+      entityLabel: tr.transactionReference,
+      outcome: "Success",
+      details: `Cancelled while still pending, before acceptance or deposit. Reason: ${reason.trim()}`,
+    });
+    activity(
+      d,
+      tr.senderCustomerId,
+      "Transfers",
+      `Pending Interac transfer ${tr.transactionReference} cancelled`,
+    );
+  });
+}
+
+/* ---------------- Alfie events ---------------- */
+
+/** Best practice for an operational event queue: resolving requires a
+ * short note saying what happened, and records who resolved it and when,
+ * so the queue can actually clear and stay auditable. Resolved events can
+ * be reopened if the issue recurs. */
+function resolveAlfieEvent(eventId: string, note: string) {
+  const db = getState();
+  const ev = db.alfieEvents.find((x) => x.id === eventId);
+  if (!ev) throw new RuleError("Alfie event not found.");
+  authorize(
+    "alfie.manage",
+    "Resolve Alfie event",
+    "Alfie",
+    "Alfie Event",
+    eventId,
+    ev.description.slice(0, 60),
+  );
+  if (ev.status === "Resolved") throw new RuleError("This event is already resolved.");
+  if (note.trim().length < 5)
+    throw new RuleError("Add a short resolution note (at least 5 characters).");
+  setState((d) => {
+    const e = d.alfieEvents.find((x) => x.id === eventId)!;
+    e.status = "Resolved";
+    e.resolvedAt = now();
+    e.resolvedBy = d.currentEmployeeId;
+    e.resolutionNote = note.trim();
+    pushAudit(d, {
+      action: "Alfie event resolved",
+      module: "Alfie",
+      entityType: "Alfie Event",
+      entityId: eventId,
+      entityLabel: ev.description.slice(0, 60),
+      outcome: "Success",
+      details: note.trim(),
+    });
+  });
+}
+
+function reopenAlfieEvent(eventId: string, note: string) {
+  const db = getState();
+  const ev = db.alfieEvents.find((x) => x.id === eventId);
+  if (!ev) throw new RuleError("Alfie event not found.");
+  authorize(
+    "alfie.manage",
+    "Reopen Alfie event",
+    "Alfie",
+    "Alfie Event",
+    eventId,
+    ev.description.slice(0, 60),
+  );
+  if (ev.status !== "Resolved") throw new RuleError("Only a resolved event can be reopened.");
+  if (note.trim().length < 5)
+    throw new RuleError("Say why the event is being reopened (at least 5 characters).");
+  setState((d) => {
+    const e = d.alfieEvents.find((x) => x.id === eventId)!;
+    e.status = "Open";
+    e.resolvedAt = null;
+    e.resolvedBy = null;
+    e.resolutionNote = null;
+    pushAudit(d, {
+      action: "Alfie event reopened",
+      module: "Alfie",
+      entityType: "Alfie Event",
+      entityId: eventId,
+      entityLabel: ev.description.slice(0, 60),
+      outcome: "Success",
+      details: note.trim(),
     });
   });
 }
@@ -1650,6 +1981,11 @@ export const localOperations: OperationsService = {
   simulateIssuanceResult: asAsync(simulateIssuanceResult),
   completeSetup: asAsync(completeSetup),
   addTransactionNote: asAsync(addTransactionNote),
+  requestTransferReturn: asAsync(requestTransferReturn),
+  recordReturnOutcome: asAsync(recordReturnOutcome),
+  cancelInteracTransfer: asAsync(cancelInteracTransfer),
+  resolveAlfieEvent: asAsync(resolveAlfieEvent),
+  reopenAlfieEvent: asAsync(reopenAlfieEvent),
   createSupportCase: asAsync(createSupportCase),
   updateCase: asAsync(updateCase),
   addCaseNote: asAsync(addCaseNote),

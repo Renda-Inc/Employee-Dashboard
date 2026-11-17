@@ -77,6 +77,15 @@ export interface OperationsService {
   completeSetup(customerId: string): Promise<void>;
   // Transactions
   addTransactionNote(transactionId: string, text: string): Promise<void>;
+  requestTransferReturn(transferId: string, note: string): Promise<void>;
+  recordReturnOutcome(
+    transferId: string,
+    outcome: "Returned" | "Declined" | "No Response",
+    note: string,
+  ): Promise<void>;
+  cancelInteracTransfer(transferId: string, reason: string): Promise<void>;
+  resolveAlfieEvent(eventId: string, note: string): Promise<void>;
+  reopenAlfieEvent(eventId: string, note: string): Promise<void>;
   // Support
   createSupportCase(input: NewSupportCase): Promise<{ id: string; ref: string }>;
   updateCase(caseId: string, patch: CasePatch): Promise<void>;

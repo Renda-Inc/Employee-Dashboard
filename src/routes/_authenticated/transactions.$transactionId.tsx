@@ -16,6 +16,7 @@ import {
 } from "@/components/common";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { NewCaseDialog } from "@/components/dialogs/NewCaseDialog";
+import { ActionDialog } from "@/components/dialogs/ActionDialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { fmtDateTime, fullName, lookup, transferTypeLabel, txTypeLabel } from "@/lib/format";
@@ -142,10 +143,154 @@ function TxnDetail() {
               </p>
             )}
             <p className="mt-4 text-[13px] text-muted-foreground">
-              Historical transaction statuses cannot be edited. Refunds, reversals and adjustments
-              must be performed through the payment provider and are not available in this demo.
+              Transactions are never reversed, and historical statuses cannot be edited. A completed
+              RenPay payment can only come back if the recipient agrees to return it, and a pending
+              Interac transfer can be cancelled before it is accepted. Both are handled under
+              Transfer actions.
             </p>
           </Panel>
+          {transfer && (
+            <Panel title="Transfer actions">
+              {transfer.transferType === "P2P" && transfer.status === "Completed" && (
+                <>
+                  <p className="text-[13px] text-muted-foreground">
+                    RenPay payments are instant and cannot be cancelled or reversed. Following the
+                    Revolut model, Renda can ask the recipient to return the money on the
+                    sender&apos;s behalf; the funds move only if the recipient agrees.
+                  </p>
+                  {!transfer.returnRequest && canInv && (
+                    <div className="mt-3">
+                      <ActionDialog
+                        trigger={<Button size="sm">Request return from recipient</Button>}
+                        title="Request return of RenPay payment"
+                        description="Renda will contact the recipient and ask them to return this payment. Nothing is debited from the recipient; they choose whether to send it back."
+                        reasonLabel="Reason for the request"
+                        minReason={5}
+                        onConfirm={(r) => operations.requestTransferReturn(transfer.id, r)}
+                        success="Return requested: recipient will be contacted"
+                        confirmLabel="Request return"
+                      />
+                    </div>
+                  )}
+                  {transfer.returnRequest?.status === "Requested" && (
+                    <div className="mt-3 space-y-3">
+                      <p className="text-[14px]">
+                        <StatusBadge status="Requested" tone="warning" />{" "}
+                        <span className="text-muted-foreground">
+                          Return requested {fmtDateTime(transfer.returnRequest.requestedAt)} by{" "}
+                          {L.empName(transfer.returnRequest.requestedBy)}:{" "}
+                          {transfer.returnRequest.note}
+                        </span>
+                      </p>
+                      {canInv && (
+                        <div className="flex flex-wrap gap-2">
+                          <ActionDialog
+                            trigger={
+                              <Button size="sm" variant="outline">
+                                Recipient returned it
+                              </Button>
+                            }
+                            title="Record return received"
+                            description="The recipient agreed and sent the money back. This posts the return as a new RenPay transfer from the recipient to the sender."
+                            reasonLabel="How was it confirmed?"
+                            minReason={5}
+                            onConfirm={(r) =>
+                              operations.recordReturnOutcome(transfer.id, "Returned", r)
+                            }
+                            success="Return recorded"
+                            confirmLabel="Record return"
+                          />
+                          <ActionDialog
+                            trigger={
+                              <Button size="sm" variant="ghost">
+                                Recipient declined
+                              </Button>
+                            }
+                            title="Record return declined"
+                            description="The recipient refused to return the payment. Without their consent the funds cannot be retrieved, and the request closes."
+                            reasonLabel="What did the recipient say?"
+                            minReason={5}
+                            onConfirm={(r) =>
+                              operations.recordReturnOutcome(transfer.id, "Declined", r)
+                            }
+                            success="Outcome recorded"
+                            confirmLabel="Record decline"
+                          />
+                          <ActionDialog
+                            trigger={
+                              <Button size="sm" variant="ghost">
+                                No response
+                              </Button>
+                            }
+                            title="Close request: no response"
+                            description="The recipient did not respond. The request closes without the funds moving; a new request can be opened later."
+                            reasonLabel="Attempts made to reach them"
+                            minReason={5}
+                            onConfirm={(r) =>
+                              operations.recordReturnOutcome(transfer.id, "No Response", r)
+                            }
+                            success="Request closed"
+                            confirmLabel="Close request"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {transfer.returnRequest && transfer.returnRequest.status !== "Requested" && (
+                    <p className="mt-3 text-[14px]">
+                      <StatusBadge
+                        status={transfer.returnRequest.status}
+                        tone={transfer.returnRequest.status === "Returned" ? "success" : "neutral"}
+                      />{" "}
+                      <span className="text-muted-foreground">
+                        Closed {fmtDateTime(transfer.returnRequest.resolvedAt)}:{" "}
+                        {transfer.returnRequest.resolutionNote}
+                      </span>
+                    </p>
+                  )}
+                </>
+              )}
+              {transfer.transferType === "Interac" && transfer.status === "Pending" && (
+                <>
+                  <p className="text-[13px] text-muted-foreground">
+                    This Interac transfer is still pending. Interac transfers can be cancelled
+                    before they are accepted or deposited; once completed, they are final.
+                  </p>
+                  {canInv && (
+                    <div className="mt-3">
+                      <ActionDialog
+                        trigger={
+                          <Button size="sm" variant="destructive">
+                            Cancel pending Interac transfer
+                          </Button>
+                        }
+                        title="Cancel pending Interac transfer"
+                        description="The transfer is cancelled before acceptance, and the pending transaction is cancelled with it. This cannot be done once the transfer completes."
+                        reasonLabel="Reason for cancellation"
+                        minReason={5}
+                        onConfirm={(r) => operations.cancelInteracTransfer(transfer.id, r)}
+                        success="Interac transfer cancelled"
+                        confirmLabel="Cancel transfer"
+                        destructive
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+              {transfer.transferType === "Interac" && transfer.status !== "Pending" && (
+                <p className="text-[13px] text-muted-foreground">
+                  This Interac transfer is {transfer.status.toLowerCase()}. Only pending Interac
+                  transfers can be cancelled; completed ones are final and can only be investigated.
+                </p>
+              )}
+              {transfer.transferType === "Account-to-Account" && (
+                <p className="text-[13px] text-muted-foreground">
+                  Account-to-account transfers move between the customer&apos;s own Renda accounts
+                  and are final once completed.
+                </p>
+              )}
+            </Panel>
+          )}
           <Panel title="Internal notes">
             {canInv && (
               <div className="mb-3 space-y-2">

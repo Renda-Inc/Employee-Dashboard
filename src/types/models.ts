@@ -27,6 +27,10 @@ export interface Customer {
   firstName: string;
   lastName: string;
   email: string;
+  /** The email verified at sign-up. Kept on record permanently; the
+   * current email can change (in-app OTP, or support after identity
+   * verification) without replacing it. */
+  signupEmail: string;
   emailVerified: boolean;
   phone: string;
   phoneVerified: boolean;
@@ -66,7 +70,7 @@ export interface Account {
   lastActivity: string | null;
 }
 
-export type TxnStatus = "Pending" | "Completed" | "Failed" | "Reversed";
+export type TxnStatus = "Pending" | "Completed" | "Failed" | "Reversed" | "Canceled";
 export type PaymentRail = "Mastercard" | "Internal Ledger" | "Interac" | "Renda Billing";
 export type TxnType =
   | "Card Purchase"
@@ -107,6 +111,19 @@ export interface Transaction {
 
 export type TransferType = "P2P" | "Interac" | "Account-to-Account";
 
+/** RenPay return request (Revolut model): a completed internal transfer
+ * cannot be cancelled or reversed. Renda asks the recipient to return the
+ * funds on the sender's behalf; money moves only with the recipient's
+ * consent, recorded as the request's outcome. */
+export interface ReturnRequest {
+  status: "Requested" | "Returned" | "Declined" | "No Response";
+  requestedAt: string;
+  requestedBy: string;
+  note: string;
+  resolvedAt: string | null;
+  resolutionNote: string | null;
+}
+
 export interface Transfer {
   id: string;
   transferType: TransferType;
@@ -122,6 +139,7 @@ export interface Transfer {
   createdAt: string;
   providerReference: string;
   transactionReference: string;
+  returnRequest: ReturnRequest | null;
 }
 
 export type CardDesign = "Classic" | "Blue Nova" | "Aqua Aura" | "Pearl Ivory";
@@ -349,7 +367,8 @@ export type ActivityType =
   | "Membership"
   | "Cards"
   | "Support"
-  | "Profile";
+  | "Profile"
+  | "Transfers";
 
 export interface ActivityEvent {
   id: string;
@@ -373,6 +392,9 @@ export interface AlfieEvent {
   severity: "Info" | "Warning" | "Error";
   status: "Open" | "Resolved";
   customerId: string | null;
+  resolvedAt: string | null;
+  resolvedBy: string | null;
+  resolutionNote: string | null;
 }
 
 export interface AlfieService {

@@ -459,6 +459,9 @@ function PersonalTab({ c }: { c: Customer }) {
             ["First name", c.firstName],
             ["Last name", c.lastName],
             ["Email address", c.email],
+            ...(c.signupEmail !== c.email
+              ? ([["Sign-up email (on record)", c.signupEmail]] as [string, string][])
+              : []),
             ["Phone number", c.phone],
             ["Residential address", c.address],
             ["City", c.city],
@@ -503,7 +506,10 @@ function PersonalTab({ c }: { c: Customer }) {
         </div>
       </div>
       <p className="mt-3 text-[13px] text-muted-foreground">
-        Changing email or phone resets its verification status.
+        Email and phone stay verified when support changes them: make the change only after the
+        customer has passed identity verification on the call or chat, and no re-KYC is required.
+        Customers can also update both in the app with OTP. The email used at sign-up stays on
+        record either way.
       </p>
       <div className="mt-4 flex gap-2">
         <Button onClick={save}>Save changes</Button>

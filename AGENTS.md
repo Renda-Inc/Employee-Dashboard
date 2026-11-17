@@ -18,6 +18,18 @@ Card manufacturing is outsourced end to end. Renda's job is the batch: build it,
 
 Plus is charged from the customer's Smart Spend account. An upgrade charges the fee immediately, in the same action (`changePlan` in the operations service): if Smart Spend cannot cover it, the upgrade does not happen and the customer stays on Everyday. There is no pending upgrade state. A failed monthly renewal does not suspend the plan and is never a "Billing Issue" status (that status does not exist): the fee becomes outstanding (`billingOutstandingSince`), the plan stays active, and the charge is retried at intervals (`planRetryIntervalDays` in Settings; the exact interval is still being decided) for the rest of the billing month, including automatic collection whenever funds land. Retries are recorded as billing-system events (`recordRenewalAttempt`), not employee simulations of a pending charge. If the fee is still unpaid when the new billing date arrives (the subscription's `nextBillingDate`, advanced past the missed date at the first failure; `billingDowngradeDue` in `src/services/rules.ts`), the plan is downgraded to Everyday (`downgradeForNonPayment`), which also cancels physical cards and open card orders because Everyday is virtual-only. Physical cards exist only for Plus members, and account issuance always creates Smart Spend and Sense Save together.
 
+## Contact details and verification (product rule, user, 2026-11-17)
+
+Email is verified at sign-up (proof of humanity) and phone during onboarding/KYC (bank requirement). After that, contact details can change without re-verification or re-KYC: customers update them in the app with OTP, and support can update them after the customer passes identity verification on the call or chat, in which case the verified flags stay set (`updateCustomer` must never clear them). The sign-up email is kept permanently on the customer record (`signupEmail`) alongside the current email, and every change is in the audit log with before/after values.
+
+## Transfers and transaction finality (product rule, user, 2026-11-17)
+
+Transactions are never reversed by employees; the remedy for a bad transaction is an investigation case. RenPay follows the Revolut model for internal transfers: payments are instant and cannot be cancelled or reversed once completed. Renda can ask the recipient to return the money on the sender's behalf (`requestTransferReturn`); funds move only with the recipient's consent, and a return is recorded as a new transfer back (`recordReturnOutcome`), never as an edit to the original. The one real cancellation is Interac: a transfer that is still Pending (not yet accepted or deposited) can be cancelled (`cancelInteracTransfer`), by the customer in the app or by an admin here. Completed Interac transfers are final.
+
+## Support cases and Alfie events (product rule, user, 2026-11-17)
+
+Customer conversations and ticketing live on a separate support platform, not in this admin. Cases here are internal work orders: a supervisor creates one when an interaction needs backend work or a follow-up inside Renda's systems, and assigns it to whoever should do the work. Notes are internal by design and there is deliberately no customer reply channel. Alfie operational events are resolved with a mandatory resolution note plus who/when (`resolveAlfieEvent`, permission `alfie.manage`), and can be reopened if the issue recurs.
+
 ## UI architecture
 
 - Use the shared semantic tokens, Button, PageHeader, Panel and table controls for every employee module; visual refinements must not modify service rules or data relationships.

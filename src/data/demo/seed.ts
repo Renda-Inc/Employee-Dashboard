@@ -603,12 +603,14 @@ export function buildSeed(): DB {
       .toLowerCase()
       .normalize("NFD")
       .replace(/[\u0300-\u036f']/g, "");
+    const signupEmail = `${slug}@${pick(["gmail.com", "outlook.com", "icloud.com", "proton.me"])}`;
     const c: Customer = {
       id,
       userId,
       firstName: s.first,
       lastName: s.last,
-      email: `${slug}@${pick(["gmail.com", "outlook.com", "icloud.com", "proton.me"])}`,
+      email: signupEmail,
+      signupEmail,
       emailVerified,
       phone: `+1 (${pick(["416", "647", "514", "604", "403", "613", "780", "902"])}) 555-${digits(4)}`,
       phoneVerified,
@@ -848,6 +850,13 @@ export function buildSeed(): DB {
   // stays outstanding until it is collected or the new billing date
   // arrives, when the plan would downgrade to Everyday.
   const olivia = customers.find((cu) => cu.firstName === "Olivia" && cu.lastName === "Thompson");
+  // She changed her email in the app after sign-up (OTP-verified in-app):
+  // the current email differs, the sign-up email stays on record, and the
+  // account remains verified with no re-KYC.
+  if (olivia) {
+    olivia.email = "olivia.t@outlook.com";
+    act(olivia.id, "Profile", "Email updated by customer in the app (OTP verified)", ago(20));
+  }
   const retrying = subscriptions.find((x) => x.customerId === olivia?.id);
   if (retrying) {
     retrying.latestBillingStatus = "Failed";
@@ -1257,13 +1266,16 @@ export function buildSeed(): DB {
   // Transfers
   const actives = customers.filter((c) => c.customerStatus === "Active");
   let trN = 0;
-  const addTransfer = (t: Omit<Transfer, "id" | "transactionReference" | "currency">) => {
+  const addTransfer = (
+    t: Omit<Transfer, "id" | "transactionReference" | "currency" | "returnRequest">,
+  ) => {
     trN++;
     const ref = `TR-${String(510000 + trN * 17)}`;
     const tr: Transfer = {
       id: `trf_${String(trN).padStart(3, "0")}`,
       transactionReference: ref,
       currency: "CAD",
+      returnRequest: null,
       ...t,
     };
     transfers.push(tr);
@@ -1674,6 +1686,9 @@ export function buildSeed(): DB {
         "Merchant categorization service timed out (3 retries). Spending insights delayed.",
       severity: "Warning",
       status: "Open",
+      resolvedAt: null,
+      resolvedBy: null,
+      resolutionNote: null,
       customerId: null,
     },
     {
@@ -1683,6 +1698,9 @@ export function buildSeed(): DB {
       description: 'Savings goal setup completed: "Vineyard tour, Napa"',
       severity: "Info",
       status: "Resolved",
+      resolvedAt: ago(0, 1),
+      resolvedBy: "emp_01",
+      resolutionNote: "Handled in the demo dataset.",
       customerId: "cus_032",
     },
     {
@@ -1693,6 +1711,9 @@ export function buildSeed(): DB {
         "Subscription analysis failed: duplicate merchant descriptors could not be reconciled.",
       severity: "Error",
       status: "Open",
+      resolvedAt: null,
+      resolvedBy: null,
+      resolutionNote: null,
       customerId: "cus_028",
     },
     {
@@ -1702,6 +1723,9 @@ export function buildSeed(): DB {
       description: "Monthly insights generated for 13 active customers.",
       severity: "Info",
       status: "Resolved",
+      resolvedAt: ago(0, 1),
+      resolvedBy: "emp_01",
+      resolutionNote: "Handled in the demo dataset.",
       customerId: null,
     },
     {
@@ -1711,6 +1735,9 @@ export function buildSeed(): DB {
       description: "Goal progress sync requires attention. Sense Save balance not yet reflected.",
       severity: "Warning",
       status: "Resolved",
+      resolvedAt: ago(0, 1),
+      resolvedBy: "emp_01",
+      resolutionNote: "Handled in the demo dataset.",
       customerId: "cus_021",
     },
     {
@@ -1720,6 +1747,9 @@ export function buildSeed(): DB {
       description: "Conversation handed off to Help. Customer asked about card delivery.",
       severity: "Info",
       status: "Resolved",
+      resolvedAt: ago(0, 1),
+      resolvedBy: "emp_01",
+      resolutionNote: "Handled in the demo dataset.",
       customerId: "cus_031",
     },
     {
@@ -1729,6 +1759,9 @@ export function buildSeed(): DB {
       description: "Subscription identified: Spotify Premium (CAD 11.99/mo).",
       severity: "Info",
       status: "Resolved",
+      resolvedAt: ago(0, 1),
+      resolvedBy: "emp_01",
+      resolutionNote: "Handled in the demo dataset.",
       customerId: "cus_024",
     },
     {
@@ -1738,6 +1771,9 @@ export function buildSeed(): DB {
       description: "Banking data feed latency above threshold for 12 minutes.",
       severity: "Warning",
       status: "Resolved",
+      resolvedAt: ago(0, 1),
+      resolvedBy: "emp_01",
+      resolutionNote: "Handled in the demo dataset.",
       customerId: null,
     },
   ];
@@ -1886,7 +1922,7 @@ export function buildSeed(): DB {
   activity.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   return {
-    version: 3,
+    version: 4,
     customers,
     accounts,
     transactions,

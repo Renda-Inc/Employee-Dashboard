@@ -19,6 +19,7 @@ export type Permission =
   | "support.view"
   | "support.manage"
   | "alfie.view"
+  | "alfie.manage"
   | "alfie.sensitive"
   | "employees.manage"
   | "roles.manage"
@@ -44,6 +45,7 @@ const ALL: Permission[] = [
   "support.view",
   "support.manage",
   "alfie.view",
+  "alfie.manage",
   "alfie.sensitive",
   "employees.manage",
   "roles.manage",
@@ -68,6 +70,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "support.view",
     "support.manage",
     "alfie.view",
+    "alfie.manage",
   ],
   Compliance: [
     "customers.view",
@@ -81,6 +84,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "support.manage",
     "audit.view",
     "alfie.view",
+    "alfie.manage",
     "alfie.sensitive",
   ],
   "Banking Operations": [
@@ -94,6 +98,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "subscriptions.view",
     "support.view",
     "alfie.view",
+    "alfie.manage",
   ],
   "Card Operations": [
     "customers.view",
@@ -138,6 +143,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   "support.view": "View support cases",
   "support.manage": "Manage support cases",
   "alfie.view": "View Alfie operations",
+  "alfie.manage": "Resolve Alfie operational events",
   "alfie.sensitive": "Access sensitive Alfie context",
   "employees.manage": "Manage employee accounts",
   "roles.manage": "Create and edit roles",
@@ -160,7 +166,7 @@ export const PERMISSION_GROUPS: { area: string; permissions: Permission[] }[] = 
   },
   { area: "Plans & Subscriptions", permissions: ["subscriptions.view", "subscriptions.manage"] },
   { area: "Customer Support", permissions: ["support.view", "support.manage"] },
-  { area: "Alfie", permissions: ["alfie.view", "alfie.sensitive"] },
+  { area: "Alfie", permissions: ["alfie.view", "alfie.manage", "alfie.sensitive"] },
   {
     area: "Administration",
     permissions: ["employees.manage", "roles.manage", "audit.view", "settings.manage"],

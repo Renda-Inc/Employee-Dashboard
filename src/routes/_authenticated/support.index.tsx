@@ -84,7 +84,7 @@ function Support() {
     <>
       <PageHeader
         title="Customer Support"
-        subtitle="Inquiries submitted from the in-app Help section."
+        subtitle="Internal cases for backend work and follow-ups. Customer conversations happen on the support platform; supervisors create cases here when an interaction needs work in Renda's systems."
         actions={
           canManage && (
             <NewCaseDialog

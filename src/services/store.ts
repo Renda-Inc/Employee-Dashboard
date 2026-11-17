@@ -14,7 +14,7 @@ export const localStorageRepository: OperationsRepository = {
       const raw = window.localStorage.getItem(KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as DB;
-        if (parsed.version === 3) return parsed;
+        if (parsed.version === 4) return parsed;
       }
     } catch {
       /* fall through to seed */

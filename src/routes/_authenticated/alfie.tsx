@@ -2,6 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Lock } from "lucide-react";
 import { useDB } from "@/services/store";
+import { operations } from "@/services/api";
+import { ActionDialog } from "@/components/dialogs/ActionDialog";
+import { Button } from "@/components/ui/button";
 import {
   NoAccess,
   PageHeader,
@@ -36,6 +39,7 @@ function Alfie() {
   const db = useDB();
   const L = lookup(db);
   const allowed = usePermission("alfie.view");
+  const canManage = usePermission("alfie.manage");
   const canCustomer = usePermission("customers.view");
   const sensitive = usePermission("alfie.sensitive");
   const [wf, setWf] = useState("all");
@@ -137,9 +141,49 @@ function Alfie() {
                     </td>
                     <td className="px-3 py-2.5">
                       <StatusBadge status={e.status} />
+                      {e.status === "Resolved" && (
+                        <div className="mt-1 max-w-56 text-[12px] text-muted-foreground">
+                          {L.empName(e.resolvedBy)} · {fmtDateTime(e.resolvedAt)}
+                          {e.resolutionNote ? `: ${e.resolutionNote}` : ""}
+                        </div>
+                      )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-2.5 text-[13px] text-muted-foreground">
                       {fmtDateTime(e.timestamp)}
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      {canManage &&
+                        (e.status === "Open" ? (
+                          <ActionDialog
+                            trigger={
+                              <Button size="sm" variant="outline">
+                                Resolve
+                              </Button>
+                            }
+                            title="Resolve Alfie event"
+                            description="Record what happened so the event can leave the open queue. The note, your name and the time are kept on the event."
+                            reasonLabel="Resolution note"
+                            minReason={5}
+                            onConfirm={(r) => operations.resolveAlfieEvent(e.id, r)}
+                            success="Event resolved"
+                            confirmLabel="Resolve event"
+                          />
+                        ) : (
+                          <ActionDialog
+                            trigger={
+                              <Button size="sm" variant="ghost">
+                                Reopen
+                              </Button>
+                            }
+                            title="Reopen Alfie event"
+                            description="Use this when the issue has come back. The previous resolution stays in the audit log."
+                            reasonLabel="Why is this reopening?"
+                            minReason={5}
+                            onConfirm={(r) => operations.reopenAlfieEvent(e.id, r)}
+                            success="Event reopened"
+                            confirmLabel="Reopen event"
+                          />
+                        ))}
                     </td>
                   </tr>
                 );

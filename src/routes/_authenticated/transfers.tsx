@@ -76,7 +76,16 @@ function Transfers() {
     {
       key: "st",
       header: "Status",
-      cell: (t) => <StatusBadge status={t.status} />,
+      cell: (t) => (
+        <span className="inline-flex flex-col items-start gap-0.5">
+          <StatusBadge status={t.status} />
+          {t.returnRequest && (
+            <span className="text-[12px] text-muted-foreground">
+              Return {t.returnRequest.status.toLowerCase()}
+            </span>
+          )}
+        </span>
+      ),
       sort: (t) => t.status,
     },
   ];
