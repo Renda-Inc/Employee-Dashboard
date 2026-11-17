@@ -1,7 +1,7 @@
 // Derived views over the shared dataset (queues, notifications, search).
 import type { DB } from "@/types/models";
-import { fullName } from "@/lib/format";
-import { ACTIVATION_FOLLOWUP_DAYS, activationOverdue } from "./rules";
+import { fmtDate, fullName } from "@/lib/format";
+import { ACTIVATION_FOLLOWUP_DAYS, activationOverdue, billingDowngradeDue } from "./rules";
 
 export interface QueueItem {
   id: string;
@@ -127,6 +127,22 @@ export function attentionQueue(db: DB): QueueItem[] {
         params: { customerId: s.customerId },
         tone: "info",
       });
+    if (s.billingOutstandingSince) {
+      const due = billingDowngradeDue(s);
+      items.push({
+        id: `q_bil_${s.id}`,
+        type: due ? "Plus downgrade due" : "Plus payment retrying",
+        record: name(s.customerId),
+        detail: due
+          ? `Plus fee unpaid since ${fmtDate(s.billingOutstandingSince)} after ${s.billingRetryCount} failed attempt${s.billingRetryCount === 1 ? "" : "s"} · retry window closed at the new billing date`
+          : `Plus fee unpaid since ${fmtDate(s.billingOutstandingSince)} · attempt ${s.billingRetryCount} · retries every ${db.settings.planRetryIntervalDays} days · downgrades ${fmtDate(s.nextBillingDate)} if unpaid`,
+        at: s.lastBillingAttemptAt ?? s.billingOutstandingSince,
+        action: "Open",
+        to: "/customers/$customerId",
+        params: { customerId: s.customerId },
+        tone: due ? "danger" : "warning",
+      });
+    }
   }
   for (const sc of db.supportCases) {
     if ((sc.status === "Open" && !sc.assignedEmployeeId) || sc.status === "Escalated")

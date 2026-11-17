@@ -50,6 +50,7 @@ function Settings() {
   const [kyc, setKyc] = useState(String(s.kycReviewSlaHours));
   const [sup, setSup] = useState(String(s.supportResponseSlaHours));
   const [mfr, setMfr] = useState(s.manufacturerName);
+  const [retry, setRetry] = useState(String(s.planRetryIntervalDays));
   return (
     <>
       <PageHeader
@@ -157,7 +158,23 @@ function Settings() {
                 disabled={!canOps}
               />
             </div>
+            <div className="space-y-1">
+              <Label htmlFor="retry">Plus fee retry interval (days)</Label>
+              <Input
+                id="retry"
+                type="number"
+                min={1}
+                value={retry}
+                onChange={(e) => setRetry(e.target.value)}
+                disabled={!canOps}
+              />
+            </div>
           </div>
+          <p className="mt-3 text-[13px] text-muted-foreground">
+            When a Plus renewal charge fails, the plan stays active and the fee is retried at this
+            interval for the rest of the billing month. If it is still unpaid at the new billing
+            date, the plan downgrades to Everyday.
+          </p>
           <div className="mt-3 flex items-center justify-between">
             <p className="max-w-md text-[13px] text-muted-foreground">
               The manufacturer mails finished cards to customers directly. Delivery is not tracked;
@@ -173,6 +190,7 @@ function Settings() {
                       kycReviewSlaHours: Number(kyc),
                       supportResponseSlaHours: Number(sup),
                       manufacturerName: mfr.trim() || s.manufacturerName,
+                      planRetryIntervalDays: Math.max(1, Number(retry) || s.planRetryIntervalDays),
                     }),
                   "Operational settings saved",
                 )

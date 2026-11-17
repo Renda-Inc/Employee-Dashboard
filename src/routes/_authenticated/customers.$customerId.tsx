@@ -1,6 +1,6 @@
 import { SelectField } from "@/components/ui/select-field";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ChevronDown, Pencil } from "lucide-react";
 import { useDB } from "@/services/store";
 import { EDITABLE_FIELDS, type EditableField } from "@/services/contracts/operations";
@@ -623,7 +623,7 @@ export function MembershipPanel({ customerId }: { customerId: string }) {
                 title={`Change plan to Renda ${target}`}
                 description={
                   target === "Plus"
-                    ? "Renda Plus is CAD $9.96/month. Billing remains pending until the billing outcome is recorded. A physical card selection will be required if none exists."
+                    ? "Renda Plus is CAD $9.96/month, charged to Smart Spend immediately. If the fee cannot be collected, the upgrade does not go ahead and the customer stays on Everyday. A physical card selection will be required if none exists."
                     : "Downgrading removes the monthly fee. Existing physical cards are unaffected."
                 }
                 reasonLabel="Note (reason for change)"
@@ -645,6 +645,13 @@ export function MembershipPanel({ customerId }: { customerId: string }) {
               ["Start date", fmtDate(sub.startDate)],
               ["Next billing", fmtDate(sub.nextBillingDate)],
               ["Latest billing", <StatusBadge status={sub.latestBillingStatus} />],
+              ...(sub.billingOutstandingSince
+                ? ([
+                    ["Fee outstanding since", fmtDate(sub.billingOutstandingSince)],
+                    ["Failed attempts", String(sub.billingRetryCount)],
+                    ["Downgrades if unpaid", fmtDate(sub.nextBillingDate)],
+                  ] as [string, ReactNode][])
+                : []),
             ]}
           />
         </Panel>
@@ -745,10 +752,13 @@ export function MembershipPanel({ customerId }: { customerId: string }) {
             </li>
           ))}
         </ol>
-        {sub.latestBillingStatus === "Pending" && (
+        {sub.billingOutstandingSince && (
           <div className="mt-4">
             <SimulatedNote>
-              Billing outcome pending. Record it from Plans &amp; Subscriptions.
+              Plus fee unpaid since {fmtDate(sub.billingOutstandingSince)}. The plan stays on Plus
+              while retries run every {db.settings.planRetryIntervalDays} days. If the fee is still
+              unpaid at the new billing date ({fmtDate(sub.nextBillingDate)}), the plan downgrades
+              to Everyday. Record renewal attempts from Plans &amp; Subscriptions.
             </SimulatedNote>
           </div>
         )}

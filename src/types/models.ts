@@ -206,7 +206,7 @@ export interface ManufacturingBatch {
   history: BatchHistoryEntry[];
 }
 
-export type SubscriptionStatus = "Active" | "Pending" | "Canceled" | "Billing Issue";
+export type SubscriptionStatus = "Active" | "Pending" | "Canceled";
 export type BillingStatus = "Paid" | "Failed" | "Not Applicable" | "Pending";
 
 export interface PlanChange {
@@ -227,6 +227,11 @@ export interface Subscription {
   startDate: string;
   nextBillingDate: string | null;
   latestBillingStatus: BillingStatus;
+  /** Billing date whose Plus fee is still unpaid, while retries run. Null when current. */
+  billingOutstandingSince: string | null;
+  /** Failed charge attempts recorded for the outstanding fee. */
+  billingRetryCount: number;
+  lastBillingAttemptAt: string | null;
   cardSelectionRequired: boolean;
   history: PlanChange[];
 }
@@ -388,6 +393,8 @@ export interface Settings {
   supportResponseSlaHours: number;
   batchProcessingDay: "Friday";
   manufacturerName: string;
+  /** Days between Plus fee charge retries while a fee is outstanding. */
+  planRetryIntervalDays: number;
 }
 
 export interface DB {

@@ -9,7 +9,7 @@ import { ActionDialog } from "@/components/dialogs/ActionDialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { fmtDate, fmtMoney, fullName, lookup } from "@/lib/format";
-import { PLAN_PRICES } from "@/services/rules";
+import { billingDowngradeDue, PLAN_PRICES } from "@/services/rules";
 import { MembershipPanel } from "./customers.$customerId";
 import type { Subscription } from "@/types/models";
 
@@ -78,7 +78,19 @@ function Subscriptions() {
     {
       key: "b",
       header: "Latest billing",
-      cell: (s) => <StatusBadge status={s.latestBillingStatus} />,
+      cell: (s) => (
+        <span className="inline-flex flex-col items-start gap-0.5">
+          <StatusBadge status={s.latestBillingStatus} />
+          {s.billingOutstandingSince && (
+            <span className="text-[12px] text-muted-foreground">
+              Attempt {s.billingRetryCount} · unpaid since {fmtDate(s.billingOutstandingSince)} ·{" "}
+              {billingDowngradeDue(s)
+                ? "downgrade due"
+                : `downgrades ${fmtDate(s.nextBillingDate)} if unpaid`}
+            </span>
+          )}
+        </span>
+      ),
     },
     {
       key: "r",
@@ -94,33 +106,59 @@ function Subscriptions() {
       key: "a",
       header: "",
       className: "text-right",
-      cell: (s) =>
-        canManage && s.latestBillingStatus === "Pending" ? (
+      cell: (s) => {
+        if (!canManage || s.plan !== "Plus" || s.subscriptionStatus !== "Active") return null;
+        if (billingDowngradeDue(s))
+          return (
+            <span onClick={(e) => e.stopPropagation()} className="inline-flex gap-1">
+              <ActionDialog
+                trigger={
+                  <Button size="sm" variant="destructive">
+                    Downgrade for non-payment
+                  </Button>
+                }
+                title="Downgrade to Everyday for non-payment"
+                description={`The Plus fee has been unpaid since ${fmtDate(s.billingOutstandingSince)} and the new billing date has arrived, closing the retry window. The plan downgrades to Everyday, and any physical cards and open card orders are canceled because Everyday is virtual-only.`}
+                onConfirm={() => operations.downgradeForNonPayment(s.customerId)}
+                success="Plan downgraded to Everyday for non-payment"
+                confirmLabel="Downgrade plan"
+                destructive
+              />
+            </span>
+          );
+        return (
           <span onClick={(e) => e.stopPropagation()} className="inline-flex gap-1">
             <ActionDialog
               trigger={
                 <Button size="sm" variant="ghost">
-                  Billing failed
+                  Renewal failed
                 </Button>
               }
-              title="Record simulated billing failure"
+              title="Record failed renewal charge"
+              description={
+                s.billingOutstandingSince
+                  ? "Records another failed retry. The plan stays on Plus and the fee stays outstanding until it is collected or the new billing date arrives."
+                  : "Records a failed renewal charge. The plan stays on Plus, the fee becomes outstanding, and retries run until the new billing date, when the plan downgrades to Everyday if it is still unpaid."
+              }
               simulated="Demo billing outcome. No payment processor is contacted."
-              onConfirm={() => operations.simulateBillingOutcome(s.customerId, false)}
-              success="Billing failure recorded (simulated)"
+              onConfirm={() => operations.recordRenewalAttempt(s.customerId, false)}
+              success="Failed renewal attempt recorded"
             />
             <ActionDialog
               trigger={
                 <Button size="sm" variant="outline">
-                  Billing succeeded
+                  Renewal paid
                 </Button>
               }
-              title="Record simulated billing success"
-              simulated="Demo billing outcome. No payment is collected."
-              onConfirm={() => operations.simulateBillingOutcome(s.customerId, true)}
-              success="Billing success recorded (simulated)"
+              title="Record paid renewal charge"
+              description="Collects the Plus fee from the customer's Smart Spend account and clears any outstanding fee. Fails if Smart Spend cannot cover the fee."
+              simulated="Demo billing outcome. The fee is posted against the demo ledger only."
+              onConfirm={() => operations.recordRenewalAttempt(s.customerId, true)}
+              success="Plus fee collected from Smart Spend"
             />
           </span>
-        ) : null,
+        );
+      },
     },
   ];
   return (
@@ -153,10 +191,13 @@ function Subscriptions() {
           <div className="text-[18px] font-semibold tabular">{plus.length}</div>
         </div>
         <div className="panel px-4 py-3">
-          <div className="text-[13px] text-muted-foreground">Billing pending / issues</div>
+          <div className="text-[13px] text-muted-foreground">Plus fees in retry window</div>
           <div className="text-[18px] font-semibold tabular">
-            {db.subscriptions.filter((s) => s.latestBillingStatus === "Pending").length} /{" "}
-            {db.subscriptions.filter((s) => s.subscriptionStatus === "Billing Issue").length}
+            {db.subscriptions.filter((s) => s.billingOutstandingSince).length}
+            <span className="text-[13px] font-normal text-muted-foreground">
+              {" "}
+              · {db.subscriptions.filter((s) => billingDowngradeDue(s)).length} at downgrade date
+            </span>
           </div>
         </div>
       </div>
@@ -178,7 +219,7 @@ function Subscriptions() {
               label="Status"
               value={status}
               onChange={setStatus}
-              options={["Active", "Pending", "Canceled", "Billing Issue"]}
+              options={["Active", "Pending", "Canceled"]}
             />
           </>
         }

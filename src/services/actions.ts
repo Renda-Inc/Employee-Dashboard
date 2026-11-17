@@ -22,7 +22,13 @@ import {
   type PersonalSettings,
 } from "./contracts/operations";
 import { can, PermissionError, RuleError, type Permission } from "./permissions";
-import { activationBlocker, batchIneligibility, PLAN_PRICES } from "./rules";
+import {
+  activationBlocker,
+  addMonths,
+  batchIneligibility,
+  billingDowngradeDue,
+  PLAN_PRICES,
+} from "./rules";
 
 let seq = 0;
 const uid = (p: string) => `${p}_${Date.now().toString(36)}${(++seq).toString(36)}`;
@@ -933,6 +939,59 @@ function cancelOrder(orderId: string, reason: string) {
 
 /* ---------------- Plans ---------------- */
 
+const fmtDay = (iso: string | null) =>
+  iso
+    ? new Date(iso).toLocaleDateString("en-CA", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : "-";
+
+function smartSpendAccount(d: DB, customerId: string) {
+  return d.accounts.find((a) => a.customerId === customerId && a.accountType === "Smart Spend");
+}
+
+/** Why the Plus fee cannot be collected from this customer's Smart Spend
+ * right now, or null when it can. Plus is charged from Smart Spend and the
+ * charge is all-or-nothing: no partial collection, no negative balance. */
+function planFeeBlocker(d: DB, customerId: string): string | null {
+  const acc = smartSpendAccount(d, customerId);
+  if (!acc || acc.accountStatus !== "Active")
+    return "The customer has no active Smart Spend account to charge.";
+  if (acc.availableBalance === null || acc.availableBalance < PLAN_PRICES.Plus)
+    return `Smart Spend cannot cover the $${PLAN_PRICES.Plus.toFixed(2)} Plus fee (available: ${
+      acc.availableBalance === null ? "unknown" : `$${acc.availableBalance.toFixed(2)}`
+    }).`;
+  return null;
+}
+
+/** Collects the Plus fee from Smart Spend and posts the Plan Fee
+ * transaction. The caller must have checked planFeeBlocker first. */
+function collectPlanFee(d: DB, customerId: string) {
+  const acc = smartSpendAccount(d, customerId)!;
+  const fee = PLAN_PRICES.Plus;
+  acc.availableBalance = (acc.availableBalance ?? 0) - fee;
+  acc.ledgerBalance = (acc.ledgerBalance ?? 0) - fee;
+  d.transactions.unshift({
+    id: uid("txn"),
+    customerId,
+    accountId: acc.id,
+    transactionReference: `TX-${Math.floor(700000 + Math.random() * 299999)}`,
+    transactionType: "Plan Fee",
+    description: "Renda Plus membership",
+    direction: "debit",
+    amount: fee,
+    currency: "CAD",
+    status: "Completed",
+    timestamp: now(),
+    completedAt: now(),
+    providerReference: `BIL-${Math.floor(10000000 + Math.random() * 89999999)}`,
+    paymentRail: "Renda Billing",
+    notes: [],
+  });
+}
+
 function changePlan(customerId: string, to: Plan, note: string) {
   const db = getState();
   const c = getCustomer(customerId);
@@ -952,6 +1011,16 @@ function changePlan(customerId: string, to: Plan, note: string) {
   if (c.customerStatus === "Restricted")
     throw new RuleError("Plans cannot be changed while the customer is restricted.");
   if (sub.plan === to) throw new RuleError(`Customer is already on Renda ${to}.`);
+  // Product rule (user, 2026-11-17): an upgrade charges Smart Spend
+  // immediately, and if the fee cannot be collected the upgrade simply
+  // does not happen. There is no pending state.
+  if (to === "Plus") {
+    const blocker = planFeeBlocker(db, customerId);
+    if (blocker)
+      throw new RuleError(
+        `${blocker} The upgrade does not go ahead and the customer stays on Everyday.`,
+      );
+  }
   const hasPhysical = db.cards.some(
     (x) =>
       x.customerId === customerId &&
@@ -969,17 +1038,28 @@ function changePlan(customerId: string, to: Plan, note: string) {
       from,
       to,
       by: d.currentEmployeeId,
-      note: note.trim() || "Changed by employee (demo)",
+      note:
+        note.trim() ||
+        (to === "Plus"
+          ? "Upgraded by employee; Plus fee collected from Smart Spend"
+          : "Changed by employee (demo)"),
     });
     if (to === "Plus") {
-      s.subscriptionStatus = "Pending";
-      s.latestBillingStatus = "Pending";
-      s.nextBillingDate = now();
+      collectPlanFee(d, customerId);
+      s.subscriptionStatus = "Active";
+      s.latestBillingStatus = "Paid";
+      s.nextBillingDate = addMonths(now(), 1);
+      s.billingOutstandingSince = null;
+      s.billingRetryCount = 0;
+      s.lastBillingAttemptAt = now();
       s.cardSelectionRequired = !hasPhysical;
     } else {
       s.subscriptionStatus = "Active";
       s.latestBillingStatus = "Not Applicable";
       s.nextBillingDate = null;
+      s.billingOutstandingSince = null;
+      s.billingRetryCount = 0;
+      s.lastBillingAttemptAt = null;
       s.cardSelectionRequired = false;
     }
     pushAudit(d, {
@@ -988,10 +1068,10 @@ function changePlan(customerId: string, to: Plan, note: string) {
       entityType: "Customer",
       entityId: customerId,
       entityLabel: name(c),
-      outcome: "Simulated",
+      outcome: "Success",
       details:
         to === "Plus"
-          ? `Billing pending (simulated).${!hasPhysical ? " Physical card selection required." : ""}`
+          ? `Plus fee of $${PLAN_PRICES.Plus.toFixed(2)} collected from Smart Spend at upgrade.${!hasPhysical ? " Physical card selection required." : ""}`
           : "Downgraded to Everyday",
       before: { plan: from },
       after: { plan: to },
@@ -1005,34 +1085,184 @@ function changePlan(customerId: string, to: Plan, note: string) {
   });
 }
 
-function simulateBillingOutcome(customerId: string, success: boolean) {
+/** Records one renewal charge attempt for a Plus subscription, the way the
+ * billing system would report it. A failed attempt leaves the plan active
+ * and starts (or continues) the retry window: the fee stays outstanding
+ * and retries run until the new billing date. A successful attempt, at the
+ * due date or on any retry, collects the fee and clears the window. */
+function recordRenewalAttempt(customerId: string, success: boolean) {
   const db = getState();
   const c = getCustomer(customerId);
   authorize(
     "subscriptions.manage",
-    "Record billing outcome",
+    "Record renewal charge attempt",
     "Plans & Subscriptions",
     "Customer",
     customerId,
     name(c),
   );
   const sub = db.subscriptions.find((s) => s.customerId === customerId);
-  if (!sub || sub.plan !== "Plus" || sub.latestBillingStatus !== "Pending")
-    throw new RuleError("No pending Plus billing to resolve.");
+  if (!sub || sub.plan !== "Plus" || sub.subscriptionStatus !== "Active")
+    throw new RuleError("Renewal charges only apply to an active Renda Plus subscription.");
+  if (billingDowngradeDue(sub))
+    throw new RuleError(
+      "The retry window closed at the new billing date. Downgrade the plan for non-payment instead of recording another attempt.",
+    );
+  if (success) {
+    const blocker = planFeeBlocker(db, customerId);
+    if (blocker)
+      throw new RuleError(
+        `${blocker} Record a failed attempt instead; the fee stays outstanding and retries continue.`,
+      );
+  }
   setState((d) => {
     const s = d.subscriptions.find((y) => y.id === sub.id)!;
-    s.latestBillingStatus = success ? "Paid" : "Failed";
-    s.subscriptionStatus = success ? "Active" : "Billing Issue";
-    if (success) s.nextBillingDate = new Date(Date.now() + 30 * 864e5).toISOString();
+    s.lastBillingAttemptAt = now();
+    if (success) {
+      collectPlanFee(d, customerId);
+      const wasRetry = !!s.billingOutstandingSince;
+      s.latestBillingStatus = "Paid";
+      s.billingOutstandingSince = null;
+      s.billingRetryCount = 0;
+      // On a normal renewal the cycle advances from the date that was due;
+      // on a successful retry nextBillingDate already holds the new date.
+      if (!wasRetry && s.nextBillingDate) s.nextBillingDate = addMonths(s.nextBillingDate, 1);
+      pushAudit(d, {
+        action: wasRetry ? "Plus fee collected on retry" : "Plus renewal charged",
+        module: "Plans & Subscriptions",
+        entityType: "Customer",
+        entityId: customerId,
+        entityLabel: name(c),
+        outcome: "Success",
+        details: `Plus fee of $${PLAN_PRICES.Plus.toFixed(2)} collected from Smart Spend.`,
+      });
+      activity(
+        d,
+        customerId,
+        "Membership",
+        wasRetry ? "Plus fee collected after retry" : "Plus renewal charged",
+      );
+    } else {
+      const firstFailure = !s.billingOutstandingSince;
+      if (firstFailure) {
+        // The missed billing date becomes the outstanding date and the
+        // next billing date becomes the end of the retry window.
+        s.billingOutstandingSince = s.nextBillingDate ?? now();
+        s.nextBillingDate = addMonths(s.billingOutstandingSince, 1);
+      }
+      s.latestBillingStatus = "Failed";
+      s.billingRetryCount += 1;
+      pushAudit(d, {
+        action: "Plus renewal charge failed",
+        module: "Plans & Subscriptions",
+        entityType: "Customer",
+        entityId: customerId,
+        entityLabel: name(c),
+        outcome: "Simulated",
+        details: `Attempt ${s.billingRetryCount}. Fee outstanding since ${fmtDay(s.billingOutstandingSince)}; retries run every ${d.settings.planRetryIntervalDays} days until the new billing date, ${fmtDay(s.nextBillingDate)}, when the plan downgrades to Everyday if still unpaid.`,
+      });
+      activity(
+        d,
+        customerId,
+        "Membership",
+        `Plus renewal charge failed (attempt ${s.billingRetryCount}); fee outstanding, retries running`,
+      );
+    }
+  });
+}
+
+/** Ends the retry window: the new billing date has arrived and the Plus
+ * fee is still unpaid, so the plan downgrades to Everyday. Physical cards
+ * and open card orders are canceled, because Everyday is virtual-only. */
+function downgradeForNonPayment(customerId: string) {
+  const db = getState();
+  const c = getCustomer(customerId);
+  authorize(
+    "subscriptions.manage",
+    "Downgrade plan for non-payment",
+    "Plans & Subscriptions",
+    "Customer",
+    customerId,
+    name(c),
+  );
+  const sub = db.subscriptions.find((s) => s.customerId === customerId);
+  if (!sub || sub.plan !== "Plus")
+    throw new RuleError("Only a Renda Plus subscription can be downgraded for non-payment.");
+  if (!sub.billingOutstandingSince)
+    throw new RuleError("This subscription has no unpaid Plus fee outstanding.");
+  if (!billingDowngradeDue(sub))
+    throw new RuleError(
+      `Retries are still open. The fee has been outstanding since ${fmtDay(sub.billingOutstandingSince)} and the plan downgrades at the new billing date, ${fmtDay(sub.nextBillingDate)}, if it is still unpaid.`,
+    );
+  setState((d) => {
+    const s = d.subscriptions.find((y) => y.id === sub.id)!;
+    const outstandingSince = s.billingOutstandingSince;
+    const attempts = s.billingRetryCount;
+    s.plan = "Everyday";
+    s.monthlyPrice = PLAN_PRICES.Everyday;
+    s.subscriptionStatus = "Active";
+    s.latestBillingStatus = "Not Applicable";
+    s.nextBillingDate = null;
+    s.billingOutstandingSince = null;
+    s.billingRetryCount = 0;
+    s.cardSelectionRequired = false;
+    s.history.push({
+      at: now(),
+      from: "Plus",
+      to: "Everyday",
+      by: d.currentEmployeeId,
+      note: `Downgraded for non-payment: Plus fee unpaid since ${fmtDay(outstandingSince)} after ${attempts} failed attempt${attempts === 1 ? "" : "s"}; retry window closed at the new billing date.`,
+    });
+    let cardsCanceled = 0;
+    for (const card of d.cards) {
+      if (
+        card.customerId === customerId &&
+        card.cardType === "Physical" &&
+        card.cardStatus !== "Canceled" &&
+        card.cardStatus !== "Replaced"
+      ) {
+        card.cardStatus = "Canceled";
+        card.notes.unshift({
+          id: uid("note"),
+          at: now(),
+          by: d.currentEmployeeId,
+          text: "Canceled: the Plus plan was downgraded to Everyday for non-payment. Everyday includes a virtual card only.",
+        });
+        cardsCanceled += 1;
+      }
+    }
+    let ordersCanceled = 0;
+    for (const o of d.cardOrders) {
+      if (
+        o.customerId === customerId &&
+        o.orderStatus !== "Activated" &&
+        o.orderStatus !== "Canceled" &&
+        o.orderStatus !== "Failed"
+      ) {
+        o.orderStatus = "Canceled";
+        o.notes =
+          (o.notes ? `${o.notes} ` : "") +
+          "Canceled: the Plus plan was downgraded to Everyday for non-payment.";
+        ordersCanceled += 1;
+      }
+    }
     pushAudit(d, {
-      action: success ? "Billing succeeded" : "Billing failed",
+      action: "Plan downgraded for non-payment",
       module: "Plans & Subscriptions",
       entityType: "Customer",
       entityId: customerId,
       entityLabel: name(c),
-      outcome: "Simulated",
-      details: "Demo billing outcome. No payment processed.",
+      outcome: "Success",
+      details: `Plus fee unpaid since ${fmtDay(outstandingSince)} (${attempts} failed attempts). Downgraded to Everyday at the new billing date.${cardsCanceled ? ` ${cardsCanceled} physical card(s) canceled.` : ""}${ordersCanceled ? ` ${ordersCanceled} open card order(s) canceled.` : ""}`,
+      before: { plan: "Plus" },
+      after: { plan: "Everyday" },
     });
+    activity(
+      d,
+      customerId,
+      "Membership",
+      "Downgraded to Everyday: Plus fee still unpaid at the new billing date",
+    );
   });
 }
 
@@ -1430,7 +1660,8 @@ export const localOperations: OperationsService = {
   createReplacement: asAsync(createReplacement),
   cancelOrder: asAsync(cancelOrder),
   changePlan: asAsync(changePlan),
-  simulateBillingOutcome: asAsync(simulateBillingOutcome),
+  recordRenewalAttempt: asAsync(recordRenewalAttempt),
+  downgradeForNonPayment: asAsync(downgradeForNonPayment),
   recordCardSelection: asAsync(recordCardSelection),
   createBatch: asAsync(createBatch),
   removeOrderFromBatch: asAsync(removeOrderFromBatch),

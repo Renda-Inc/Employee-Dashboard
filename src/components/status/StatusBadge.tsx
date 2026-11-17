@@ -50,7 +50,6 @@ const TONE: Record<string, Tone> = {
   Blocked: "danger",
   Restricted: "danger",
   Locked: "danger",
-  "Billing Issue": "danger",
   Escalated: "danger",
   Denied: "danger",
   Outage: "danger",

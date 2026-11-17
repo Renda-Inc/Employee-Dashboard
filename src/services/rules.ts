@@ -56,3 +56,29 @@ export function activationOverdue(
   if (card.cardStatus !== "In Production" || !submittedAt) return false;
   return now - new Date(submittedAt).getTime() >= ACTIVATION_FOLLOWUP_DAYS * 864e5;
 }
+
+/** ISO timestamp one or more calendar months after the given one, with the
+ * day clamped to the target month's length (Jan 31 + 1 month is Feb 28/29). */
+export function addMonths(iso: string, months: number): string {
+  const d = new Date(iso);
+  const day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + months);
+  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(day, lastDay));
+  return d.toISOString();
+}
+
+/** Plus billing (product rule, user, 2026-11-17): a failed renewal charge is
+ * retried at intervals for the rest of the billing month while the plan
+ * stays active. The retry window closes at the new billing date, which is
+ * the subscription's nextBillingDate (advanced past the missed date when
+ * the first attempt failed). If the fee is still outstanding then, the
+ * plan is downgraded to Everyday. There is no "billing issue" state. */
+export function billingDowngradeDue(
+  sub: { billingOutstandingSince: string | null; nextBillingDate: string | null },
+  now: number = Date.now(),
+): boolean {
+  if (!sub.billingOutstandingSince || !sub.nextBillingDate) return false;
+  return now >= new Date(sub.nextBillingDate).getTime();
+}

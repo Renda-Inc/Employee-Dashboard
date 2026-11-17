@@ -756,6 +756,9 @@ export function buildSeed(): DB {
             ? iso(DEMO_NOW + (((n * 3) % 28) + 1) * D)
             : null,
         latestBillingStatus: s.plan === "Plus" ? "Paid" : "Not Applicable",
+        billingOutstandingSince: null,
+        billingRetryCount: 0,
+        lastBillingAttemptAt: null,
         cardSelectionRequired: false,
         history: [
           {
@@ -781,6 +784,9 @@ export function buildSeed(): DB {
         startDate: iso(start),
         nextBillingDate: null,
         latestBillingStatus: "Not Applicable",
+        billingOutstandingSince: null,
+        billingRetryCount: 0,
+        lastBillingAttemptAt: null,
         cardSelectionRequired: false,
         history: [
           {
@@ -824,7 +830,8 @@ export function buildSeed(): DB {
   const upgraded = subscriptions.find((x) => x.customerId === "cus_025")!;
   upgraded.plan = "Plus";
   upgraded.monthlyPrice = PLAN_PRICES.Plus;
-  upgraded.latestBillingStatus = "Pending";
+  upgraded.latestBillingStatus = "Paid";
+  upgraded.lastBillingAttemptAt = ago(1, 5);
   upgraded.nextBillingDate = iso(DEMO_NOW + 29 * D);
   upgraded.cardSelectionRequired = true;
   upgraded.history.push({
@@ -835,6 +842,26 @@ export function buildSeed(): DB {
     note: "Upgraded in app. Physical card design not yet selected.",
   });
   act("cus_025", "Membership", "Upgraded from Everyday to Renda Plus", ago(1, 5));
+
+  // Plus member inside the retry window (Olivia Thompson): the renewal
+  // charge failed 12 days ago, two attempts are on record, and the fee
+  // stays outstanding until it is collected or the new billing date
+  // arrives, when the plan would downgrade to Everyday.
+  const olivia = customers.find((cu) => cu.firstName === "Olivia" && cu.lastName === "Thompson");
+  const retrying = subscriptions.find((x) => x.customerId === olivia?.id);
+  if (retrying) {
+    retrying.latestBillingStatus = "Failed";
+    retrying.billingOutstandingSince = ago(12);
+    retrying.nextBillingDate = iso(DEMO_NOW + 18 * D);
+    retrying.billingRetryCount = 2;
+    retrying.lastBillingAttemptAt = ago(2);
+    act(
+      olivia!.id,
+      "Membership",
+      "Plus renewal charge failed (attempt 2); fee outstanding, retries running",
+      ago(2),
+    );
+  }
 
   // Physical cards, orders and batches
   const plusIds = ["cus_026", "cus_027", "cus_028", "cus_029", "cus_030", "cus_031", "cus_032"];
@@ -1859,7 +1886,7 @@ export function buildSeed(): DB {
   activity.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   return {
-    version: 2,
+    version: 3,
     customers,
     accounts,
     transactions,
@@ -1892,6 +1919,7 @@ export function buildSeed(): DB {
       supportResponseSlaHours: 24,
       batchProcessingDay: "Friday",
       manufacturerName: "Card manufacturer (to be confirmed)",
+      planRetryIntervalDays: 5,
     },
     currentEmployeeId: "",
     readNotificationIds: [],

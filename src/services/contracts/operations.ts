@@ -95,7 +95,8 @@ export interface OperationsService {
   cancelOrder(orderId: string, reason: string): Promise<void>;
   // Subscriptions
   changePlan(customerId: string, to: Plan, note: string): Promise<void>;
-  simulateBillingOutcome(customerId: string, success: boolean): Promise<void>;
+  recordRenewalAttempt(customerId: string, success: boolean): Promise<void>;
+  downgradeForNonPayment(customerId: string): Promise<void>;
   /** Returns the new card ID. */
   recordCardSelection(customerId: string, design: CardDesign): Promise<string>;
   // Card manufacturing
