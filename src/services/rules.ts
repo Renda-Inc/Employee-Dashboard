@@ -69,6 +69,46 @@ export function addMonths(iso: string, months: number): string {
   return d.toISOString();
 }
 
+/** Restriction and closure (product rule, user, 2026-11-17): two kinds of
+ * restriction, an operational freeze (Support or Banking Operations) and a
+ * compliance hold (Compliance only). Restriction blocks outbound activity
+ * only; inbound payments and login still work, and cards stop working
+ * because spending is outbound, not because the card itself is blocked.
+ * Only Compliance can lift a restriction from the admin. */
+export const RESTRICTION_REASONS = [
+  "Suspected fraud",
+  "Customer request",
+  "Lost or stolen device",
+  "AML review",
+  "Sanctions",
+  "Abuse",
+] as const;
+
+export const CLOSURE_REASONS = [
+  "Customer request",
+  "Inactivity",
+  "Abuse",
+  "Failed KYC",
+  "Suspected fraud",
+  "AML review",
+  "Deceased",
+] as const;
+
+/** Days after closure during which a customer can appeal and, if they
+ * pass the reactivation policy checks, have the same account reactivated.
+ * After the window the closure is permanent; returning customers then
+ * register fresh (Revolut's model: the same email and phone can be reused
+ * for a new account, with full KYC again). */
+export const REACTIVATION_WINDOW_DAYS = 90;
+
+export function reactivationAvailable(
+  closure: { closedAt: string } | null,
+  now: number = Date.now(),
+): boolean {
+  if (!closure) return false;
+  return now - new Date(closure.closedAt).getTime() < REACTIVATION_WINDOW_DAYS * 864e5;
+}
+
 /** Plus billing (product rule, user, 2026-11-17): a failed renewal charge is
  * retried at intervals for the rest of the billing month while the plan
  * stays active. The retry window closes at the new billing date, which is

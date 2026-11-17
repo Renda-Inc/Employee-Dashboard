@@ -21,6 +21,31 @@ export type KycStatus = "Not Started" | "Pending" | "Under Review" | "Approved" 
 export type IssuanceStatus = "Not Started" | "Pending" | "Issued" | "Failed";
 export type Plan = "Everyday" | "Plus";
 
+export type RestrictionKind = "Operational Freeze" | "Compliance Hold";
+
+/** Why a customer is restricted and who did it. Restriction is outbound
+ * only: the customer can log in and receive money, but cannot send, spend
+ * or withdraw, so cards stop working without being blocked themselves. */
+export interface CustomerRestriction {
+  kind: RestrictionKind;
+  reason: string;
+  note: string;
+  setBy: string;
+  setAt: string;
+}
+
+/** Closure record. Balances are paid out by Interac before closing;
+ * a closed account can be reactivated on appeal only inside the
+ * reactivation window, after which the closure is permanent. */
+export interface CustomerClosure {
+  reason: string;
+  note: string;
+  closedBy: string;
+  closedAt: string;
+  payoutEmail: string | null;
+  payoutAmount: number;
+}
+
 export interface Customer {
   id: string;
   userId: string;
@@ -49,6 +74,8 @@ export interface Customer {
   kycStatus: KycStatus;
   accountIssuanceStatus: IssuanceStatus;
   customerStatus: CustomerStatus;
+  restriction: CustomerRestriction | null;
+  closure: CustomerClosure | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -254,7 +281,7 @@ export interface Subscription {
   history: PlanChange[];
 }
 
-export type GoalStatus = "Active" | "Completed" | "Paused";
+export type GoalStatus = "Active" | "Completed" | "Paused" | "Closed";
 
 export interface SavingsGoal {
   id: string;

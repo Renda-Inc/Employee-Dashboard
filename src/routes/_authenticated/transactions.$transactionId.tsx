@@ -160,16 +160,14 @@ function TxnDetail() {
                   </p>
                   {!transfer.returnRequest && canInv && (
                     <div className="mt-3">
-                      <ActionDialog
-                        trigger={<Button size="sm">Request return from recipient</Button>}
-                        title="Request return of RenPay payment"
-                        description="Renda will contact the recipient and ask them to return this payment. Nothing is debited from the recipient; they choose whether to send it back."
-                        reasonLabel="Reason for the request"
-                        minReason={5}
-                        onConfirm={(r) => operations.requestTransferReturn(transfer.id, r)}
-                        success="Return requested: recipient will be contacted"
-                        confirmLabel="Request return"
-                      />
+                      <Button size="sm" disabled>
+                        Request return from recipient
+                      </Button>
+                      <p className="mt-2 text-[12px] text-muted-foreground">
+                        Not live yet: a return request asks the recipient to act inside the app, and
+                        the RenPay screens for that do not exist yet. This action stays disabled
+                        until the customer app can present the request to the recipient.
+                      </p>
                     </div>
                   )}
                   {transfer.returnRequest?.status === "Requested" && (

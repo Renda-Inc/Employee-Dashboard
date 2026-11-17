@@ -634,6 +634,35 @@ export function buildSeed(): DB {
       kycStatus,
       accountIssuanceStatus,
       customerStatus: s.stage,
+      restriction:
+        s.stage === "Restricted"
+          ? n % 2 === 0
+            ? {
+                kind: "Operational Freeze" as const,
+                reason: "Suspected fraud",
+                note: "Freeze placed after unusual sign-in and transfer activity; review in progress.",
+                setBy: "emp_01",
+                setAt: ago(4),
+              }
+            : {
+                kind: "Compliance Hold" as const,
+                reason: "AML review",
+                note: "Enhanced due diligence in progress; source-of-funds documents requested.",
+                setBy: "emp_01",
+                setAt: ago(6),
+              }
+          : null,
+      closure:
+        s.stage === "Closed"
+          ? {
+              reason: "Customer request",
+              note: "Closed at the customer's request in the demo dataset.",
+              closedBy: "emp_01",
+              closedAt: ago(n % 2 === 0 ? 30 : 120),
+              payoutEmail: signupEmail,
+              payoutAmount: 0,
+            }
+          : null,
       createdAt: iso(regMs),
       updatedAt: iso(Math.min(DEMO_NOW, regMs + Math.max(1, s.regDays * 0.6) * D)),
     };
@@ -1922,7 +1951,7 @@ export function buildSeed(): DB {
   activity.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   return {
-    version: 4,
+    version: 5,
     customers,
     accounts,
     transactions,

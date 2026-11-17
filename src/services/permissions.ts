@@ -4,6 +4,8 @@ export type Permission =
   | "customers.view"
   | "customers.edit"
   | "customers.lifecycle"
+  | "customers.restrict"
+  | "customers.hold"
   | "kyc.view"
   | "kyc.decide"
   | "accounts.view"
@@ -30,6 +32,8 @@ const ALL: Permission[] = [
   "customers.view",
   "customers.edit",
   "customers.lifecycle",
+  "customers.restrict",
+  "customers.hold",
   "kyc.view",
   "kyc.decide",
   "accounts.view",
@@ -59,6 +63,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   "Customer Support": [
     "customers.view",
     "customers.edit",
+    "customers.restrict",
     "accounts.view",
     "transactions.view",
     "transactions.investigate",
@@ -75,6 +80,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   Compliance: [
     "customers.view",
     "customers.lifecycle",
+    "customers.restrict",
+    "customers.hold",
     "kyc.view",
     "kyc.decide",
     "accounts.view",
@@ -90,6 +97,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   "Banking Operations": [
     "customers.view",
     "customers.lifecycle",
+    "customers.restrict",
     "kyc.view",
     "accounts.view",
     "accounts.manage",
@@ -128,6 +136,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   "customers.view": "View customer records",
   "customers.edit": "Edit permitted customer information",
   "customers.lifecycle": "Advance customer lifecycle",
+  "customers.restrict": "Place operational freezes on customers",
+  "customers.hold": "Manage compliance holds, lift restrictions, reactivate customers",
   "kyc.view": "View KYC cases",
   "kyc.decide": "Record compliance decisions",
   "accounts.view": "View banking accounts",
@@ -153,7 +163,16 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
 
 /** Permissions grouped by the area of Renda Admin they unlock. */
 export const PERMISSION_GROUPS: { area: string; permissions: Permission[] }[] = [
-  { area: "Customers", permissions: ["customers.view", "customers.edit", "customers.lifecycle"] },
+  {
+    area: "Customers",
+    permissions: [
+      "customers.view",
+      "customers.edit",
+      "customers.lifecycle",
+      "customers.restrict",
+      "customers.hold",
+    ],
+  },
   { area: "Onboarding & KYC", permissions: ["kyc.view", "kyc.decide"] },
   { area: "Banking & Accounts", permissions: ["accounts.view", "accounts.manage"] },
   {

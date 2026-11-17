@@ -12,6 +12,7 @@ import type {
   DB,
   Plan,
   ReplacementReason,
+  RestrictionKind,
 } from "@/types/models";
 import { getState, resetState, setState } from "./store";
 import {
@@ -28,6 +29,8 @@ import {
   batchIneligibility,
   billingDowngradeDue,
   PLAN_PRICES,
+  REACTIVATION_WINDOW_DAYS,
+  reactivationAvailable,
 } from "./rules";
 
 let seq = 0;
@@ -161,6 +164,343 @@ function updateCustomer(id: string, patch: Partial<Pick<Customer, EditableField>
       after,
     });
     activity(d, id, "Profile", `Profile updated by employee (${Object.keys(after).join(", ")})`);
+  });
+}
+
+/* ---------------- Restriction & closure ---------------- */
+
+const RESTRICTION_MARKER = "Outbound blocked: customer restricted";
+
+/** Places a restriction on a customer (product rule, user, 2026-11-17).
+ * An operational freeze can be placed by Support or Banking Operations;
+ * a compliance hold only by Compliance. Restriction is outbound only:
+ * the customer can log in and receive money, but cannot send, spend or
+ * withdraw. Cards are deliberately not touched: they stop working
+ * because spending is outbound, whatever their own status says. */
+function restrictCustomer(customerId: string, kind: RestrictionKind, reason: string, note: string) {
+  const c = getCustomer(customerId);
+  authorize(
+    kind === "Compliance Hold" ? "customers.hold" : "customers.restrict",
+    kind === "Compliance Hold" ? "Place compliance hold" : "Place operational freeze",
+    "Customers",
+    "Customer",
+    customerId,
+    name(c),
+  );
+  if (note.trim().length < 5) throw new RuleError("A note is required (at least 5 characters).");
+  const escalating =
+    c.customerStatus === "Restricted" &&
+    c.restriction?.kind === "Operational Freeze" &&
+    kind === "Compliance Hold";
+  if (c.customerStatus !== "Active" && !escalating)
+    throw new RuleError(
+      c.customerStatus === "Restricted"
+        ? "This customer is already restricted. Only an operational freeze can be escalated to a compliance hold."
+        : `Only an active customer can be restricted (current: ${c.customerStatus}).`,
+    );
+  setState((d) => {
+    const x = d.customers.find((y) => y.id === customerId)!;
+    x.customerStatus = "Restricted";
+    x.restriction = {
+      kind,
+      reason,
+      note: note.trim(),
+      setBy: d.currentEmployeeId,
+      setAt: now(),
+    };
+    x.updatedAt = now();
+    for (const a of d.accounts) {
+      if (a.customerId === customerId && a.accountStatus === "Active") {
+        a.accountStatus = "Restricted";
+        if (!a.restrictions.includes(RESTRICTION_MARKER)) a.restrictions.push(RESTRICTION_MARKER);
+      }
+    }
+    pushAudit(d, {
+      action: escalating ? "Restriction escalated to compliance hold" : `${kind} placed`,
+      module: "Customers",
+      entityType: "Customer",
+      entityId: customerId,
+      entityLabel: name(x),
+      outcome: "Success",
+      details: `${kind} · ${reason}. Outbound activity blocked; inbound and login unaffected. ${note.trim()}`,
+      before: { customerStatus: escalating ? "Restricted" : "Active" },
+      after: { customerStatus: "Restricted", restrictionKind: kind, reason },
+    });
+    activity(d, customerId, "Profile", `${kind} placed (${reason}): outbound activity blocked`);
+  });
+}
+
+/** Lifts a restriction. Button-wise this is Compliance only (product
+ * rule, user, 2026-11-17): Support and Operations can place a freeze but
+ * cannot lift one from the admin. */
+function liftRestriction(customerId: string, note: string) {
+  const c = getCustomer(customerId);
+  authorize(
+    "customers.hold",
+    "Lift customer restriction",
+    "Customers",
+    "Customer",
+    customerId,
+    name(c),
+  );
+  if (c.customerStatus !== "Restricted") throw new RuleError("This customer is not restricted.");
+  if (note.trim().length < 5) throw new RuleError("A note is required (at least 5 characters).");
+  setState((d) => {
+    const x = d.customers.find((y) => y.id === customerId)!;
+    const was = x.restriction;
+    x.customerStatus = "Active";
+    x.restriction = null;
+    x.updatedAt = now();
+    for (const a of d.accounts) {
+      if (a.customerId === customerId) {
+        a.restrictions = a.restrictions.filter((r) => r !== RESTRICTION_MARKER);
+        if (a.accountStatus === "Restricted") a.accountStatus = "Active";
+      }
+    }
+    pushAudit(d, {
+      action: "Customer restriction lifted",
+      module: "Customers",
+      entityType: "Customer",
+      entityId: customerId,
+      entityLabel: name(x),
+      outcome: "Success",
+      details: was
+        ? `Lifted the ${was.kind.toLowerCase()} (${was.reason}, placed ${fmtDay(was.setAt)}). ${note.trim()}`
+        : `Lifted a restriction placed before restriction records existed. ${note.trim()}`,
+      before: { customerStatus: "Restricted" },
+      after: { customerStatus: "Active" },
+    });
+    activity(d, customerId, "Profile", "Restriction lifted by Compliance: full access restored");
+  });
+}
+
+/** Closes a customer (product rule, user, 2026-11-17). Customer-requested
+ * or bank-initiated. Any remaining balance is sent to the customer by
+ * Interac e-Transfer, to an Interac email they chose or the one on their
+ * account, so balances reach zero as part of the closure. Savings goals
+ * close and their funds are part of the Sense Save balance paid out.
+ * The Plus subscription is cancelled with no refund, and every card
+ * becomes inactive. */
+function closeCustomer(
+  customerId: string,
+  input: { reason: string; note: string; payoutEmail: string },
+) {
+  const c = getCustomer(customerId);
+  authorize("customers.lifecycle", "Close customer", "Customers", "Customer", customerId, name(c));
+  if (c.customerStatus === "Closed") throw new RuleError("This customer is already closed.");
+  if (c.customerStatus !== "Active" && c.customerStatus !== "Restricted")
+    throw new RuleError(
+      `Only an active or restricted customer can be closed (current: ${c.customerStatus}).`,
+    );
+  if (input.note.trim().length < 5)
+    throw new RuleError("A note is required (at least 5 characters).");
+  const db = getState();
+  const payable = db.accounts.filter(
+    (a) =>
+      a.customerId === customerId &&
+      (a.accountStatus === "Active" || a.accountStatus === "Restricted") &&
+      (a.availableBalance ?? 0) > 0,
+  );
+  const total = payable.reduce((sum, a) => sum + (a.availableBalance ?? 0), 0);
+  const payoutEmail = input.payoutEmail.trim() || c.email;
+  if (total > 0 && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(payoutEmail))
+    throw new RuleError(
+      "A valid Interac email is required to pay out the remaining balance before closing.",
+    );
+  setState((d) => {
+    const x = d.customers.find((y) => y.id === customerId)!;
+    let payoutTransferId: string | null = null;
+    if (total > 0) {
+      payoutTransferId = uid("trf");
+      const ref = `TR-${Math.floor(510000 + Math.random() * 389999)}`;
+      d.transfers.unshift({
+        id: payoutTransferId,
+        transferType: "Interac",
+        senderCustomerId: customerId,
+        recipientCustomerId: null,
+        direction: "Outgoing",
+        counterpartyLabel: `Closure payout to ${payoutEmail}`,
+        sourceAccountId: payable[0].id,
+        amount: Math.round(total * 100) / 100,
+        currency: "CAD",
+        status: "Completed",
+        createdAt: now(),
+        providerReference: `INT-${Math.floor(10000000 + Math.random() * 89999999)}`,
+        transactionReference: ref,
+        returnRequest: null,
+      });
+      for (const a of payable) {
+        const acc = d.accounts.find((y) => y.id === a.id)!;
+        const amount = acc.availableBalance ?? 0;
+        d.transactions.unshift({
+          id: uid("txn"),
+          customerId,
+          accountId: acc.id,
+          transactionReference: ref,
+          transactionType: "Interac Sent",
+          description: "Account closure payout",
+          direction: "debit",
+          amount,
+          currency: "CAD",
+          status: "Completed",
+          timestamp: now(),
+          completedAt: now(),
+          providerReference: `INT-${Math.floor(10000000 + Math.random() * 89999999)}`,
+          paymentRail: "Interac",
+          transferId: payoutTransferId,
+          notes: [],
+        });
+        acc.availableBalance = 0;
+        acc.ledgerBalance = 0;
+      }
+    }
+    for (const a of d.accounts) {
+      if (
+        a.customerId === customerId &&
+        (a.accountStatus === "Active" || a.accountStatus === "Restricted")
+      ) {
+        a.accountStatus = "Closed";
+        a.restrictions = a.restrictions.filter((r) => r !== RESTRICTION_MARKER);
+        if (!a.restrictions.includes("Account closed")) a.restrictions.push("Account closed");
+      }
+    }
+    let goalsClosed = 0;
+    for (const g of d.goals) {
+      if (g.customerId === customerId && (g.status === "Active" || g.status === "Paused")) {
+        g.status = "Closed";
+        goalsClosed += 1;
+      }
+    }
+    const sub = d.subscriptions.find((s) => s.customerId === customerId);
+    if (sub && sub.subscriptionStatus !== "Canceled") {
+      sub.subscriptionStatus = "Canceled";
+      sub.nextBillingDate = null;
+      sub.billingOutstandingSince = null;
+      sub.billingRetryCount = 0;
+      sub.cardSelectionRequired = false;
+      sub.history.push({
+        at: now(),
+        from: sub.plan,
+        to: sub.plan,
+        by: d.currentEmployeeId,
+        note: "Subscription cancelled on account closure. No refund for the unused period.",
+      });
+    }
+    let cardsInactivated = 0;
+    for (const card of d.cards) {
+      if (
+        card.customerId === customerId &&
+        card.cardStatus !== "Canceled" &&
+        card.cardStatus !== "Replaced"
+      ) {
+        card.cardStatus = "Canceled";
+        card.notes.unshift({
+          id: uid("note"),
+          at: now(),
+          by: d.currentEmployeeId,
+          text: "Account closed: this card is inactive and can no longer be used.",
+        });
+        cardsInactivated += 1;
+      }
+    }
+    for (const o of d.cardOrders) {
+      if (
+        o.customerId === customerId &&
+        o.orderStatus !== "Activated" &&
+        o.orderStatus !== "Canceled" &&
+        o.orderStatus !== "Failed"
+      ) {
+        o.orderStatus = "Canceled";
+        o.notes = (o.notes ? `${o.notes} ` : "") + "Canceled: account closed.";
+      }
+    }
+    x.customerStatus = "Closed";
+    x.restriction = null;
+    x.closure = {
+      reason: input.reason,
+      note: input.note.trim(),
+      closedBy: d.currentEmployeeId,
+      closedAt: now(),
+      payoutEmail: total > 0 ? payoutEmail : null,
+      payoutAmount: Math.round(total * 100) / 100,
+    };
+    x.updatedAt = now();
+    pushAudit(d, {
+      action: "Customer closed",
+      module: "Customers",
+      entityType: "Customer",
+      entityId: customerId,
+      entityLabel: name(x),
+      outcome: "Success",
+      details:
+        `${input.reason}. ` +
+        (total > 0
+          ? `Remaining balance of $${total.toFixed(2)} paid out by Interac to ${payoutEmail} (savings goal funds included via Sense Save). `
+          : "Balances were already zero. ") +
+        `${goalsClosed} goal(s) closed, ${cardsInactivated} card(s) inactivated, subscription cancelled without refund. ${input.note.trim()}`,
+      before: { customerStatus: c.customerStatus },
+      after: { customerStatus: "Closed", reason: input.reason },
+    });
+    activity(
+      d,
+      customerId,
+      "Profile",
+      total > 0
+        ? `Account closed (${input.reason}); $${total.toFixed(2)} paid out by Interac to ${payoutEmail}`
+        : `Account closed (${input.reason})`,
+    );
+  });
+}
+
+/** Reactivates a closed customer after a successful appeal (product
+ * rule, user, 2026-11-17): Compliance only, and only inside the
+ * reactivation window. Accounts reopen at zero balance; cards stay
+ * inactive and the subscription stays cancelled, so the customer starts
+ * clean. After the window, closure is permanent and a returning customer
+ * registers fresh. */
+function reactivateCustomer(customerId: string, note: string) {
+  const c = getCustomer(customerId);
+  authorize(
+    "customers.hold",
+    "Reactivate closed customer",
+    "Customers",
+    "Customer",
+    customerId,
+    name(c),
+  );
+  if (c.customerStatus !== "Closed" || !c.closure)
+    throw new RuleError("Only a closed customer can be reactivated.");
+  if (!reactivationAvailable(c.closure))
+    throw new RuleError(
+      `The ${REACTIVATION_WINDOW_DAYS}-day reactivation window has passed, so this closure is permanent. A returning customer registers a new account with full KYC.`,
+    );
+  if (note.trim().length < 5)
+    throw new RuleError("Record the appeal outcome (at least 5 characters).");
+  setState((d) => {
+    const x = d.customers.find((y) => y.id === customerId)!;
+    const closedAt = x.closure!.closedAt;
+    x.customerStatus = "Active";
+    x.closure = null;
+    x.restriction = null;
+    x.updatedAt = now();
+    for (const a of d.accounts) {
+      if (a.customerId === customerId && a.accountStatus === "Closed") {
+        a.accountStatus = "Active";
+        a.restrictions = a.restrictions.filter((r) => r !== "Account closed");
+      }
+    }
+    pushAudit(d, {
+      action: "Customer reactivated after appeal",
+      module: "Customers",
+      entityType: "Customer",
+      entityId: customerId,
+      entityLabel: name(x),
+      outcome: "Success",
+      details: `Closed ${fmtDay(closedAt)}, reactivated inside the ${REACTIVATION_WINDOW_DAYS}-day appeal window after passing policy checks. Accounts reopen at zero balance; cards stay inactive and the subscription stays cancelled. ${note.trim()}`,
+      before: { customerStatus: "Closed" },
+      after: { customerStatus: "Active" },
+    });
+    activity(d, customerId, "Profile", "Account reactivated after a successful appeal");
   });
 }
 
@@ -1974,6 +2314,10 @@ const asAsync =
 
 export const localOperations: OperationsService = {
   updateCustomer: asAsync(updateCustomer),
+  restrictCustomer: asAsync(restrictCustomer),
+  liftRestriction: asAsync(liftRestriction),
+  closeCustomer: asAsync(closeCustomer),
+  reactivateCustomer: asAsync(reactivateCustomer),
   escalateKyc: asAsync(escalateKyc),
   recordKycDecision: asAsync(recordKycDecision),
   requestKycResubmission: asAsync(requestKycResubmission),

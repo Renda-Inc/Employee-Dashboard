@@ -11,6 +11,7 @@ import type {
   DB,
   Plan,
   ReplacementReason,
+  RestrictionKind,
   Settings,
 } from "@/types/models";
 
@@ -77,6 +78,18 @@ export interface OperationsService {
   completeSetup(customerId: string): Promise<void>;
   // Transactions
   addTransactionNote(transactionId: string, text: string): Promise<void>;
+  restrictCustomer(
+    customerId: string,
+    kind: RestrictionKind,
+    reason: string,
+    note: string,
+  ): Promise<void>;
+  liftRestriction(customerId: string, note: string): Promise<void>;
+  closeCustomer(
+    customerId: string,
+    input: { reason: string; note: string; payoutEmail: string },
+  ): Promise<void>;
+  reactivateCustomer(customerId: string, note: string): Promise<void>;
   requestTransferReturn(transferId: string, note: string): Promise<void>;
   recordReturnOutcome(
     transferId: string,

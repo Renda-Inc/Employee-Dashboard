@@ -5,7 +5,13 @@ import { ChevronDown, Pencil } from "lucide-react";
 import { useDB } from "@/services/store";
 import { EDITABLE_FIELDS, type EditableField } from "@/services/contracts/operations";
 import { operations } from "@/services/api";
-import { activationBlocker } from "@/services/rules";
+import {
+  activationBlocker,
+  CLOSURE_REASONS,
+  REACTIVATION_WINDOW_DAYS,
+  reactivationAvailable,
+  RESTRICTION_REASONS,
+} from "@/services/rules";
 import {
   Avatar,
   EmptyState,
@@ -101,7 +107,14 @@ function CustomerProfile() {
   const db = useDB();
   const allowed = usePermission("customers.view");
   const canLifecycle = usePermission("customers.lifecycle");
+  const canRestrict = usePermission("customers.restrict");
+  const canHold = usePermission("customers.hold");
   const canCase = usePermission("support.manage");
+  const [freezeReason, setFreezeReason] = useState<string>(RESTRICTION_REASONS[0]);
+  const [holdReason, setHoldReason] = useState<string>(RESTRICTION_REASONS[3]);
+  const [closureReason, setClosureReason] = useState<string>(CLOSURE_REASONS[0]);
+  const [payoutEmail, setPayoutEmail] = useState("");
+  const L = lookup(db);
   const c = db.customers.find((x) => x.id === customerId);
   if (!allowed) return <NoAccess what="customer records" />;
   if (!c)
@@ -160,6 +173,154 @@ function CustomerProfile() {
                 success="Customer is now Active"
               />
             )}
+            {c.customerStatus === "Active" && canRestrict && (
+              <ActionDialog
+                trigger={
+                  <Button size="sm" variant="outline">
+                    Place operational freeze
+                  </Button>
+                }
+                title="Place operational freeze"
+                description="Blocks outbound activity only: the customer can still log in and receive money, but cannot send, spend or withdraw. Cards stop working because spending is outbound; their own status does not change. Only Compliance can lift a restriction."
+                reasonLabel="Note (required)"
+                minReason={5}
+                onConfirm={(note) =>
+                  operations.restrictCustomer(c.id, "Operational Freeze", freezeReason, note)
+                }
+                success="Operational freeze placed"
+                confirmLabel="Place freeze"
+              >
+                <div className="space-y-1">
+                  <Label htmlFor="freeze-reason">Reason</Label>
+                  <SelectField
+                    id="freeze-reason"
+                    value={freezeReason}
+                    onChange={(e) => setFreezeReason(e.target.value)}
+                    className="h-9 w-full rounded-md border bg-card px-2"
+                  >
+                    {RESTRICTION_REASONS.map((r) => (
+                      <option key={r}>{r}</option>
+                    ))}
+                  </SelectField>
+                </div>
+              </ActionDialog>
+            )}
+            {((c.customerStatus === "Active" && canHold) ||
+              (c.customerStatus === "Restricted" &&
+                c.restriction?.kind === "Operational Freeze" &&
+                canHold)) && (
+              <ActionDialog
+                trigger={
+                  <Button size="sm" variant="outline">
+                    {c.customerStatus === "Restricted"
+                      ? "Escalate to compliance hold"
+                      : "Place compliance hold"}
+                  </Button>
+                }
+                title="Place compliance hold"
+                description="Compliance only. Blocks outbound activity only: the customer can still log in and receive money, but cannot send, spend or withdraw. Only Compliance can lift a restriction."
+                reasonLabel="Note (required)"
+                minReason={5}
+                onConfirm={(note) =>
+                  operations.restrictCustomer(c.id, "Compliance Hold", holdReason, note)
+                }
+                success="Compliance hold placed"
+                confirmLabel="Place hold"
+              >
+                <div className="space-y-1">
+                  <Label htmlFor="hold-reason">Reason</Label>
+                  <SelectField
+                    id="hold-reason"
+                    value={holdReason}
+                    onChange={(e) => setHoldReason(e.target.value)}
+                    className="h-9 w-full rounded-md border bg-card px-2"
+                  >
+                    {RESTRICTION_REASONS.map((r) => (
+                      <option key={r}>{r}</option>
+                    ))}
+                  </SelectField>
+                </div>
+              </ActionDialog>
+            )}
+            {c.customerStatus === "Restricted" && canHold && (
+              <ActionDialog
+                trigger={<Button size="sm">Lift restriction</Button>}
+                title="Lift restriction"
+                description="Compliance only. Restores full access, including outbound payments and card spending."
+                reasonLabel="Note (required)"
+                minReason={5}
+                onConfirm={(note) => operations.liftRestriction(c.id, note)}
+                success="Restriction lifted"
+                confirmLabel="Lift restriction"
+              />
+            )}
+            {(c.customerStatus === "Active" || c.customerStatus === "Restricted") &&
+              canLifecycle && (
+                <ActionDialog
+                  trigger={
+                    <Button size="sm" variant="destructive">
+                      Close customer
+                    </Button>
+                  }
+                  title="Close customer"
+                  description="Any remaining balance is sent to the customer by Interac e-Transfer (savings goal funds are included through Sense Save), goals are closed, the Plus subscription is cancelled with no refund, and every card becomes inactive. Closure can be undone on appeal only within the reactivation window."
+                  reasonLabel="Note (required)"
+                  minReason={5}
+                  onConfirm={(note) =>
+                    operations.closeCustomer(c.id, {
+                      reason: closureReason,
+                      note,
+                      payoutEmail: payoutEmail || c.email,
+                    })
+                  }
+                  success="Customer closed"
+                  confirmLabel="Close customer"
+                  destructive
+                >
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="closure-reason">Reason</Label>
+                      <SelectField
+                        id="closure-reason"
+                        value={closureReason}
+                        onChange={(e) => setClosureReason(e.target.value)}
+                        className="h-9 w-full rounded-md border bg-card px-2"
+                      >
+                        {CLOSURE_REASONS.map((r) => (
+                          <option key={r}>{r}</option>
+                        ))}
+                      </SelectField>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="payout-email">Interac payout email</Label>
+                      <Input
+                        id="payout-email"
+                        value={payoutEmail || c.email}
+                        onChange={(e) => setPayoutEmail(e.target.value)}
+                      />
+                      <p className="text-[12px] text-muted-foreground">
+                        The Interac email the customer chose, or the one on their account. Used only
+                        if a balance remains.
+                      </p>
+                    </div>
+                  </div>
+                </ActionDialog>
+              )}
+            {c.customerStatus === "Closed" &&
+              c.closure &&
+              canHold &&
+              reactivationAvailable(c.closure) && (
+                <ActionDialog
+                  trigger={<Button size="sm">Reactivate customer</Button>}
+                  title="Reactivate customer after appeal"
+                  description={`Compliance only, and only within ${REACTIVATION_WINDOW_DAYS} days of closure. Accounts reopen at zero balance; cards stay inactive and the subscription stays cancelled.`}
+                  reasonLabel="Appeal outcome (required)"
+                  minReason={5}
+                  onConfirm={(note) => operations.reactivateCustomer(c.id, note)}
+                  success="Customer reactivated"
+                  confirmLabel="Reactivate"
+                />
+              )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -203,6 +364,37 @@ function CustomerProfile() {
           </div>
         </div>
       </div>
+      {c.customerStatus === "Restricted" && (
+        <div className="mb-4 rounded-md bg-warning-soft px-4 py-3 text-[13px]">
+          <strong>Restricted: outbound activity blocked.</strong>{" "}
+          {c.restriction ? (
+            <>
+              {c.restriction.kind} · {c.restriction.reason} · placed by{" "}
+              {L.empName(c.restriction.setBy)} on {fmtDate(c.restriction.setAt)}.{" "}
+              {c.restriction.note}{" "}
+            </>
+          ) : (
+            <>Restricted before restriction records existed. </>
+          )}
+          The customer can still log in and receive money. Only Compliance can lift this.
+        </div>
+      )}
+      {c.customerStatus === "Closed" && c.closure && (
+        <div className="mb-4 rounded-md bg-danger-soft px-4 py-3 text-[13px]">
+          <strong>Closed on {fmtDate(c.closure.closedAt)}.</strong> Reason: {c.closure.reason}.{" "}
+          {c.closure.payoutAmount > 0 ? (
+            <>
+              Remaining balance of {fmtMoney(c.closure.payoutAmount)} was paid out by Interac to{" "}
+              {c.closure.payoutEmail}.{" "}
+            </>
+          ) : (
+            <>Balances were zero at closure. </>
+          )}
+          {reactivationAvailable(c.closure)
+            ? `Reactivation on appeal is possible until ${fmtDate(new Date(new Date(c.closure.closedAt).getTime() + REACTIVATION_WINDOW_DAYS * 864e5).toISOString())} (Compliance only).`
+            : "The reactivation window has passed, so this closure is permanent. A returning customer registers a new account and can reuse the same email and phone, with full KYC again."}
+        </div>
+      )}
       <TabBar tabs={TABS} value={tab} onChange={setTab} />
       {tab === "Overview" && <OverviewTab c={c} />}
       {tab === "Personal Information" && <PersonalTab c={c} />}
