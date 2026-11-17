@@ -32,10 +32,27 @@ export function activationBlocker(c: Customer, accounts: Account[]): string | nu
 
 /** Why an order cannot be added to a new batch, or null if it can. */
 export function batchIneligibility(o: CardOrder): string | null {
-  if (o.orderStatus === "Submitted" || o.orderStatus === "Delivered")
+  if (o.orderStatus === "Submitted" || o.orderStatus === "Activated")
     return "This card order has already been included in a submitted manufacturing batch.";
   if (o.manufacturingBatchId)
     return "This card order is already part of another manufacturing batch.";
   if (o.orderStatus !== "Eligible") return `Orders with status ${o.orderStatus} cannot be batched.`;
   return null;
+}
+
+/** Days a card may sit In Production before the missing activation is
+ * worth an employee's attention. The manufacturer mails cards directly
+ * and delivery is not tracked, so a card that was submitted long ago and
+ * never activated is the only "where is my card" signal Renda gets. */
+export const ACTIVATION_FOLLOWUP_DAYS = 14;
+
+/** True when a manufactured card was submitted at least
+ * ACTIVATION_FOLLOWUP_DAYS ago and the customer still has not activated it. */
+export function activationOverdue(
+  card: { cardStatus: string },
+  submittedAt: string | null,
+  now: number = Date.now(),
+): boolean {
+  if (card.cardStatus !== "In Production" || !submittedAt) return false;
+  return now - new Date(submittedAt).getTime() >= ACTIVATION_FOLLOWUP_DAYS * 864e5;
 }

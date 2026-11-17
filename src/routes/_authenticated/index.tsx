@@ -124,8 +124,8 @@ function Overview() {
       count: db.cardOrders.filter((o) => o.orderStatus === "Submitted").length,
     },
     {
-      label: "Delivered",
-      count: db.cardOrders.filter((o) => o.orderStatus === "Delivered").length,
+      label: "Activated",
+      count: db.cardOrders.filter((o) => o.orderStatus === "Activated").length,
     },
   ];
 

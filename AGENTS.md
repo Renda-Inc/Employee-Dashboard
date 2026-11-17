@@ -10,6 +10,10 @@ depends on it, and the build runs on the plain Vite config in
 `vite.config.ts`. Work happens directly on the `main` branch, which
 auto-deploys to GitHub Pages.
 
+## Cards and manufacturing (product rule, user, 2026-11-15)
+
+Card manufacturing is outsourced end to end. Renda's job is the batch: build it, generate the PDF, mark it ready, record its submission to the manufacturer. The manufacturer prints the cards and mails them to customers directly. Renda does NOT track shipping or delivery, and the admin must never show a delivery state, tracking reference or shipping status. The lifecycle after submission is driven by one signal: the customer activating the card (reported by the card processor; `recordCardActivation` in the operations service). Activation moves the card to Active, completes the order as "Activated", and retires any card it replaces. A card still In Production `ACTIVATION_FOLLOWUP_DAYS` (14) after submission surfaces in the attention queue as "Card not activated", and a submitted, never-activated order can still be canceled so a replacement can be issued.
+
 ## UI architecture
 
 - Use the shared semantic tokens, Button, PageHeader, Panel and table controls for every employee module; visual refinements must not modify service rules or data relationships.

@@ -732,6 +732,65 @@ function unlockCard(cardId: string, reason: string) {
   });
 }
 
+/**
+ * Records a customer activation reported by the card processor. This is
+ * the moment a manufactured card's journey completes: the manufacturer
+ * printed it and mailed it to the customer directly, Renda never tracked
+ * its delivery, and activation is the first confirmation it arrived.
+ * Activating a replacement retires the card it replaces.
+ */
+function recordCardActivation(cardId: string) {
+  const db = getState();
+  const card = db.cards.find((x) => x.id === cardId);
+  if (!card) throw new RuleError("Card not found.");
+  authorize("cards.lock", "Record card activation", "Cards", "Card", cardId, `•••• ${card.last4}`);
+  if (card.cardType !== "Physical")
+    throw new RuleError("Virtual cards are active from issuance and need no activation.");
+  if (card.cardStatus !== "In Production")
+    throw new RuleError(
+      `Only cards in production can be recorded as activated (current: ${card.cardStatus}).`,
+    );
+  const order = db.cardOrders.find((o) => o.cardId === cardId && o.orderStatus === "Submitted");
+  if (!order) throw new RuleError("This card has no submitted manufacturing order.");
+  setState((d) => {
+    const x = d.cards.find((y) => y.id === cardId)!;
+    const at = now();
+    x.cardStatus = "Active";
+    x.activatedAt = at;
+    if (!x.issueDate) x.issueDate = at;
+    x.notes.unshift({
+      id: uid("note"),
+      at,
+      by: d.currentEmployeeId,
+      text: "Activated by the customer (reported by the card processor, simulated). Activation is the first confirmation the card arrived; the manufacturer mailed it directly and delivery was not tracked.",
+    });
+    const o = d.cardOrders.find((y) => y.id === order.id)!;
+    o.orderStatus = "Activated";
+    o.activatedAt = at;
+    if (x.replacesCardId) {
+      const prev = d.cards.find((y) => y.id === x.replacesCardId);
+      if (prev && prev.cardStatus !== "Canceled" && prev.cardStatus !== "Replaced")
+        prev.cardStatus = "Replaced";
+    }
+    pushAudit(d, {
+      action: "Card activation recorded",
+      module: "Cards",
+      entityType: "Card",
+      entityId: cardId,
+      entityLabel: `•••• ${x.last4}`,
+      outcome: "Simulated",
+      details:
+        "Customer activated the card. The manufacturer delivered it directly; no delivery was tracked.",
+      before: { cardStatus: "In Production" },
+      after: { cardStatus: "Active" },
+    });
+    activity(d, x.customerId, "Cards", `Card •••• ${x.last4} activated by customer`, {
+      to: "/cards/$cardId",
+      params: { cardId },
+    });
+  });
+}
+
 function createReplacement(input: {
   cardId: string;
   design: CardDesign;
@@ -788,6 +847,7 @@ function createReplacement(input: {
       cardStatus: "Awaiting Manufacturing",
       last4: String(1000 + ((maxOrd * 7919) % 9000)),
       issueDate: null,
+      activatedAt: null,
       manufacturingBatchId: null,
       replacementReference: rpl,
       replacesCardId: old.id,
@@ -808,7 +868,7 @@ function createReplacement(input: {
       manufacturingBatchId: null,
       replacementReason: input.reason,
       replacementReference: rpl,
-      shippingReference: `SHP-${String(100000 + maxOrd * 31).slice(0, 6)}`,
+      activatedAt: null,
       notes: input.notes.trim(),
     });
     pushAudit(d, {
@@ -835,10 +895,15 @@ function cancelOrder(orderId: string, reason: string) {
   const o = getState().cardOrders.find((x) => x.id === orderId);
   if (!o) throw new RuleError("Order not found.");
   authorize("cards.replace", "Cancel card order", "Cards", "Card Order", orderId, o.orderReference);
-  if (o.orderStatus !== "Eligible")
+  if (o.orderStatus === "Batched")
     throw new RuleError(
-      "Only unbatched eligible orders can be canceled. Remove it from its draft batch first.",
+      "This order is in a draft batch. Remove it from the batch before canceling it.",
     );
+  // Submitted orders can still be canceled while the card was never
+  // activated (for example it never arrived): the manufactured card is
+  // canceled with the order, and a replacement can then be issued.
+  if (o.orderStatus !== "Eligible" && o.orderStatus !== "Submitted")
+    throw new RuleError(`Orders with status ${o.orderStatus} cannot be canceled.`);
   if (reason.trim().length < 5) throw new RuleError("A reason is required.");
   setState((d) => {
     const x = d.cardOrders.find((y) => y.id === orderId)!;
@@ -1010,6 +1075,7 @@ function recordCardSelection(customerId: string, design: CardDesign) {
       cardStatus: "Awaiting Manufacturing",
       last4: String(1000 + ((maxOrd * 6151) % 9000)),
       issueDate: null,
+      activatedAt: null,
       manufacturingBatchId: null,
       replacementReference: null,
       replacesCardId: null,
@@ -1030,7 +1096,7 @@ function recordCardSelection(customerId: string, design: CardDesign) {
       manufacturingBatchId: null,
       replacementReason: null,
       replacementReference: null,
-      shippingReference: `SHP-${String(200000 + maxOrd * 29).slice(0, 6)}`,
+      activatedAt: null,
       notes: "Design selected by customer; recorded by employee.",
     });
     d.subscriptions.find((s) => s.id === sub.id)!.cardSelectionRequired = false;
@@ -1360,6 +1426,7 @@ export const localOperations: OperationsService = {
   linkCaseRecord: asAsync(linkCaseRecord),
   lockCard: asAsync(lockCard),
   unlockCard: asAsync(unlockCard),
+  recordCardActivation: asAsync(recordCardActivation),
   createReplacement: asAsync(createReplacement),
   cancelOrder: asAsync(cancelOrder),
   changePlan: asAsync(changePlan),

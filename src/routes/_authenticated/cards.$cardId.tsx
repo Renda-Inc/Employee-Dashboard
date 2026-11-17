@@ -120,6 +120,17 @@ function CardDetail() {
         }
         actions={
           <>
+            {canLock && card.cardStatus === "In Production" && (
+              <ActionDialog
+                trigger={<Button size="sm">Record activation</Button>}
+                title="Record card activation"
+                description={`Record that ${fullName(c)} activated the ${card.cardDesign} card •••• ${card.last4}. The manufacturer mailed this card directly; Renda does not track delivery, so activation is the first confirmation it arrived. Activating a replacement retires the card it replaces.`}
+                confirmLabel="Record activation"
+                simulated="Demo mode. In production this arrives from the card processor when the customer activates the card in the app."
+                onConfirm={() => operations.recordCardActivation(card.id)}
+                success="Card activation recorded. Card is now Active"
+              />
+            )}
             {canLock && card.cardStatus === "Active" && (
               <ActionDialog
                 trigger={
@@ -165,21 +176,26 @@ function CardDetail() {
                   Request replacement
                 </Button>
               )}
-            {canReplace && order?.orderStatus === "Eligible" && (
-              <ActionDialog
-                trigger={
-                  <Button size="sm" variant="outline">
-                    Cancel order
-                  </Button>
-                }
-                title={`Cancel ${order.orderReference}`}
-                description="The order and card history are preserved with a Canceled outcome."
-                reasonLabel="Reason"
-                destructive
-                onConfirm={(r) => operations.cancelOrder(order.id, r)}
-                success="Order canceled"
-              />
-            )}
+            {canReplace &&
+              (order?.orderStatus === "Eligible" || order?.orderStatus === "Submitted") && (
+                <ActionDialog
+                  trigger={
+                    <Button size="sm" variant="outline">
+                      Cancel order
+                    </Button>
+                  }
+                  title={`Cancel ${order.orderReference}`}
+                  description={
+                    order.orderStatus === "Submitted"
+                      ? "This order was already sent to the manufacturer, but the card was never activated. Canceling cancels the manufactured card as well; you can then issue a replacement. The order and card history are preserved with a Canceled outcome."
+                      : "The order and card history are preserved with a Canceled outcome."
+                  }
+                  reasonLabel="Reason"
+                  destructive
+                  onConfirm={(r) => operations.cancelOrder(order.id, r)}
+                  success="Order canceled"
+                />
+              )}
           </>
         }
       />
@@ -217,6 +233,7 @@ function CardDetail() {
                 ["Card design", card.cardDesign],
                 ["Status", <StatusBadge status={card.cardStatus} />],
                 ["Issue date", fmtDate(card.issueDate)],
+                ["Activated", card.activatedAt ? fmtDate(card.activatedAt) : "Not yet activated"],
                 [
                   "Replacement ref",
                   card.replacementReference ? <Mono>{card.replacementReference}</Mono> : "-",
@@ -236,7 +253,7 @@ function CardDetail() {
                   ),
                 ],
                 [
-                  "Fulfillment",
+                  "Manufacturing order",
                   order ? (
                     <StatusBadge status={order.orderStatus} />
                   ) : card.cardType === "Virtual" ? (

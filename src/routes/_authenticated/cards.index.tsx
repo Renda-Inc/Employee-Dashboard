@@ -60,7 +60,7 @@ function Cards() {
       o.filter((x) => x.orderStatus === "Eligible" || x.orderStatus === "Batched").length,
     ],
     ["In production", o.filter((x) => x.orderStatus === "Submitted").length],
-    ["Awaiting fulfillment", db.cards.filter((c) => c.cardStatus === "In Production").length],
+    ["Awaiting activation", db.cards.filter((c) => c.cardStatus === "In Production").length],
   ] as const;
   const rows = db.cards.filter((c) => {
     const cu = L.customer(c.customerId);
@@ -151,7 +151,7 @@ function Cards() {
               label="Manufacturing"
               value={mfg}
               onChange={setMfg}
-              options={["Eligible", "Batched", "Submitted", "Delivered", "None"]}
+              options={["Eligible", "Batched", "Submitted", "Activated", "None"]}
             />
             <FilterSelect
               label="Replacement"

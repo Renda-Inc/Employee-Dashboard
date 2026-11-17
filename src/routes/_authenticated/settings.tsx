@@ -159,20 +159,10 @@ function Settings() {
             </div>
           </div>
           <div className="mt-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="ship"
-                checked={s.pdfIncludeShippingReference}
-                disabled={!canOps}
-                onCheckedChange={(v) =>
-                  run(
-                    () => operations.updateOperationalSettings({ pdfIncludeShippingReference: v }),
-                    "PDF fields updated",
-                  )
-                }
-              />
-              <Label htmlFor="ship">Include shipping reference in manufacturing PDF</Label>
-            </div>
+            <p className="max-w-md text-[13px] text-muted-foreground">
+              The manufacturer mails finished cards to customers directly. Delivery is not tracked;
+              a card's arrival is confirmed when the customer activates it.
+            </p>
             <Button
               size="sm"
               disabled={!canOps}

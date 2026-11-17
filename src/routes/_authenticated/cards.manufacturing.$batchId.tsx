@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Download, FileText } from "lucide-react";
+import { ACTIVATION_FOLLOWUP_DAYS } from "@/services/rules";
 import { useDB, getState } from "@/services/store";
 import { operations } from "@/services/api";
 import { buildBatchPdf } from "@/services/pdf";
@@ -129,6 +130,14 @@ function BatchDetail() {
         <p className="mb-4 rounded-md bg-warning-soft px-3 py-2 text-[13px] text-warning">
           Generate the manufacturing PDF to continue. Downloading a PDF does not mark the batch as
           submitted.
+        </p>
+      )}
+      {b.status === "Submitted" && (
+        <p className="mb-4 rounded-md bg-info-soft px-3 py-2 text-[13px] text-info">
+          This batch is with the manufacturer, who prints the cards and mails them to customers
+          directly. Renda does not track delivery: each card becomes Active when its customer
+          activates it, and a card still not activated after {ACTIVATION_FOLLOWUP_DAYS} days appears
+          in the Requires attention queue.
         </p>
       )}
       <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">

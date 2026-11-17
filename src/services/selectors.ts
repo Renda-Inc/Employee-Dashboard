@@ -1,6 +1,7 @@
 // Derived views over the shared dataset (queues, notifications, search).
 import type { DB } from "@/types/models";
 import { fullName } from "@/lib/format";
+import { ACTIVATION_FOLLOWUP_DAYS, activationOverdue } from "./rules";
 
 export interface QueueItem {
   id: string;
@@ -79,6 +80,25 @@ export function attentionQueue(db: DB): QueueItem[] {
         params: { cardId: o.cardId },
         tone: "info",
       });
+  }
+  for (const card of db.cards) {
+    if (card.cardStatus !== "In Production") continue;
+    const batch = db.batches.find((b) => b.id === card.manufacturingBatchId);
+    if (!activationOverdue(card, batch?.submittedAt ?? null)) continue;
+    const days = batch?.submittedAt
+      ? Math.floor((Date.now() - new Date(batch.submittedAt).getTime()) / 864e5)
+      : ACTIVATION_FOLLOWUP_DAYS;
+    items.push({
+      id: `q_act_${card.id}`,
+      type: "Card not activated",
+      record: name(card.customerId),
+      detail: `•••• ${card.last4} · sent to manufacturer ${days} days ago in ${batch?.batchReference ?? "a submitted batch"} · no activation yet (delivery is not tracked)`,
+      at: batch?.submittedAt ?? card.issueDate ?? "",
+      action: "View card",
+      to: "/cards/$cardId",
+      params: { cardId: card.id },
+      tone: "warning",
+    });
   }
   for (const b of db.batches) {
     if (b.status !== "Submitted")

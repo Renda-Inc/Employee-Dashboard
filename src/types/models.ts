@@ -138,6 +138,10 @@ export interface Card {
   cardStatus: CardStatus;
   last4: string;
   issueDate: string | null;
+  /** When the customer activated the card. For physical cards this is the
+   * first confirmation the card arrived: the manufacturer mails cards
+   * directly and delivery is not tracked. Null until activation. */
+  activatedAt: string | null;
   manufacturingBatchId: string | null;
   replacementReference: string | null;
   replacesCardId: string | null;
@@ -146,7 +150,7 @@ export interface Card {
 }
 
 export type OrderStatus =
-  "Eligible" | "Batched" | "Submitted" | "Delivered" | "Canceled" | "Failed";
+  "Eligible" | "Batched" | "Submitted" | "Activated" | "Canceled" | "Failed";
 export type OrderType = "Initial Plus Card" | "Replacement Card";
 export type ReplacementReason =
   | "Lost card"
@@ -169,7 +173,10 @@ export interface CardOrder {
   manufacturingBatchId: string | null;
   replacementReason: ReplacementReason | null;
   replacementReference: string | null;
-  shippingReference: string;
+  /** When the customer activated the manufactured card; the order is
+   * complete at that point. There is deliberately no delivery state:
+   * the manufacturer mails the card directly and Renda does not track it. */
+  activatedAt: string | null;
   notes: string;
 }
 
@@ -381,7 +388,6 @@ export interface Settings {
   supportResponseSlaHours: number;
   batchProcessingDay: "Friday";
   manufacturerName: string;
-  pdfIncludeShippingReference: boolean;
 }
 
 export interface DB {

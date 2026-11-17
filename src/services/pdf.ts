@@ -72,23 +72,16 @@ export function buildBatchPdf(db: DB, batch: ManufacturingBatch): jsPDF {
   });
   y += 16;
 
-  // Orders table
-  const cols = db.settings.pdfIncludeShippingReference
-    ? [
-        ["#", 48],
-        ["Order ref", 70],
-        ["Customer token", 160],
-        ["Type", 260],
-        ["Design", 360],
-        ["Shipping ref", 450],
-      ]
-    : [
-        ["#", 48],
-        ["Order ref", 70],
-        ["Customer token", 180],
-        ["Type", 290],
-        ["Design", 410],
-      ];
+  // Orders table. No shipping or tracking reference: the manufacturer
+  // mails finished cards to customers directly and Renda does not track
+  // delivery; a card's arrival is confirmed when the customer activates it.
+  const cols = [
+    ["#", 48],
+    ["Order ref", 70],
+    ["Customer token", 180],
+    ["Type", 290],
+    ["Design", 410],
+  ];
   doc.setFillColor(241, 243, 245).rect(48, y - 11, W - 96, 18, "F");
   doc.setFont("helvetica", "bold").setFontSize(8);
   cols.forEach(([h, x]) => doc.text(String(h), Number(x) + 4, y));
@@ -106,7 +99,6 @@ export function buildBatchPdf(db: DB, batch: ManufacturingBatch): jsPDF {
       token,
       o.orderType === "Replacement Card" ? `Replacement (${o.replacementReference})` : "Initial",
       o.requestedDesign,
-      o.shippingReference,
     ];
     cols.forEach(([, x], j) => doc.text(row[j], Number(x) + 4, y));
     doc.setDrawColor(229, 231, 235).line(48, y + 6, W - 48, y + 6);

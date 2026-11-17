@@ -809,6 +809,7 @@ export function buildSeed(): DB {
           s.stage === "Restricted" ? "Locked" : s.stage === "Closed" ? "Canceled" : "Active",
         last4: digits(4),
         issueDate: iso(regMs + 1.6 * D),
+        activatedAt: null,
         manufacturingBatchId: null,
         replacementReference: null,
         replacesCardId: null,
@@ -863,6 +864,9 @@ export function buildSeed(): DB {
     cardStatus: status,
     last4: digits(4),
     issueDate: issue,
+    // An already-active physical card in the seed was activated on its
+    // issue date; every other state has not been activated yet.
+    activatedAt: status === "Active" ? issue : null,
     manufacturingBatchId: batch,
     replacementReference: null,
     replacesCardId: null,
@@ -885,18 +889,19 @@ export function buildSeed(): DB {
       manufacturingBatchId: null,
       replacementReason: null,
       replacementReference: null,
-      shippingReference: `SHP-${digits(6)}`,
+      activatedAt: null,
       notes: "",
       ...o,
     };
   };
 
-  // B0 (historical, submitted Oct 9), initial cards for cus_026, cus_027 → delivered
+  // B0 (historical, submitted Oct 9), initial cards for cus_026, cus_027 → both activated
   // B1 (submitted Oct 23), initial cus_028, replacement cus_026 (Pearl Ivory? no: Classic → Blue Nova)
   // B2 (ready), initial cus_029, replacement cus_027 (Pearl Ivory → Classic... design change)
   // B3 (draft), initial cus_030
   // Eligible, initial cus_031, cus_032, replacement cus_026? (kept simple)
-  const c026 = mkCard("cus_026", "p1", designs[0], "Replaced", ago(14), "bat_000");
+  // c026 stays Active: a card is only retired when its replacement is activated.
+  const c026 = mkCard("cus_026", "p1", designs[0], "Active", ago(14), "bat_000");
   const c027 = mkCard("cus_027", "p1", designs[1], "Active", ago(13), "bat_000");
   const c026r = mkCard("cus_026", "p2", "Blue Nova", "In Production", null, "bat_001");
   c026r.replacesCardId = c026.id;
@@ -911,7 +916,7 @@ export function buildSeed(): DB {
   const c027r = mkCard("cus_027", "p2", "Classic", "Awaiting Manufacturing", null, "bat_002");
   c027r.replacesCardId = c027.id;
   c027r.replacementReference = "RPL-2026-0318";
-  c027.replacedByCardId = c027r.id; // old card stays active until replacement ships
+  c027.replacedByCardId = c027r.id; // old card stays active until the replacement is activated
   const c028 = mkCard("cus_028", "p1", designs[2], "In Production", null, "bat_001");
   const c029 = mkCard("cus_029", "p1", designs[3], "Awaiting Manufacturing", null, "bat_002");
   const c030 = mkCard("cus_030", "p1", designs[4], "Awaiting Manufacturing", null, "bat_003");
@@ -924,18 +929,20 @@ export function buildSeed(): DB {
     cardId: c026.id,
     orderType: "Initial Plus Card",
     requestedDesign: "Classic",
-    orderStatus: "Delivered",
+    orderStatus: "Activated",
     requestDate: ago(23),
     manufacturingBatchId: "bat_000",
+    activatedAt: ago(14),
   });
   const o2 = mkOrder({
     customerId: "cus_027",
     cardId: c027.id,
     orderType: "Initial Plus Card",
     requestedDesign: "Pearl Ivory",
-    orderStatus: "Delivered",
+    orderStatus: "Activated",
     requestDate: ago(22),
     manufacturingBatchId: "bat_000",
+    activatedAt: ago(13),
   });
   const o3 = mkOrder({
     customerId: "cus_028",
@@ -1852,7 +1859,7 @@ export function buildSeed(): DB {
   activity.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   return {
-    version: 1,
+    version: 2,
     customers,
     accounts,
     transactions,
@@ -1885,7 +1892,6 @@ export function buildSeed(): DB {
       supportResponseSlaHours: 24,
       batchProcessingDay: "Friday",
       manufacturerName: "Card manufacturer (to be confirmed)",
-      pdfIncludeShippingReference: true,
     },
     currentEmployeeId: "",
     readNotificationIds: [],

@@ -9,7 +9,7 @@ const TONE: Record<string, Tone> = {
   Issued: "success",
   Paid: "success",
   Resolved: "success",
-  Delivered: "success",
+  Activated: "success",
   Submitted: "success",
   Operational: "success",
   Success: "success",

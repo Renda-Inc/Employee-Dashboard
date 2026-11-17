@@ -85,6 +85,11 @@ export interface OperationsService {
   // Cards
   lockCard(cardId: string, reason: string): Promise<void>;
   unlockCard(cardId: string, reason: string): Promise<void>;
+  /** Records that the customer activated a manufactured card (reported by
+   * the card processor in production). Activation completes the card
+   * order and retires any card it replaces. There is no delivery step:
+   * the manufacturer mails cards directly and delivery is not tracked. */
+  recordCardActivation(cardId: string): Promise<void>;
   /** Returns the new replacement card ID. */
   createReplacement(input: NewReplacement): Promise<string>;
   cancelOrder(orderId: string, reason: string): Promise<void>;
