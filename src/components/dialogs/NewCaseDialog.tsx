@@ -16,8 +16,10 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useDB } from "@/services/store";
 import { operations } from "@/services/api";
-import { run } from "@/components/common";
-import { fullName } from "@/lib/format";
+import { Avatar, run } from "@/components/common";
+import { StatusBadge } from "@/components/status/StatusBadge";
+import { fmtDate, fullName } from "@/lib/format";
+import { searchCustomers } from "@/lib/customerSearch";
 import type { CaseCategory, CaseLink, CasePriority } from "@/types/models";
 
 const CATS: CaseCategory[] = [
@@ -52,6 +54,9 @@ export function NewCaseDialog({
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [cid, setCid] = useState(customerId ?? "");
+  const [query, setQuery] = useState("");
+  const selectedCustomer = db.customers.find((c) => c.id === cid);
+  const results = cid ? [] : searchCustomers(db.customers, query);
   const [subject, setSubject] = useState(defaultSubject);
   const [message, setMessage] = useState("");
   const [category, setCategory] = useState<CaseCategory>(defaultCategory);
@@ -101,19 +106,80 @@ export function NewCaseDialog({
             {!customerId && (
               <div className="space-y-1">
                 <Label htmlFor="nc-c">Customer</Label>
-                <SelectField
-                  id="nc-c"
-                  className="h-9 w-full rounded-md border bg-card px-2"
-                  value={cid}
-                  onChange={(e) => setCid(e.target.value)}
-                >
-                  <option value="">Select customer…</option>
-                  {db.customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {fullName(c)} · {c.userId}
-                    </option>
-                  ))}
-                </SelectField>
+                {selectedCustomer ? (
+                  <div className="flex items-start gap-2.5 rounded-md border bg-card px-3 py-2.5">
+                    <Avatar name={fullName(selectedCustomer)} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <p className="flex flex-wrap items-center gap-2 text-[14px] font-medium">
+                        {fullName(selectedCustomer)}
+                        <StatusBadge status={selectedCustomer.customerStatus} />
+                      </p>
+                      <p className="truncate text-[12px] text-muted-foreground">
+                        {selectedCustomer.userId} · {selectedCustomer.email}
+                      </p>
+                      <p className="truncate text-[12px] text-muted-foreground">
+                        {selectedCustomer.city}, {selectedCustomer.province} · DOB{" "}
+                        {fmtDate(selectedCustomer.dateOfBirth)} · {selectedCustomer.phone}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setCid("");
+                        setQuery("");
+                      }}
+                    >
+                      Change
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Input
+                      id="nc-c"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="Search by name, email, phone, member ID or city…"
+                      autoComplete="off"
+                    />
+                    {query.trim() && results.length === 0 && (
+                      <p className="text-[13px] text-muted-foreground">
+                        No customers match that search.
+                      </p>
+                    )}
+                    {results.length > 0 && (
+                      <div className="max-h-56 overflow-y-auto rounded-md border">
+                        {results.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => setCid(c.id)}
+                            className="flex w-full items-start gap-2.5 border-b px-3 py-2 text-left last:border-b-0 hover:bg-secondary"
+                          >
+                            <Avatar name={fullName(c)} size="sm" />
+                            <span className="min-w-0">
+                              <span className="flex flex-wrap items-center gap-2 text-[14px] font-medium">
+                                {fullName(c)}
+                                <StatusBadge status={c.customerStatus} />
+                              </span>
+                              <span className="block truncate text-[12px] text-muted-foreground">
+                                {c.userId} · {c.email}
+                              </span>
+                              <span className="block truncate text-[12px] text-muted-foreground">
+                                {c.city}, {c.province} · DOB {fmtDate(c.dateOfBirth)} · {c.phone}
+                              </span>
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-[12px] text-muted-foreground">
+                      Matches show member ID, email, city, date of birth and phone so you can tell
+                      customers with the same name apart before opening the case.
+                    </p>
+                  </>
+                )}
                 {err.cid && <p className="text-[13px] text-danger">{err.cid}</p>}
               </div>
             )}

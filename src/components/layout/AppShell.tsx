@@ -30,6 +30,8 @@ import {
   FlaskConical,
   KeyRound,
   Loader2,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDB } from "@/services/store";
@@ -40,6 +42,7 @@ import { globalSearch, notifications, type SearchResult } from "@/services/selec
 import { can, type Permission } from "@/services/permissions";
 import { Avatar } from "@/components/common";
 import { fullName, relTime } from "@/lib/format";
+import { applyTheme, storedTheme, type ThemePref } from "@/lib/theme";
 import {
   CommandDialog,
   CommandEmpty,
@@ -402,6 +405,28 @@ function GlobalSearch() {
   );
 }
 
+/** Light/dark toggle for the header. The preference is saved per browser
+ * and applied app-wide (see lib/theme and the .dark tokens in styles.css). */
+function ThemeToggle() {
+  const [theme, setTheme] = useState<ThemePref>(() => storedTheme());
+  const toggle = () => {
+    const next: ThemePref = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    applyTheme(next);
+  };
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+    >
+      {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+    </button>
+  );
+}
+
 function Notifications() {
   const db = useDB();
   const navigate = useNavigate();
@@ -518,6 +543,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <FlaskConical className="size-3" /> Demo environment
           </span>
           <Notifications />
+          <ThemeToggle />
           <a
             href="#help"
             onClick={(e) => {

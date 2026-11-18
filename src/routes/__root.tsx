@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportError } from "../lib/error-reporting";
+import { applyTheme, storedTheme } from "../lib/theme";
 import { auth } from "@/services/api";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -123,6 +124,12 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+
+  // Apply the employee's saved theme preference (light/dark) app-wide,
+  // including the sign-in screen.
+  useEffect(() => {
+    applyTheme(storedTheme());
+  }, []);
 
   useEffect(() => {
     return auth.onAuthStateChange((event) => {
