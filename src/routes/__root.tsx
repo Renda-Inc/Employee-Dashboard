@@ -14,7 +14,6 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportError } from "../lib/error-reporting";
-import { applyTheme, storedTheme } from "../lib/theme";
 import { auth } from "@/services/api";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -126,16 +125,15 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
 
-  // The employee's saved theme preference (light/dark) applies only to
-  // the signed-in admin. The sign-in and set-password screens are always
-  // bright: the dark class is stripped there without touching the saved
-  // preference, so signing back in restores the employee's theme.
+  // The sign-in and set-password screens are always bright, with no dark
+  // styling at all. The saved theme preference is applied by the
+  // signed-in AppShell when it mounts, so it can never leak onto the
+  // sign-in form during the login transition; this effect is only a
+  // backstop that strips a stale dark class on the public routes.
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   useEffect(() => {
     if (pathname.startsWith("/auth") || pathname.startsWith("/set-password")) {
       document.documentElement.classList.remove("dark");
-    } else {
-      applyTheme(storedTheme());
     }
   }, [pathname]);
 

@@ -524,6 +524,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const db = useDB();
   const me = currentEmployee(db);
+  // The theme belongs to the signed-in shell only: apply the saved
+  // preference when this shell mounts (never while the sign-in form is
+  // still on screen during the login transition), and strip it when the
+  // shell unmounts on sign-out so public screens are always bright.
+  useEffect(() => {
+    applyTheme(storedTheme());
+    return () => {
+      document.documentElement.classList.remove("dark");
+    };
+  }, []);
   return (
     <div className="flex min-h-screen w-full">
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
