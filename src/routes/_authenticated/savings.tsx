@@ -106,7 +106,7 @@ function Savings() {
               label="Status"
               value={status}
               onChange={setStatus}
-              options={["Active", "Completed", "Paused"]}
+              options={["Active", "Completed", "Paused", "Closed"]}
             />
           </>
         }

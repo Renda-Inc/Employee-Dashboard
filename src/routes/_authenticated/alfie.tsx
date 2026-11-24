@@ -5,14 +5,7 @@ import { useDB } from "@/services/store";
 import { operations } from "@/services/api";
 import { ActionDialog } from "@/components/dialogs/ActionDialog";
 import { Button } from "@/components/ui/button";
-import {
-  NoAccess,
-  PageHeader,
-  Panel,
-  SimulatedNote,
-  usePermission,
-  Mono,
-} from "@/components/common";
+import { NoAccess, PageHeader, Panel, SimulatedNote, usePermission } from "@/components/common";
 import { FilterSelect } from "@/components/tables/DataTable";
 import { CaseTable } from "@/components/tables/RecordTables";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -206,18 +199,6 @@ function Alfie() {
               <p className="text-muted-foreground">No open issues.</p>
             )}
           </Panel>
-          <Panel title="Integration status">
-            {[
-              ["Banking data feed", "Operational"],
-              ["Merchant categorization", "Degraded"],
-              ["Card transaction stream", "Operational"],
-            ].map(([n, s]) => (
-              <div key={n} className="flex justify-between py-1">
-                <span>{n}</span>
-                <StatusBadge status={s} />
-              </div>
-            ))}
-          </Panel>
           <Panel title="Conversation access">
             {sensitive ? (
               <p className="text-[13px]">
@@ -235,9 +216,6 @@ function Alfie() {
       </div>
       <h2 className="mb-2 mt-6 text-[14px] font-semibold">Related support cases</h2>
       <CaseTable rows={cases} />
-      <span className="hidden">
-        <Mono>.</Mono>
-      </span>
     </>
   );
 }

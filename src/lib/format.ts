@@ -16,6 +16,24 @@ export const fmtDateTime = (s: string | null | undefined) =>
       })
     : "-";
 
+/** "Now" for relative time windows over the dataset: the newest
+ * timestamp in the data being windowed. The demo dataset is anchored
+ * to a fixed demo date in the past, so plain Date.now() pushes every
+ * seeded record outside windows like "last 7 days" and the filters
+ * return nothing forever. Anchoring to the data's own present keeps
+ * the windows meaningful; with live data the newest record is
+ * typically minutes old, so the windows behave the same. Falls back
+ * to the real clock when there is nothing to anchor to. */
+export function dataNow(timestamps: (string | null | undefined)[]): number {
+  let max = 0;
+  for (const t of timestamps) {
+    if (!t) continue;
+    const ms = new Date(t).getTime();
+    if (Number.isFinite(ms) && ms > max) max = ms;
+  }
+  return max || Date.now();
+}
+
 export function relTime(s: string) {
   const diff = Date.now() - new Date(s).getTime();
   const m = Math.round(diff / 60000);

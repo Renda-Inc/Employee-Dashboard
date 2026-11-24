@@ -165,20 +165,16 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
   const item = (n: NavItem) => {
     const allowed = !n.perm || can(me.role, n.perm);
     const isActive = active(n.to);
-    return (
-      <Link
-        key={n.to}
-        to={n.to}
-        title={n.title}
-        className={cn(
-          "relative flex h-10 items-center gap-3 rounded-md px-3 text-[14px] transition-colors",
-          isActive
-            ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-            : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
-          !allowed && "opacity-50",
-          collapsed && "justify-center px-0",
-        )}
-      >
+    const cls = cn(
+      "relative flex h-10 items-center gap-3 rounded-md px-3 text-[14px] transition-colors",
+      isActive
+        ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+        : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
+      !allowed && "cursor-not-allowed opacity-50",
+      collapsed && "justify-center px-0",
+    );
+    const inner = (
+      <>
         {isActive && (
           <span
             className="absolute inset-y-1.5 left-0 w-[2px] rounded-full bg-primary"
@@ -187,6 +183,25 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
         )}
         <n.icon className="size-[18px] shrink-0" strokeWidth={1.75} />
         {!collapsed && <span className="truncate">{n.title}</span>}
+      </>
+    );
+    // A destination the role cannot open is shown dimmed but is not a
+    // link: sending the employee to an Access restricted page is a
+    // dead end, not navigation.
+    if (!allowed)
+      return (
+        <span
+          key={n.to}
+          title={`${n.title} (not available for your role)`}
+          aria-disabled="true"
+          className={cls}
+        >
+          {inner}
+        </span>
+      );
+    return (
+      <Link key={n.to} to={n.to} title={n.title} className={cls}>
+        {inner}
       </Link>
     );
   };
@@ -432,7 +447,10 @@ function ThemeToggle() {
 function Notifications() {
   const db = useDB();
   const navigate = useNavigate();
-  const list = notifications(db);
+  const me = currentEmployee(db);
+  // Only items the signed-in role can actually open: a notification
+  // that lands on an Access restricted page is a dead end.
+  const list = notifications(db).filter((n) => can(me.role, n.perm));
   const unread = list.filter((n) => !db.readNotificationIds.includes(n.id));
   return (
     <Popover>
@@ -504,16 +522,23 @@ function Notifications() {
 }
 
 function MobileNav() {
-  const { path } = useActiveNav();
+  const { active } = useActiveNav();
   const navigate = useNavigate();
+  const db = useDB();
+  const me = currentEmployee(db);
+  // Same rules as the sidebar: most specific match wins (Roles &
+  // Permissions over Employee Management), and destinations the role
+  // cannot open are not offered at all.
+  const items = ALL_NAV.filter((n) => !n.perm || can(me.role, n.perm));
+  const current = items.find((n) => active(n.to))?.to ?? items[0]?.to ?? "/";
   return (
     <SelectField
       aria-label="Navigate"
       className="h-10 w-48 shrink-0 rounded-md border bg-card px-3 text-[14px] lg:hidden"
-      value={ALL_NAV.find((n) => (n.to === "/" ? path === "/" : path.startsWith(n.to)))?.to ?? "/"}
+      value={current}
       onChange={(e) => navigate({ to: e.target.value })}
     >
-      {ALL_NAV.map((n) => (
+      {items.map((n) => (
         <option key={n.to} value={n.to}>
           {n.title}
         </option>

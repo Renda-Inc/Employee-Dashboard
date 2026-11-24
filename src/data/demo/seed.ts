@@ -23,6 +23,13 @@ import type {
 import { closureBalanceSnapshot, PLAN_PRICES } from "@/services/rules";
 
 export const DEMO_NOW = new Date("2026-10-28T16:00:00Z").getTime();
+
+/** Dataset version, the single source for both the seed and the store's
+ * acceptance check (src/services/store.ts). Bump it whenever seeded
+ * data changes shape or content in a way saved browser data must not
+ * keep: stored datasets with any other version are discarded and
+ * reseeded on load. */
+export const DATASET_VERSION = 9;
 const H = 3600_000;
 const D = 24 * H;
 const iso = (ms: number) => new Date(ms).toISOString();
@@ -282,7 +289,9 @@ const SPECS: Spec[] = [
       reason: "Moving to another bank",
       feedback: "",
       daysAgo: 2,
-      assignedTo: "emp_02",
+      // Banking Operations (Samuel Ortiz): processing a closure needs
+      // customers.lifecycle, which Support does not hold.
+      assignedTo: "emp_05",
     },
   },
   // Active Everyday
@@ -686,6 +695,7 @@ export function buildSeed(): DB {
               payoutEmail: signupEmail,
               payoutAmount: 0,
               source: "Admin" as const,
+              previousStatus: "Active" as const,
             }
           : null,
       closureRequest: null,
@@ -1237,7 +1247,7 @@ export function buildSeed(): DB {
   let txN = 0;
   const statusPick = (): TxnStatus => {
     const x = rnd();
-    return x < 0.86 ? "Completed" : x < 0.93 ? "Pending" : x < 0.98 ? "Failed" : "Reversed";
+    return x < 0.86 ? "Completed" : x < 0.93 ? "Pending" : "Failed";
   };
   const addTxn = (
     t: Omit<Transaction, "id" | "transactionReference" | "currency" | "notes" | "completedAt"> & {
@@ -1251,9 +1261,7 @@ export function buildSeed(): DB {
       currency: "CAD",
       notes: [],
       completedAt:
-        t.status === "Completed" || t.status === "Reversed"
-          ? iso(new Date(t.timestamp).getTime() + 2 * 60_000)
-          : null,
+        t.status === "Completed" ? iso(new Date(t.timestamp).getTime() + 2 * 60_000) : null,
       ...t,
     };
     delete (tx as Partial<{ ref: string }>).ref;
@@ -1394,8 +1402,7 @@ export function buildSeed(): DB {
   for (let k = 0; k < 12; k++) {
     const a = actives[(k * 3 + 1) % actives.length];
     const dir = k % 3 === 0 ? "Incoming" : "Outgoing";
-    const st: TxnStatus =
-      k === 4 ? "Failed" : k === 7 ? "Pending" : k === 10 ? "Reversed" : "Completed";
+    const st: TxnStatus = k === 4 ? "Failed" : k === 7 ? "Pending" : "Completed";
     const amount = money(25, 1800);
     const ts = ago(Math.floor(rnd() * 20), Math.floor(rnd() * 20));
     const tr = addTransfer({
@@ -2007,7 +2014,7 @@ export function buildSeed(): DB {
   activity.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   return {
-    version: 8,
+    version: DATASET_VERSION,
     customers,
     accounts,
     transactions,

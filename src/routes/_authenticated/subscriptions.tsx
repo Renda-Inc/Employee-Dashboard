@@ -108,6 +108,13 @@ function Subscriptions() {
       className: "text-right",
       cell: (s) => {
         if (!canManage || s.plan !== "Plus" || s.subscriptionStatus !== "Active") return null;
+        // Billing pauses during a restriction (the service rejects
+        // these actions too), so say so instead of offering buttons
+        // that can only fail.
+        if (db.customers.find((x) => x.id === s.customerId)?.customerStatus === "Restricted")
+          return (
+            <span className="text-[13px] text-muted-foreground">Billing paused: restricted</span>
+          );
         if (billingDowngradeDue(s))
           return (
             <span onClick={(e) => e.stopPropagation()} className="inline-flex gap-1">

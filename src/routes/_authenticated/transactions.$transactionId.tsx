@@ -19,7 +19,14 @@ import { NewCaseDialog } from "@/components/dialogs/NewCaseDialog";
 import { ActionDialog } from "@/components/dialogs/ActionDialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { fmtDateTime, fullName, lookup, transferTypeLabel, txTypeLabel } from "@/lib/format";
+import {
+  fmtDateTime,
+  fmtMoney,
+  fullName,
+  lookup,
+  transferTypeLabel,
+  txTypeLabel,
+} from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/transactions/$transactionId")({
   head: () => ({
@@ -32,8 +39,18 @@ export const Route = createFileRoute("/_authenticated/transactions/$transactionI
       { property: "og:description", content: "Transaction details." },
     ],
   }),
-  component: TxnDetail,
+  component: TxnDetailPage,
 });
+/**
+ * Record pages hold per-record form state (drafts, pre-filled emails,
+ * edit forms). Keying the page by its route param forces a remount when
+ * navigating directly from one record to another on the same route, so
+ * state from the previous record can never be submitted for the next.
+ */
+function TxnDetailPage() {
+  const { transactionId } = Route.useParams();
+  return <TxnDetail key={transactionId} />;
+}
 
 function TxnDetail() {
   const { transactionId } = Route.useParams();
@@ -117,7 +134,7 @@ function TxnDetail() {
                 [
                   "Amount",
                   <span>
-                    {t.amount.toFixed(2)} {t.currency} ({t.direction})
+                    {fmtMoney(t.amount)} {t.currency} ({t.direction})
                   </span>,
                 ],
                 ["Type", txTypeLabel(t.transactionType)],
@@ -300,6 +317,7 @@ function TxnDetail() {
                 />
                 <Button
                   size="sm"
+                  disabled={note.trim().length < 3}
                   onClick={async () => {
                     if (await run(() => operations.addTransactionNote(t.id, note), "Note added"))
                       setNote("");

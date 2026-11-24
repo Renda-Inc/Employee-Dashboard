@@ -5,7 +5,7 @@ import { useDB } from "@/services/store";
 import { NoAccess, PageHeader, usePermission } from "@/components/common";
 import { FilterSelect, SearchInput } from "@/components/tables/DataTable";
 import { TransactionTable } from "@/components/tables/RecordTables";
-import { fullName, lookup } from "@/lib/format";
+import { dataNow, fullName, lookup } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/transactions/")({
   head: () => ({
@@ -33,6 +33,9 @@ function Transactions() {
   const [days, setDays] = useState("all");
   const [min, setMin] = useState("");
   const [max, setMax] = useState("");
+  // Anchor for the date-range filter: never earlier than the newest
+  // transaction, so the demo dataset does not age out of every window.
+  const refNow = dataNow(db.transactions.map((t) => t.timestamp));
   const rows = useMemo(
     () =>
       db.transactions.filter((t) => {
@@ -52,13 +55,13 @@ function Transactions() {
         if (status !== "all" && t.status !== status) return false;
         if (rail !== "all" && t.paymentRail !== rail) return false;
         if (acct !== "all" && L.account(t.accountId)?.accountType !== acct) return false;
-        if (days !== "all" && Date.now() - new Date(t.timestamp).getTime() > Number(days) * 864e5)
+        if (days !== "all" && refNow - new Date(t.timestamp).getTime() > Number(days) * 864e5)
           return false;
         if (min && t.amount < Number(min)) return false;
         if (max && t.amount > Number(max)) return false;
         return true;
       }),
-    [db, q, type, status, acct, rail, days, min, max],
+    [db, q, type, status, acct, rail, days, min, max, refNow],
   );
   if (!allowed) return <NoAccess what="transactions" />;
   return (
@@ -93,7 +96,7 @@ function Transactions() {
               label="Status"
               value={status}
               onChange={setStatus}
-              options={["Pending", "Completed", "Failed", "Reversed"]}
+              options={["Pending", "Completed", "Failed"]}
             />
             <FilterSelect
               label="Account"

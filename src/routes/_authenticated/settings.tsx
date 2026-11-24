@@ -28,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 const STATUS_DEFS = [
   ["Registered", "Account created; email not yet verified."],
+  ["Email Verification Pending", "Account created; email verification outstanding."],
   ["Email Verified", "Email confirmed; onboarding not started."],
   ["Onboarding In Progress", "Questionnaire underway."],
   ["KYC Pending", "Awaiting identity provider result."],
@@ -200,8 +201,8 @@ function Settings() {
             </Button>
           </div>
           <p className="mt-3 text-[13px] text-muted-foreground">
-            Batch processing day: Friday (manual). These settings do not modify any real banking
-            infrastructure.
+            Batch processing day: {s.batchProcessingDay} (manual). These settings do not modify any
+            real banking infrastructure.
           </p>
         </Panel>
         <Panel title="Supported status definitions" className="lg:col-span-2" bodyClass="p-0">
@@ -223,19 +224,23 @@ function Settings() {
             <p className="text-[14px] text-muted-foreground">
               Data is stored in this browser. Resetting restores the original sample dataset.
             </p>
-            <ActionDialog
-              trigger={
-                <Button variant="outline" size="sm">
-                  Reset demo data
-                </Button>
-              }
-              title="Reset demo data?"
-              description="All changes made in this browser will be discarded."
-              destructive
-              confirmLabel="Reset"
-              onConfirm={() => operations.resetDemoData()}
-              success="Demo data reset"
-            />
+            {canOps ? (
+              <ActionDialog
+                trigger={
+                  <Button variant="outline" size="sm">
+                    Reset demo data
+                  </Button>
+                }
+                title="Reset demo data?"
+                description="All changes made in this browser will be discarded."
+                destructive
+                confirmLabel="Reset"
+                onConfirm={() => operations.resetDemoData()}
+                success="Demo data reset"
+              />
+            ) : (
+              <span className="text-[13px] text-muted-foreground">Administrator only</span>
+            )}
           </div>
         </Panel>
       </div>

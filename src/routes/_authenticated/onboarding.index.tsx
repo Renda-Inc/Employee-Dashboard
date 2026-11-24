@@ -51,11 +51,10 @@ export function outstanding(c: Customer): string {
 const match = (t: Tab, c: Customer) => {
   switch (t) {
     case "All Cases":
-      return (
-        c.customerStatus !== "Active" &&
-        c.customerStatus !== "Closed" &&
-        c.customerStatus !== "Restricted"
-      );
+      // Restricted customers stay visible: one frozen mid-setup still
+      // has an outstanding onboarding step, it just cannot be completed
+      // until Compliance lifts the restriction.
+      return c.customerStatus !== "Active" && c.customerStatus !== "Closed";
     case "Email Verification":
       return !c.emailVerified;
     case "Phone Verification":
@@ -113,14 +112,14 @@ function Onboarding() {
     {
       key: "e",
       header: "Email",
-      cell: (c) => <StatusBadge status={c.emailVerified ? "Verified" : "Pending"} />,
+      cell: (c) => <StatusBadge status={c.emailVerified ? "Verified" : "Unverified"} />,
     },
     {
       key: "p",
       header: "Phone",
       cell: (c) => (
         <StatusBadge
-          status={c.phoneVerified ? "Verified" : c.emailVerified ? "Pending" : "Not Started"}
+          status={c.phoneVerified ? "Verified" : c.emailVerified ? "Unverified" : "Not Started"}
         />
       ),
     },

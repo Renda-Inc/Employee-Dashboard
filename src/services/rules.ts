@@ -2,7 +2,6 @@
 import type { Account, CardOrder, Customer, Plan } from "@/types/models";
 
 export const PLAN_PRICES: Record<Plan, number> = { Everyday: 0, Plus: 9.96 };
-export const CURRENCY = "CAD";
 
 /** Next Friday processing date (today if today is Friday), local time. */
 export function nextFriday(from: Date = new Date()): Date {
@@ -12,7 +11,6 @@ export function nextFriday(from: Date = new Date()): Date {
   return d;
 }
 
-/** Returns null when the customer can be activated, otherwise the blocking reason. */
 /** Days a customer can sit in Setup In Progress (accounts issued, app
  * setup unfinished: plan choice, biometrics, card design) before the
  * attention queue flags them as not fully live yet. */
@@ -23,6 +21,7 @@ export function setupIncomplete(c: Customer, now: number = Date.now()): boolean 
   return now - new Date(c.updatedAt).getTime() >= SETUP_FOLLOWUP_DAYS * 864e5;
 }
 
+/** Returns null when the customer can be activated, otherwise the blocking reason. */
 export function activationBlocker(c: Customer, accounts: Account[]): string | null {
   if (c.restriction)
     return "This customer is restricted. The restriction must be lifted before setup can be completed.";
@@ -87,14 +86,20 @@ export function addMonths(iso: string, months: number): string {
  * only; inbound payments and login still work, and cards stop working
  * because spending is outbound, not because the card itself is blocked.
  * Only Compliance can lift a restriction from the admin. */
-export const RESTRICTION_REASONS = [
+/** Reasons for an operational freeze (Support or Banking Operations). */
+export const FREEZE_REASONS = [
   "Suspected fraud",
   "Customer request",
   "Lost or stolen device",
-  "AML review",
-  "Sanctions",
   "Abuse",
 ] as const;
+
+/** Reasons for a compliance hold (Compliance only). */
+export const HOLD_REASONS = ["AML review", "Sanctions"] as const;
+
+/** Every restriction reason, for reference and tests. The kind-specific
+ * lists above are what the dialogs offer and the service enforces. */
+export const RESTRICTION_REASONS = [...FREEZE_REASONS, ...HOLD_REASONS] as const;
 
 export const CLOSURE_REASONS = [
   "Customer request",
@@ -145,6 +150,32 @@ export function closureBalanceSnapshot(
     goals: round(goalsTotal),
     total: round(smartSpend + senseSave),
   };
+}
+
+/** The balance a closure actually pays out: positive balances on Active
+ * or Restricted accounts. The snapshot above is a display figure that
+ * sums every account; this is the definition the money follows, used by
+ * the closure itself and by the zero-balance check on a closure
+ * request, so the two can never disagree. */
+export function payableBalance(
+  accounts: Pick<Account, "customerId" | "accountStatus" | "availableBalance">[],
+  customerId: string,
+): number {
+  const total = accounts
+    .filter(
+      (a) =>
+        a.customerId === customerId &&
+        (a.accountStatus === "Active" || a.accountStatus === "Restricted") &&
+        (a.availableBalance ?? 0) > 0,
+    )
+    .reduce((sum, a) => sum + (a.availableBalance ?? 0), 0);
+  return Math.round(total * 100) / 100;
+}
+
+/** A card's current order: the one that has not been canceled. Used by
+ * the cards list, the card detail page and the shared card table. */
+export function currentOrderForCard(orders: CardOrder[], cardId: string): CardOrder | undefined {
+  return orders.find((o) => o.cardId === cardId && o.orderStatus !== "Canceled");
 }
 
 /** Days after closure during which a customer can appeal and, if they

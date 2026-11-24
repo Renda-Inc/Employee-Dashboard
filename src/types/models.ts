@@ -41,8 +41,9 @@ export interface CustomerRestriction {
 /** A closure the customer requested themselves in the app (exit survey).
  * The admin sees why they are leaving, what they said, the balances as
  * they stood when they asked, and the Interac email they chose for the
- * payout. Processing is a single one-time step: once a request leaves
- * Pending it can never be processed again, so a payout cannot duplicate. */
+ * payout. Processing is stepped (assign, prepare the payout, complete)
+ * and completion is one-time: once a request is Processed it can never
+ * be processed again, so a payout cannot duplicate. */
 export interface ClosureRequest {
   requestedAt: string;
   /** Exit reason the customer picked in the app. */
@@ -88,6 +89,12 @@ export interface CustomerClosure {
   /** Whether the closure was an admin action or the processing of a
    * closure the customer requested in the app. */
   source: "Admin" | "Customer app request";
+  /** The lifecycle status a reactivation restores: the status the
+   * customer held when they were closed (for a customer closed while
+   * restricted, the status the restriction itself would have restored).
+   * Absent on records created before this field existed; those
+   * reactivate to Active. */
+  previousStatus?: CustomerStatus;
 }
 
 export interface Customer {

@@ -3,6 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useDB } from "@/services/store";
 import { operations } from "@/services/api";
+import { currentOrderForCard } from "@/services/rules";
 import {
   EmptyState,
   KV,
@@ -41,8 +42,18 @@ export const Route = createFileRoute("/_authenticated/cards/$cardId")({
       { property: "og:description", content: "Card details." },
     ],
   }),
-  component: CardDetail,
+  component: CardDetailPage,
 });
+/**
+ * Record pages hold per-record form state (drafts, pre-filled emails,
+ * edit forms). Keying the page by its route param forces a remount when
+ * navigating directly from one record to another on the same route, so
+ * state from the previous record can never be submitted for the next.
+ */
+function CardDetailPage() {
+  const { cardId } = Route.useParams();
+  return <CardDetail key={cardId} />;
+}
 
 const REASONS: ReplacementReason[] = [
   "Lost card",
@@ -74,7 +85,7 @@ function CardDetail() {
     );
   const c = L.customer(card.customerId)!;
   const acc = L.account(card.accountId);
-  const order = db.cardOrders.find((o) => o.cardId === card.id && o.orderStatus !== "Canceled");
+  const order = currentOrderForCard(db.cardOrders, card.id);
   const batch = db.batches.find((b) => b.id === card.manufacturingBatchId);
   // replacement chain
   const chain: typeof db.cards = [];

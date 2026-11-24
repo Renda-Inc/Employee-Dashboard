@@ -51,8 +51,18 @@ export const Route = createFileRoute("/_authenticated/employees/$employeeId")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: EmployeeProfile,
+  component: EmployeeProfilePage,
 });
+/**
+ * Record pages hold per-record form state (drafts, pre-filled emails,
+ * edit forms). Keying the page by its route param forces a remount when
+ * navigating directly from one record to another on the same route, so
+ * state from the previous record can never be submitted for the next.
+ */
+function EmployeeProfilePage() {
+  const { employeeId } = Route.useParams();
+  return <EmployeeProfile key={employeeId} />;
+}
 
 function EmployeeProfile() {
   const { employeeId } = Route.useParams();
@@ -328,7 +338,7 @@ function EditEmployeeDialog({
   const [f, setF] = useState(init);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (open) {
       setF(init());

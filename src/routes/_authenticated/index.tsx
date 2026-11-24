@@ -13,9 +13,11 @@ import {
 } from "lucide-react";
 import { useDB } from "@/services/store";
 import { attentionQueue } from "@/services/selectors";
+import { currentEmployee } from "@/services/actions";
+import { can } from "@/services/permissions";
 import { PageHeader, Panel, EmptyState } from "@/components/common";
 import { StatusBadge } from "@/components/status/StatusBadge";
-import { fullName, relTime } from "@/lib/format";
+import { dataNow, fullName, relTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +48,8 @@ const STAGES = [
   ["Issuance", ["KYC Approved", "Account Issuance Pending", "Account Issuance Failed"]],
   ["Setup", ["Setup In Progress"]],
   ["Active", ["Active"]],
+  ["Restricted", ["Restricted"]],
+  ["Closed", ["Closed"]],
 ] as const;
 
 function Overview() {
@@ -80,14 +84,14 @@ function Overview() {
       },
       {
         label: "Onboarding in progress",
-        value: c.filter((x) =>
-          [
-            "Registered",
-            "Email Verification Pending",
-            "Email Verified",
-            "Onboarding In Progress",
-            "Setup In Progress",
-          ].includes(x.customerStatus),
+        // Every status between registration and Active: the note says
+        // "registered but not yet active", so the KYC and issuance
+        // stages count too (they were previously left out).
+        value: c.filter(
+          (x) =>
+            x.customerStatus !== "Active" &&
+            x.customerStatus !== "Restricted" &&
+            x.customerStatus !== "Closed",
         ).length,
         note: "Registered but not yet active",
       },
@@ -109,8 +113,10 @@ function Overview() {
     ];
   }, [db]);
 
-  const queue = attentionQueue(db);
-  const since = range === "all" ? 0 : Date.now() - Number(range) * 864e5;
+  const me = currentEmployee(db);
+  const queue = attentionQueue(db).filter((q) => can(me.role, q.perm));
+  const since =
+    range === "all" ? 0 : dataNow(db.activity.map((a) => a.timestamp)) - Number(range) * 864e5;
   const feed = db.activity.filter((a) => new Date(a.timestamp).getTime() >= since).slice(0, 14);
   const stageData = STAGES.map(([label, sts]) => ({
     label,

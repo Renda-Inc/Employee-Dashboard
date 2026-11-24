@@ -26,6 +26,7 @@ const TABS = [
   "Smart Spend",
   "Sense Save",
   "Pending Issuance",
+  "Issuance Failed",
   "Restricted",
   "Closed",
 ] as const;
@@ -35,9 +36,7 @@ const match = (t: Tab, a: Account) =>
     ? true
     : t === "Smart Spend" || t === "Sense Save"
       ? a.accountType === t
-      : t === "Pending Issuance"
-        ? a.accountStatus === "Pending Issuance" || a.accountStatus === "Issuance Failed"
-        : a.accountStatus === t;
+      : a.accountStatus === t;
 
 function Accounts() {
   const db = useDB();

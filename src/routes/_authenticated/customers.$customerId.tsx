@@ -10,7 +10,8 @@ import {
   CLOSURE_REASONS,
   REACTIVATION_WINDOW_DAYS,
   reactivationAvailable,
-  RESTRICTION_REASONS,
+  FREEZE_REASONS,
+  HOLD_REASONS,
 } from "@/services/rules";
 import {
   Avatar,
@@ -73,8 +74,18 @@ export const Route = createFileRoute("/_authenticated/customers/$customerId")({
       { property: "og:description", content: "Central customer record." },
     ],
   }),
-  component: CustomerProfile,
+  component: CustomerProfilePage,
 });
+/**
+ * Record pages hold per-record form state (drafts, pre-filled emails,
+ * edit forms). Keying the page by its route param forces a remount when
+ * navigating directly from one record to another on the same route, so
+ * state from the previous record can never be submitted for the next.
+ */
+function CustomerProfilePage() {
+  const { customerId } = Route.useParams();
+  return <CustomerProfile key={customerId} />;
+}
 
 const LIFECYCLE = [
   "Registered",
@@ -113,8 +124,8 @@ function CustomerProfile() {
   const canRestrict = usePermission("customers.restrict");
   const canHold = usePermission("customers.hold");
   const canCase = usePermission("support.manage");
-  const [freezeReason, setFreezeReason] = useState<string>(RESTRICTION_REASONS[0]);
-  const [holdReason, setHoldReason] = useState<string>(RESTRICTION_REASONS[3]);
+  const [freezeReason, setFreezeReason] = useState<string>(FREEZE_REASONS[0]);
+  const [holdReason, setHoldReason] = useState<string>(HOLD_REASONS[0]);
   const [closureReason, setClosureReason] = useState<string>(CLOSURE_REASONS[0]);
   const [payoutEmail, setPayoutEmail] = useState("");
   const L = lookup(db);
@@ -172,6 +183,7 @@ function CustomerProfile() {
                   "All onboarding, KYC, issuance and setup conditions are satisfied. The customer will become Active."
                 }
                 confirmLabel="Activate"
+                confirmDisabled={!!blocker}
                 onConfirm={() => operations.completeSetup(c.id)}
                 success="Customer is now Active"
               />
@@ -202,7 +214,7 @@ function CustomerProfile() {
                       onChange={(e) => setFreezeReason(e.target.value)}
                       className="h-9 w-full rounded-md border bg-card px-2"
                     >
-                      {RESTRICTION_REASONS.map((r) => (
+                      {FREEZE_REASONS.map((r) => (
                         <option key={r}>{r}</option>
                       ))}
                     </SelectField>
@@ -240,7 +252,7 @@ function CustomerProfile() {
                     onChange={(e) => setHoldReason(e.target.value)}
                     className="h-9 w-full rounded-md border bg-card px-2"
                   >
-                    {RESTRICTION_REASONS.map((r) => (
+                    {HOLD_REASONS.map((r) => (
                       <option key={r}>{r}</option>
                     ))}
                   </SelectField>
@@ -862,6 +874,8 @@ export function MembershipPanel({ customerId }: { customerId: string }) {
         />
       </div>
     );
+  const cust = db.customers.find((x) => x.id === customerId);
+  const restricted = cust?.customerStatus === "Restricted";
   const physical = db.cards.filter((x) => x.customerId === customerId && x.cardType === "Physical");
   const billing = db.transactions.filter(
     (t) => t.customerId === customerId && t.transactionType === "Plan Fee",
@@ -874,7 +888,8 @@ export function MembershipPanel({ customerId }: { customerId: string }) {
           title="Current membership"
           actions={
             canManage &&
-            sub.subscriptionStatus !== "Canceled" && (
+            sub.subscriptionStatus !== "Canceled" &&
+            !restricted && (
               <ActionDialog
                 trigger={
                   <Button size="sm" variant="outline">
@@ -885,7 +900,7 @@ export function MembershipPanel({ customerId }: { customerId: string }) {
                 description={
                   target === "Plus"
                     ? "Renda Plus is CAD $9.96/month, charged to Smart Spend immediately. If the fee cannot be collected, the upgrade does not go ahead and the customer stays on Everyday. A physical card selection will be required if none exists."
-                    : "Downgrading removes the monthly fee. Existing physical cards are unaffected."
+                    : "Downgrading removes the monthly fee. Physical cards are canceled and open card orders are closed, because Everyday is virtual-only."
                 }
                 reasonLabel="Note (reason for change)"
                 minReason={5}
@@ -915,6 +930,12 @@ export function MembershipPanel({ customerId }: { customerId: string }) {
                 : []),
             ]}
           />
+          {restricted && (
+            <p className="mt-3 text-[13px] text-muted-foreground">
+              Plan changes and billing are paused while this customer is restricted. They resume
+              when the restriction is lifted.
+            </p>
+          )}
         </Panel>
         <Panel title="Card selection & setup requirements">
           {sub.cardSelectionRequired ? (

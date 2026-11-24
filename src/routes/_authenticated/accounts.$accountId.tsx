@@ -114,11 +114,13 @@ function AccountDetail() {
         }
         actions={
           <>
-            <Link to="/onboarding/$customerId" params={{ customerId: c.id }}>
-              <Button size="sm" variant="outline">
-                Review account issues
-              </Button>
-            </Link>
+            {(a.accountStatus !== "Active" || a.restrictions.length > 0) && (
+              <Link to="/onboarding/$customerId" params={{ customerId: c.id }}>
+                <Button size="sm" variant="outline">
+                  Review account issues
+                </Button>
+              </Link>
+            )}
             {canCase && (
               <NewCaseDialog
                 customerId={c.id}

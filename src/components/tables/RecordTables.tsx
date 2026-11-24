@@ -4,6 +4,7 @@ import { DataTable, type Column } from "@/components/tables/DataTable";
 import { Amount, CustomerCell, Mono } from "@/components/common";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { fmtDate, fmtDateTime, lookup, txTypeLabel } from "@/lib/format";
+import { currentOrderForCard } from "@/services/rules";
 import type { Card, SupportCase, Transaction } from "@/types/models";
 
 export function TransactionTable({
@@ -109,8 +110,7 @@ export function CardTable({
   const db = useDB();
   const navigate = useNavigate();
   const L = lookup(db);
-  const orderFor = (c: Card) =>
-    db.cardOrders.find((o) => o.cardId === c.id && o.orderStatus !== "Canceled");
+  const orderFor = (c: Card) => currentOrderForCard(db.cardOrders, c.id);
   const cols: Column<Card>[] = [
     ...(showCustomer
       ? [

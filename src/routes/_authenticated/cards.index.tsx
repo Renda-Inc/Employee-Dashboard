@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Factory } from "lucide-react";
 import { useDB } from "@/services/store";
+import { currentOrderForCard } from "@/services/rules";
 import { NoAccess, PageHeader, usePermission } from "@/components/common";
 import { FilterSelect, SearchInput } from "@/components/tables/DataTable";
 import { CardTable } from "@/components/tables/RecordTables";
@@ -35,8 +36,7 @@ function Cards() {
   const [mfg, setMfg] = useState("all");
   const [rpl, setRpl] = useState("all");
   if (!allowed) return <NoAccess what="card records" />;
-  const orderOf = (id: string) =>
-    db.cardOrders.find((o) => o.cardId === id && o.orderStatus !== "Canceled");
+  const orderOf = (id: string) => currentOrderForCard(db.cardOrders, id);
   const o = db.cardOrders;
   const metrics = [
     ["Total cards", db.cards.length],

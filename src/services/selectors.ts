@@ -1,5 +1,6 @@
 // Derived views over the shared dataset (queues, notifications, search).
 import type { DB } from "@/types/models";
+import type { Permission } from "./permissions";
 import { fmtDate, fullName } from "@/lib/format";
 import {
   ACTIVATION_FOLLOWUP_DAYS,
@@ -10,6 +11,9 @@ import {
 
 export interface QueueItem {
   id: string;
+  /** Permission needed to open the item's target, so the dashboard and
+   * the notification bell only show items the signed-in role can act on. */
+  perm: Permission;
   type: string;
   record: string;
   detail: string;
@@ -30,6 +34,7 @@ export function attentionQueue(db: DB): QueueItem[] {
     if (k.status === "Under Review" || k.status === "Pending")
       items.push({
         id: `q_kyc_${k.id}`,
+        perm: "kyc.view",
         type: k.status === "Under Review" ? "KYC manual review" : "KYC awaiting result",
         record: name(k.customerId),
         detail: k.outstandingRequirements[0] ?? "",
@@ -44,6 +49,7 @@ export function attentionQueue(db: DB): QueueItem[] {
     if (c.customerStatus === "Account Issuance Failed")
       items.push({
         id: `q_iss_${c.id}`,
+        perm: "kyc.view",
         type: "Account issuance failed",
         record: fullName(c),
         detail: "Banking provider returned an error",
@@ -56,6 +62,7 @@ export function attentionQueue(db: DB): QueueItem[] {
     if (setupIncomplete(c))
       items.push({
         id: `q_setup_${c.id}`,
+        perm: "customers.view",
         type: "Setup incomplete",
         record: fullName(c),
         detail:
@@ -72,6 +79,7 @@ export function attentionQueue(db: DB): QueueItem[] {
         : undefined;
       items.push({
         id: `q_close_${c.id}`,
+        perm: "customers.view",
         type:
           c.closureRequest.status === "In Progress"
             ? "Closure being processed"
@@ -91,6 +99,7 @@ export function attentionQueue(db: DB): QueueItem[] {
     )
       items.push({
         id: `q_onb_${c.id}`,
+        perm: "kyc.view",
         type: "Onboarding blocked",
         record: fullName(c),
         detail:
@@ -108,6 +117,7 @@ export function attentionQueue(db: DB): QueueItem[] {
     if (o.orderType === "Replacement Card" && o.orderStatus === "Eligible")
       items.push({
         id: `q_rpl_${o.id}`,
+        perm: "cards.view",
         type: "Card replacement awaiting batch",
         record: name(o.customerId),
         detail: `${o.replacementReference} · ${o.previousDesign} → ${o.requestedDesign}`,
@@ -127,6 +137,7 @@ export function attentionQueue(db: DB): QueueItem[] {
       : ACTIVATION_FOLLOWUP_DAYS;
     items.push({
       id: `q_act_${card.id}`,
+      perm: "cards.view",
       type: "Card not activated",
       record: name(card.customerId),
       detail: `•••• ${card.last4} · sent to manufacturer ${days} days ago in ${batch?.batchReference ?? "a submitted batch"} · no activation yet (delivery is not tracked)`,
@@ -141,6 +152,7 @@ export function attentionQueue(db: DB): QueueItem[] {
     if (b.status !== "Submitted")
       items.push({
         id: `q_bat_${b.id}`,
+        perm: "cards.view",
         type: b.status === "Draft" ? "Draft manufacturing batch" : "Batch awaiting submission",
         record: b.batchReference,
         detail: `${b.orderCount} orders · ${b.pdfReference ? "PDF generated" : "PDF not generated"}`,
@@ -155,6 +167,7 @@ export function attentionQueue(db: DB): QueueItem[] {
     if (s.cardSelectionRequired)
       items.push({
         id: `q_sel_${s.id}`,
+        perm: "customers.view",
         type: "Plus card selection outstanding",
         record: name(s.customerId),
         detail: "Upgraded to Plus; no physical card selected",
@@ -168,6 +181,7 @@ export function attentionQueue(db: DB): QueueItem[] {
       const due = billingDowngradeDue(s);
       items.push({
         id: `q_bil_${s.id}`,
+        perm: "customers.view",
         type: due ? "Plus downgrade due" : "Plus payment retrying",
         record: name(s.customerId),
         detail: due
@@ -185,6 +199,7 @@ export function attentionQueue(db: DB): QueueItem[] {
     if ((sc.status === "Open" && !sc.assignedEmployeeId) || sc.status === "Escalated")
       items.push({
         id: `q_sc_${sc.id}`,
+        perm: "support.view",
         type: sc.status === "Escalated" ? "Escalated support case" : "Unassigned support case",
         record: `${sc.caseReference} · ${name(sc.customerId)}`,
         detail: sc.subject,
@@ -205,6 +220,7 @@ export function attentionQueue(db: DB): QueueItem[] {
     )
       items.push({
         id: `q_tx_${t.id}`,
+        perm: "transactions.view",
         type: "Transaction under investigation",
         record: t.transactionReference,
         detail: `${t.description} · ${t.errorMessage ?? "Failed"}`,
@@ -225,7 +241,12 @@ export function notifications(db: DB) {
       if (q.id.startsWith("q_kyc") || q.id.startsWith("q_onb") || q.id.startsWith("q_iss"))
         return s.notifyKyc;
       if (q.id.startsWith("q_sc") || q.id.startsWith("q_tx")) return s.notifySupport;
-      if (q.id.startsWith("q_bat") || q.id.startsWith("q_rpl") || q.id.startsWith("q_sel"))
+      if (
+        q.id.startsWith("q_bat") ||
+        q.id.startsWith("q_rpl") ||
+        q.id.startsWith("q_sel") ||
+        q.id.startsWith("q_act")
+      )
         return s.notifyManufacturing;
       return true;
     })

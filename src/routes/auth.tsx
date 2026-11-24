@@ -326,7 +326,7 @@ function SignIn() {
             maxLength={6}
             value={code}
             onChange={setCode}
-            onComplete={() => undefined}
+            onComplete={() => void onVerify()}
             autoFocus
             aria-label="Verification code"
           >

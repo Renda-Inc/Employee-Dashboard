@@ -10,6 +10,7 @@ import { CaseTable } from "@/components/tables/RecordTables";
 import { NewCaseDialog } from "@/components/dialogs/NewCaseDialog";
 import { Button } from "@/components/ui/button";
 import { fullName, lookup } from "@/lib/format";
+import { can } from "@/services/permissions";
 
 export const Route = createFileRoute("/_authenticated/support/")({
   head: () => ({
@@ -131,7 +132,15 @@ function Support() {
               label="Assigned"
               value={as}
               onChange={setAs}
-              options={["Me", "Unassigned", ...db.employees.map((e) => e.name)]}
+              options={[
+                "Me",
+                "Unassigned",
+                // Only people a case can actually be assigned to (the
+                // same rule the case page and the service enforce).
+                ...db.employees
+                  .filter((e) => e.status === "Active" && can(e.role, "support.manage"))
+                  .map((e) => e.name),
+              ]}
             />
             <SelectField
               aria-label="Date range"

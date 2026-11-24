@@ -74,7 +74,7 @@ function VerificationCase() {
             : c.accountIssuanceStatus === "Pending"
               ? "Account Issuance Pending: Awaiting banking provider confirmation."
               : null;
-  const eligible = c.kycStatus === "Approved" && c.emailVerified && c.phoneVerified;
+  const eligible = c.kycStatus === "Approved";
 
   return (
     <>
@@ -195,7 +195,12 @@ function VerificationCase() {
               <ActionDialog
                 trigger={<Button size="sm">Complete setup</Button>}
                 title="Activate customer"
-                description={activationBlocker(c, db.accounts) ?? "All requirements satisfied."}
+                description={
+                  activationBlocker(c, db.accounts) ??
+                  "All onboarding, KYC, issuance and setup conditions are satisfied. The customer will become Active."
+                }
+                confirmLabel="Activate"
+                confirmDisabled={!!activationBlocker(c, db.accounts)}
                 onConfirm={() => operations.completeSetup(c.id)}
                 success="Customer is now Active"
               />
@@ -220,8 +225,8 @@ function VerificationCase() {
                 ["Name", fullName(c)],
                 ["Date of birth", c.dateOfBirth],
                 ["Province", c.province],
-                ["Email", <StatusBadge status={c.emailVerified ? "Verified" : "Pending"} />],
-                ["Phone", <StatusBadge status={c.phoneVerified ? "Verified" : "Pending"} />],
+                ["Email", <StatusBadge status={c.emailVerified ? "Verified" : "Unverified"} />],
+                ["Phone", <StatusBadge status={c.phoneVerified ? "Verified" : "Unverified"} />],
                 ["Onboarding", <StatusBadge status={c.onboardingStatus} />],
               ]}
             />

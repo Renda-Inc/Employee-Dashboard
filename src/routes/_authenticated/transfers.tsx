@@ -195,7 +195,7 @@ function Transfers() {
             label="Status"
             value={status}
             onChange={setStatus}
-            options={["Pending", "Completed", "Failed", "Reversed"]}
+            options={["Pending", "Completed", "Failed"]}
           />
         }
       />

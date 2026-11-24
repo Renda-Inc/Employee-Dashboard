@@ -115,7 +115,7 @@ function ClosureRequests() {
     },
     {
       key: "total",
-      header: "Balance to pay out",
+      header: "Balance when requested",
       cell: (c) =>
         c.closureRequest!.balances.total > 0 ? fmtMoney(c.closureRequest!.balances.total) : "None",
       sort: (c) => c.closureRequest!.balances.total,

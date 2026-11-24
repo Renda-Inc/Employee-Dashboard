@@ -4,7 +4,8 @@ import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useDB } from "@/services/store";
 import { operations } from "@/services/api";
-import { closureBalanceSnapshot } from "@/services/rules";
+import { closureBalanceSnapshot, payableBalance } from "@/services/rules";
+import { can } from "@/services/permissions";
 import { Avatar, EmptyState, KV, NoAccess, Panel, run, usePermission } from "@/components/common";
 import { StatusBadge, PlanBadge } from "@/components/status/StatusBadge";
 import { ActionDialog } from "@/components/dialogs/ActionDialog";
@@ -27,8 +28,18 @@ export const Route = createFileRoute("/_authenticated/closure-requests/$customer
       { property: "og:description", content: "Closure request processing." },
     ],
   }),
-  component: ClosureRequestDetail,
+  component: ClosureRequestDetailPage,
 });
+/**
+ * Record pages hold per-record form state (drafts, pre-filled emails,
+ * edit forms). Keying the page by its route param forces a remount when
+ * navigating directly from one record to another on the same route, so
+ * state from the previous record can never be submitted for the next.
+ */
+function ClosureRequestDetailPage() {
+  const { customerId } = Route.useParams();
+  return <ClosureRequestDetail key={customerId} />;
+}
 
 function StepHeading({
   n,
@@ -91,10 +102,16 @@ function ClosureRequestDetail() {
   const live = closureBalanceSnapshot(db.accounts, db.goals, c.id);
   const open = req.status === "Pending" || req.status === "In Progress";
   const step = req.status === "Pending" ? 1 : req.status === "In Progress" ? 2 : 3;
-  const employees = db.employees.filter((e) => e.status === "Active");
+  // Only employees whose role can actually process a closure are
+  // offered; the service enforces the same rule on assignment.
+  const employees = db.employees.filter(
+    (e) => e.status === "Active" && can(e.role, "customers.lifecycle"),
+  );
   // A zero balance needs no Interac payout at all: the payout step
-  // becomes a simple confirmation that nothing will be sent.
-  const zeroBalance = live.total < 0.01;
+  // becomes a simple confirmation that nothing will be sent. The check
+  // uses payableBalance, the same definition the service enforces for
+  // the None method, not the display snapshot.
+  const zeroBalance = payableBalance(db.accounts, c.id) < 0.01;
   const balancesMoved =
     Math.abs(live.total - req.balances.total) > 0.009 ||
     Math.abs(live.smartSpend - req.balances.smartSpend) > 0.009 ||

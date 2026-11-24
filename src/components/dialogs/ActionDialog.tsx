@@ -27,6 +27,7 @@ export function ActionDialog({
   success,
   children,
   disabled,
+  confirmDisabled,
 }: {
   trigger: ReactNode;
   title: string;
@@ -40,6 +41,10 @@ export function ActionDialog({
   success: string;
   children?: ReactNode;
   disabled?: boolean;
+  /** Disables only the confirm button, leaving the dialog openable so
+   * the employee can still read why the action cannot run (for example
+   * an activation blocker shown in the description). */
+  confirmDisabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
@@ -96,7 +101,7 @@ export function ActionDialog({
             </Button>
             <Button
               variant={destructive ? "destructive" : "default"}
-              disabled={busy}
+              disabled={busy || confirmDisabled}
               onClick={async () => {
                 setTouched(true);
                 if (invalid) return;

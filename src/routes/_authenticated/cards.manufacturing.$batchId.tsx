@@ -261,8 +261,9 @@ function BatchDetail() {
             ))}
           </ol>
           <p className="mt-4 text-[13px] text-muted-foreground">
-            PDF contains order references, designs, placeholder customer tokens and shipping
-            references only. Fields are configurable once the manufacturer confirms specifications.
+            PDF contains order references, designs and placeholder customer tokens only. No shipping
+            or tracking references are included. Fields are configurable once the manufacturer
+            confirms specifications.
           </p>
         </Panel>
       </div>

@@ -28,6 +28,10 @@ import {
   addMonths,
   batchIneligibility,
   billingDowngradeDue,
+  CLOSURE_REASONS,
+  FREEZE_REASONS,
+  HOLD_REASONS,
+  payableBalance,
   PLAN_PRICES,
   REACTIVATION_WINDOW_DAYS,
   reactivationAvailable,
@@ -188,6 +192,15 @@ function restrictCustomer(customerId: string, kind: RestrictionKind, reason: str
     name(c),
   );
   if (note.trim().length < 5) throw new RuleError("A note is required (at least 5 characters).");
+  // Reasons come from the fixed list for the kind (product rule, user,
+  // 2026-11-24): freezes and holds have different reason sets, and the
+  // service enforces them rather than trusting the dialog.
+  const allowedReasons: readonly string[] =
+    kind === "Compliance Hold" ? HOLD_REASONS : FREEZE_REASONS;
+  if (!allowedReasons.includes(reason))
+    throw new RuleError(
+      `"${reason}" is not a ${kind === "Compliance Hold" ? "compliance hold" : "operational freeze"} reason. Use one of: ${allowedReasons.join(", ")}.`,
+    );
   const escalating =
     c.customerStatus === "Restricted" &&
     c.restriction?.kind === "Operational Freeze" &&
@@ -314,6 +327,17 @@ function closeCustomer(
   // balance yet (product rule, user, 2026-11-23).
   if (input.note.trim().length < 5)
     throw new RuleError("A note is required (at least 5 characters).");
+  if (!(CLOSURE_REASONS as readonly string[]).includes(input.reason))
+    throw new RuleError(
+      `"${input.reason}" is not a closure reason. Use one of: ${CLOSURE_REASONS.join(", ")}.`,
+    );
+  // The status a later reactivation restores: where the customer stood
+  // when closed, looking through a restriction to the status it would
+  // itself have restored (mirrors how lifting a restriction works).
+  const returnStatus =
+    c.customerStatus === "Restricted"
+      ? (c.restriction?.previousStatus ?? "Active")
+      : c.customerStatus;
   const db = getState();
   const payable = db.accounts.filter(
     (a) =>
@@ -446,6 +470,7 @@ function closeCustomer(
       payoutEmail: total > 0 ? payoutEmail : null,
       payoutAmount: Math.round(total * 100) / 100,
       source,
+      previousStatus: returnStatus,
     };
     // A direct admin close also fulfils an open app closure request,
     // so the request can never be processed a second time afterwards.
@@ -514,6 +539,13 @@ function assignClosureRequest(customerId: string, employeeId: string, note: stri
   const assignee = getState().employees.find((e) => e.id === employeeId);
   if (!assignee || assignee.status !== "Active")
     throw new RuleError("The assignee must be an active employee.");
+  // The assignee has to be able to finish the job: processing a closure
+  // needs customers.lifecycle, so a request is never parked on someone
+  // whose role can only look at it (same check updateCase makes).
+  if (!can(assignee.role, "customers.lifecycle"))
+    throw new RuleError(
+      `${assignee.name}'s role (${assignee.role}) cannot process closure requests. Assign it to someone whose role can close customers.`,
+    );
   setState((d) => {
     const x = d.customers.find((y) => y.id === customerId)!;
     const was = x.closureRequest!;
@@ -590,15 +622,8 @@ function processClosureRequest(
   // Zero-balance closures have no payout at all (product rule, user,
   // 2026-11-24): the None method skips Interac entirely and only
   // confirms the closure. It is only valid while nothing is payable,
-  // computed the same way closeCustomer computes it.
-  const livePayable = getState()
-    .accounts.filter(
-      (a) =>
-        a.customerId === customerId &&
-        (a.accountStatus === "Active" || a.accountStatus === "Restricted") &&
-        (a.availableBalance ?? 0) > 0,
-    )
-    .reduce((sum, a) => sum + (a.availableBalance ?? 0), 0);
+  // using the same payableBalance definition the closure itself pays.
+  const livePayable = payableBalance(getState().accounts, customerId);
   if (input.method === "None" && livePayable > 0.009)
     throw new RuleError(
       "This customer still has a balance to pay out, so the closure needs a payout method (Automated or Manual).",
@@ -698,7 +723,18 @@ function reactivateCustomer(customerId: string, note: string) {
   setState((d) => {
     const x = d.customers.find((y) => y.id === customerId)!;
     const closedAt = x.closure!.closedAt;
-    x.customerStatus = "Active";
+    // Reactivation restores the status the customer held when they
+    // were closed (recorded on the closure), so a customer closed
+    // during setup goes back to finishing setup instead of skipping
+    // it. Closures recorded before previousStatus existed were all
+    // Active customers.
+    const restored =
+      x.closure!.previousStatus &&
+      x.closure!.previousStatus !== "Closed" &&
+      x.closure!.previousStatus !== "Restricted"
+        ? x.closure!.previousStatus
+        : "Active";
+    x.customerStatus = restored;
     x.closure = null;
     x.restriction = null;
     x.updatedAt = now();
@@ -715,11 +751,18 @@ function reactivateCustomer(customerId: string, note: string) {
       entityId: customerId,
       entityLabel: name(x),
       outcome: "Success",
-      details: `Closed ${fmtDay(closedAt)}, reactivated inside the ${REACTIVATION_WINDOW_DAYS}-day appeal window after passing policy checks. Accounts reopen at zero balance; cards stay inactive and the subscription stays cancelled. ${note.trim()}`,
+      details: `Closed ${fmtDay(closedAt)}, reactivated inside the ${REACTIVATION_WINDOW_DAYS}-day appeal window after passing policy checks. Customer returns to ${restored}; accounts reopen at zero balance; cards stay inactive and the subscription stays cancelled. ${note.trim()}`,
       before: { customerStatus: "Closed" },
-      after: { customerStatus: "Active" },
+      after: { customerStatus: restored },
     });
-    activity(d, customerId, "Profile", "Account reactivated after a successful appeal");
+    activity(
+      d,
+      customerId,
+      "Profile",
+      restored === "Active"
+        ? "Account reactivated after a successful appeal"
+        : "Account reactivated after a successful appeal: customer returns to finishing setup",
+    );
   });
 }
 
@@ -1133,6 +1176,21 @@ function recordReturnOutcome(
       throw new RuleError(
         "The recipient's Smart Spend cannot cover the return in full, so a full return cannot be recorded. Record the actual outcome instead.",
       );
+    // The money has to land somewhere: the original sender's Smart
+    // Spend must be able to receive it (Active, or Restricted, since a
+    // restriction blocks outbound only). Without this check the old
+    // code debited the recipient and silently credited nobody when the
+    // sender's account was no longer Active, destroying the money.
+    const senderAcc = db.accounts.find(
+      (a) =>
+        a.customerId === tr.senderCustomerId &&
+        a.accountType === "Smart Spend" &&
+        (a.accountStatus === "Active" || a.accountStatus === "Restricted"),
+    );
+    if (!senderAcc)
+      throw new RuleError(
+        "The original sender's Smart Spend is closed, so returned money would have nowhere to land. A full return cannot be recorded; record the actual outcome instead.",
+      );
   }
   setState((d) => {
     const t = d.transfers.find((x) => x.id === transferId)!;
@@ -1153,26 +1211,31 @@ function recordReturnOutcome(
         (a) =>
           a.customerId === t.senderCustomerId &&
           a.accountType === "Smart Spend" &&
-          a.accountStatus === "Active",
-      );
+          (a.accountStatus === "Active" || a.accountStatus === "Restricted"),
+      )!;
       fromAcc.availableBalance = (fromAcc.availableBalance ?? 0) - t.amount;
       fromAcc.ledgerBalance = (fromAcc.ledgerBalance ?? 0) - t.amount;
-      if (toAcc) {
-        toAcc.availableBalance = (toAcc.availableBalance ?? 0) + t.amount;
-        toAcc.ledgerBalance = (toAcc.ledgerBalance ?? 0) + t.amount;
-      }
+      toAcc.availableBalance = (toAcc.availableBalance ?? 0) + t.amount;
+      toAcc.ledgerBalance = (toAcc.ledgerBalance ?? 0) + t.amount;
       const ref = `TR-${Math.floor(510000 + Math.random() * 389999)}`;
+      // One movement, one provider reference, shared by the transfer
+      // and both of its transactions (as the closure payout does).
+      const providerReference = `P2P-${Math.floor(10000000 + Math.random() * 89999999)}`;
       const returnTransferId = uid("trf");
+      const sender = d.customers.find((x) => x.id === t.senderCustomerId);
       d.transfers.unshift({
         id: returnTransferId,
         transferType: "P2P",
         senderCustomerId: t.recipientCustomerId,
         recipientCustomerId: t.senderCustomerId,
+        direction: "Outgoing",
+        counterpartyLabel: sender ? `Return to ${name(sender)}` : "RenPay return",
+        sourceAccountId: fromAcc.id,
         amount: t.amount,
         currency: "CAD",
         status: "Completed",
         createdAt: now(),
-        providerReference: `P2P-${Math.floor(10000000 + Math.random() * 89999999)}`,
+        providerReference,
         transactionReference: ref,
         returnRequest: null,
       });
@@ -1189,30 +1252,29 @@ function recordReturnOutcome(
         status: "Completed",
         timestamp: now(),
         completedAt: now(),
-        providerReference: `P2P-${Math.floor(10000000 + Math.random() * 89999999)}`,
+        providerReference,
         paymentRail: "Internal Ledger",
         transferId: returnTransferId,
         notes: [],
       });
-      if (toAcc)
-        d.transactions.unshift({
-          id: uid("txn"),
-          customerId: t.senderCustomerId,
-          accountId: toAcc.id,
-          transactionReference: ref,
-          transactionType: "P2P Received",
-          description: `Returned RenPay payment ${t.transactionReference}`,
-          direction: "credit",
-          amount: t.amount,
-          currency: "CAD",
-          status: "Completed",
-          timestamp: now(),
-          completedAt: now(),
-          providerReference: `P2P-${Math.floor(10000000 + Math.random() * 89999999)}`,
-          paymentRail: "Internal Ledger",
-          transferId: returnTransferId,
-          notes: [],
-        });
+      d.transactions.unshift({
+        id: uid("txn"),
+        customerId: t.senderCustomerId,
+        accountId: toAcc.id,
+        transactionReference: ref,
+        transactionType: "P2P Received",
+        description: `Returned RenPay payment ${t.transactionReference}`,
+        direction: "credit",
+        amount: t.amount,
+        currency: "CAD",
+        status: "Completed",
+        timestamp: now(),
+        completedAt: now(),
+        providerReference,
+        paymentRail: "Internal Ledger",
+        transferId: returnTransferId,
+        notes: [],
+      });
     }
     pushAudit(d, {
       action: `RenPay return ${outcome.toLowerCase()}`,
@@ -1882,6 +1944,46 @@ function collectPlanFee(d: DB, customerId: string) {
   });
 }
 
+/** Cancels a customer's physical cards and open card orders: the side
+ * effect of any move to Everyday, which is virtual-only. Shared by the
+ * manual plan change and the non-payment downgrade so a downgrade can
+ * never leave a live physical card behind on an Everyday plan.
+ * Returns how many of each were canceled. */
+function cancelPhysicalCardsAndOrders(
+  d: DB,
+  customerId: string,
+  cardNote: string,
+  orderNote: string,
+): { cardsCanceled: number; ordersCanceled: number } {
+  let cardsCanceled = 0;
+  for (const card of d.cards) {
+    if (
+      card.customerId === customerId &&
+      card.cardType === "Physical" &&
+      card.cardStatus !== "Canceled" &&
+      card.cardStatus !== "Replaced"
+    ) {
+      card.cardStatus = "Canceled";
+      card.notes.unshift({ id: uid("note"), at: now(), by: d.currentEmployeeId, text: cardNote });
+      cardsCanceled += 1;
+    }
+  }
+  let ordersCanceled = 0;
+  for (const o of d.cardOrders) {
+    if (
+      o.customerId === customerId &&
+      o.orderStatus !== "Activated" &&
+      o.orderStatus !== "Canceled" &&
+      o.orderStatus !== "Failed"
+    ) {
+      o.orderStatus = "Canceled";
+      o.notes = (o.notes ? `${o.notes} ` : "") + orderNote;
+      ordersCanceled += 1;
+    }
+  }
+  return { cardsCanceled, ordersCanceled };
+}
+
 function changePlan(customerId: string, to: Plan, note: string) {
   const db = getState();
   const c = getCustomer(customerId);
@@ -1934,6 +2036,7 @@ function changePlan(customerId: string, to: Plan, note: string) {
           ? "Upgraded by employee; Plus fee collected from Smart Spend"
           : "Changed by employee (demo)"),
     });
+    let downgradeEffects = "";
     if (to === "Plus") {
       collectPlanFee(d, customerId);
       s.subscriptionStatus = "Active";
@@ -1944,6 +2047,7 @@ function changePlan(customerId: string, to: Plan, note: string) {
       s.lastBillingAttemptAt = now();
       s.cardSelectionRequired = !hasPhysical;
     } else {
+      const outstandingSince = s.billingOutstandingSince;
       s.subscriptionStatus = "Active";
       s.latestBillingStatus = "Not Applicable";
       s.nextBillingDate = null;
@@ -1951,6 +2055,21 @@ function changePlan(customerId: string, to: Plan, note: string) {
       s.billingRetryCount = 0;
       s.lastBillingAttemptAt = null;
       s.cardSelectionRequired = false;
+      // Everyday is virtual-only (product rule): a manual downgrade
+      // cancels physical cards and open orders, exactly like the
+      // non-payment downgrade does.
+      const { cardsCanceled, ordersCanceled } = cancelPhysicalCardsAndOrders(
+        d,
+        customerId,
+        "Canceled: the plan was downgraded to Everyday. Everyday includes a virtual card only.",
+        "Canceled: the plan was downgraded to Everyday.",
+      );
+      downgradeEffects =
+        (outstandingSince
+          ? ` Outstanding Plus fee from ${fmtDay(outstandingSince)} written off on downgrade.`
+          : "") +
+        (cardsCanceled ? ` ${cardsCanceled} physical card(s) canceled.` : "") +
+        (ordersCanceled ? ` ${ordersCanceled} open card order(s) canceled.` : "");
     }
     pushAudit(d, {
       action: to === "Plus" ? "Plan upgraded" : "Plan downgraded",
@@ -1962,7 +2081,7 @@ function changePlan(customerId: string, to: Plan, note: string) {
       details:
         to === "Plus"
           ? `Plus fee of $${PLAN_PRICES.Plus.toFixed(2)} collected from Smart Spend at upgrade.${!hasPhysical ? " Physical card selection required." : ""}`
-          : "Downgraded to Everyday",
+          : `Downgraded to Everyday.${downgradeEffects}`,
       before: { plan: from },
       after: { plan: to },
     });
@@ -1994,6 +2113,13 @@ function recordRenewalAttempt(customerId: string, success: boolean) {
   const sub = db.subscriptions.find((s) => s.customerId === customerId);
   if (!sub || sub.plan !== "Plus" || sub.subscriptionStatus !== "Active")
     throw new RuleError("Renewal charges only apply to an active Renda Plus subscription.");
+  // Product rule (user, 2026-11-24): Renda's own charges pause while a
+  // customer is restricted, the Plus renewal included, and the retry
+  // clock pauses with them. Attempts resume when the restriction lifts.
+  if (c.customerStatus === "Restricted")
+    throw new RuleError(
+      "Billing is paused while the customer is restricted. Renewal attempts resume when the restriction is lifted.",
+    );
   if (billingDowngradeDue(sub))
     throw new RuleError(
       "The retry window closed at the new billing date. Downgrade the plan for non-payment instead of recording another attempt.",
@@ -2078,6 +2204,13 @@ function downgradeForNonPayment(customerId: string) {
   const sub = db.subscriptions.find((s) => s.customerId === customerId);
   if (!sub || sub.plan !== "Plus")
     throw new RuleError("Only a Renda Plus subscription can be downgraded for non-payment.");
+  // The downgrade clock pauses during a restriction (charges pause,
+  // user, 2026-11-24): a customer is never downgraded over a fee Renda
+  // chose not to collect while they were restricted.
+  if (c.customerStatus === "Restricted")
+    throw new RuleError(
+      "This customer is restricted, and the downgrade clock is paused for the duration of the restriction. The downgrade can run once the restriction is lifted and the retry window has closed.",
+    );
   if (!sub.billingOutstandingSince)
     throw new RuleError("This subscription has no unpaid Plus fee outstanding.");
   if (!billingDowngradeDue(sub))
@@ -2103,39 +2236,12 @@ function downgradeForNonPayment(customerId: string) {
       by: d.currentEmployeeId,
       note: `Downgraded for non-payment: Plus fee unpaid since ${fmtDay(outstandingSince)} after ${attempts} failed attempt${attempts === 1 ? "" : "s"}; retry window closed at the new billing date.`,
     });
-    let cardsCanceled = 0;
-    for (const card of d.cards) {
-      if (
-        card.customerId === customerId &&
-        card.cardType === "Physical" &&
-        card.cardStatus !== "Canceled" &&
-        card.cardStatus !== "Replaced"
-      ) {
-        card.cardStatus = "Canceled";
-        card.notes.unshift({
-          id: uid("note"),
-          at: now(),
-          by: d.currentEmployeeId,
-          text: "Canceled: the Plus plan was downgraded to Everyday for non-payment. Everyday includes a virtual card only.",
-        });
-        cardsCanceled += 1;
-      }
-    }
-    let ordersCanceled = 0;
-    for (const o of d.cardOrders) {
-      if (
-        o.customerId === customerId &&
-        o.orderStatus !== "Activated" &&
-        o.orderStatus !== "Canceled" &&
-        o.orderStatus !== "Failed"
-      ) {
-        o.orderStatus = "Canceled";
-        o.notes =
-          (o.notes ? `${o.notes} ` : "") +
-          "Canceled: the Plus plan was downgraded to Everyday for non-payment.";
-        ordersCanceled += 1;
-      }
-    }
+    const { cardsCanceled, ordersCanceled } = cancelPhysicalCardsAndOrders(
+      d,
+      customerId,
+      "Canceled: the Plus plan was downgraded to Everyday for non-payment. Everyday includes a virtual card only.",
+      "Canceled: the Plus plan was downgraded to Everyday for non-payment.",
+    );
     pushAudit(d, {
       action: "Plan downgraded for non-payment",
       module: "Plans & Subscriptions",
@@ -2330,6 +2436,10 @@ function removeOrderFromBatch(batchId: string, orderId: string) {
   const b = getState().batches.find((x) => x.id === batchId);
   if (!b) throw new RuleError("Batch not found.");
   if (b.status !== "Draft") throw new RuleError("Orders can only be removed from draft batches.");
+  if (!b.orderIds.includes(orderId))
+    throw new RuleError("That order is not in this batch, so it cannot be removed from it.");
+  if (!getState().cardOrders.some((o) => o.id === orderId))
+    throw new RuleError("Card order not found.");
   setState((d) => {
     const x = d.batches.find((y) => y.id === batchId)!;
     x.orderIds = x.orderIds.filter((o) => o !== orderId);
@@ -2371,6 +2481,13 @@ function recordPdfExport(batchId: string) {
   const b = getState().batches.find((x) => x.id === batchId);
   if (!b) throw new RuleError("Batch not found.");
   if (!b.orderCount) throw new RuleError("This batch has no orders.");
+  // The export belongs to the draft stage: once a batch is marked ready
+  // or submitted, re-exporting would silently overwrite the export
+  // record the review and submission were based on.
+  if (b.status !== "Draft")
+    throw new RuleError(
+      "The manufacturing PDF can only be exported while the batch is a draft. This batch has already been marked ready or submitted.",
+    );
   setState((d) => {
     const x = d.batches.find((y) => y.id === batchId)!;
     x.pdfReference = `${x.batchReference}.pdf`;
@@ -2573,5 +2690,11 @@ export const localOperations: OperationsService = {
   markNotificationsRead: asAsync(markNotificationsRead),
   updatePreferences: asAsync(updatePreferences),
   updateOperationalSettings: asAsync(updateOperationalSettings),
-  resetDemoData: () => resetState(),
+  resetDemoData: asAsync(() => {
+    // Destructive and dataset-wide, so it takes the same permission as
+    // the rest of Settings (it previously had no check at all, in the
+    // service or on the settings page).
+    authorize("settings.manage", "Reset demo data", "Settings", "Dataset", "demo", "Demo dataset");
+    resetState();
+  }),
 };

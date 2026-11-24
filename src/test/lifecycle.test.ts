@@ -3,6 +3,10 @@ import {
   CLOSURE_REASONS,
   CLOSURE_REQUEST_REASONS,
   closureBalanceSnapshot,
+  currentOrderForCard,
+  FREEZE_REASONS,
+  HOLD_REASONS,
+  payableBalance,
   REACTIVATION_WINDOW_DAYS,
   reactivationAvailable,
   RESTRICTION_REASONS,
@@ -42,6 +46,18 @@ describe("restriction and closure policy", () => {
 
   it("never allows reactivation without a closure record", () => {
     expect(reactivationAvailable(null, NOW)).toBe(false);
+  });
+
+  it("keeps freeze and hold reasons separate, by kind", () => {
+    // The split the backend engineer was given (2026-11-24): freezes
+    // are operational, holds are AML and sanctions only.
+    expect(FREEZE_REASONS).toContain("Suspected fraud");
+    expect(FREEZE_REASONS).toContain("Lost or stolen device");
+    expect(FREEZE_REASONS).toContain("Customer request");
+    expect(FREEZE_REASONS).not.toContain("AML review");
+    expect(FREEZE_REASONS).not.toContain("Sanctions");
+    expect(HOLD_REASONS).toEqual(["AML review", "Sanctions"]);
+    expect(RESTRICTION_REASONS).toEqual([...FREEZE_REASONS, ...HOLD_REASONS]);
   });
 });
 
@@ -123,5 +139,53 @@ describe("setupIncomplete", () => {
   it("ignores customers in any other state", () => {
     expect(setupIncomplete(at("Active", daysAgo(30)), NOW)).toBe(false);
     expect(setupIncomplete(at("KYC Pending", daysAgo(30)), NOW)).toBe(false);
+  });
+});
+
+describe("payableBalance", () => {
+  const acc = (
+    patch: Partial<Account>,
+  ): Pick<Account, "customerId" | "accountStatus" | "availableBalance"> => ({
+    customerId: "cus_1",
+    accountStatus: "Active",
+    availableBalance: 0,
+    ...patch,
+  });
+
+  it("sums positive balances on Active and Restricted accounts only", () => {
+    const accounts = [
+      acc({ accountStatus: "Active", availableBalance: 100.1 }),
+      acc({ accountStatus: "Restricted", availableBalance: 50 }),
+      acc({ accountStatus: "Closed", availableBalance: 999 }),
+      acc({ accountStatus: "Pending Issuance", availableBalance: 999 }),
+      acc({ accountStatus: "Active", availableBalance: -5 }),
+      acc({ customerId: "cus_2", accountStatus: "Active", availableBalance: 999 }),
+    ];
+    expect(payableBalance(accounts, "cus_1")).toBe(150.1);
+  });
+
+  it("is zero when nothing is payable", () => {
+    expect(payableBalance([acc({ availableBalance: 0 })], "cus_1")).toBe(0);
+    expect(payableBalance([], "cus_1")).toBe(0);
+  });
+});
+
+describe("currentOrderForCard", () => {
+  const order = (patch: Record<string, unknown>) =>
+    ({ id: "ord_1", cardId: "card_1", orderStatus: "Eligible", ...patch }) as never;
+
+  it("returns the card's non-canceled order", () => {
+    const live = order({ id: "ord_2", orderStatus: "Batched" });
+    expect(currentOrderForCard([order({}), live], "card_1")?.id).toBe("ord_1");
+    expect(currentOrderForCard([live], "card_1")?.id).toBe("ord_2");
+  });
+
+  it("skips canceled orders and other cards", () => {
+    expect(
+      currentOrderForCard(
+        [order({ orderStatus: "Canceled" }), order({ id: "ord_9", cardId: "card_2" })],
+        "card_1",
+      ),
+    ).toBeUndefined();
   });
 });

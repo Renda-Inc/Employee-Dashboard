@@ -9,7 +9,7 @@ import { DataTable, TabBar, type Column } from "@/components/tables/DataTable";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { ActionDialog } from "@/components/dialogs/ActionDialog";
 import { Button } from "@/components/ui/button";
-import { fmtDate, fmtDateTime, lookup } from "@/lib/format";
+import { dataNow, fmtDate, fmtDateTime, lookup } from "@/lib/format";
 import type { CardOrder, ManufacturingBatch } from "@/types/models";
 
 export const Route = createFileRoute("/_authenticated/cards/manufacturing/")({
@@ -62,7 +62,7 @@ function Manufacturing() {
 
   const eligible = db.cardOrders.filter((o) => o.orderStatus === "Eligible");
   const attention = db.cardOrders.filter((o) => o.orderStatus === "Failed");
-  const twoWeeks = Date.now() - 14 * 864e5;
+  const twoWeeks = dataNow(db.batches.map((b) => b.submittedAt ?? b.createdAt)) - 14 * 864e5;
   const byStatus = (s: ManufacturingBatch["status"]) => db.batches.filter((b) => b.status === s);
   const submittedRecent = byStatus("Submitted").filter(
     (b) => new Date(b.submittedAt!).getTime() >= twoWeeks,

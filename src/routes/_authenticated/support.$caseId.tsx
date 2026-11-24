@@ -34,8 +34,18 @@ export const Route = createFileRoute("/_authenticated/support/$caseId")({
       { property: "og:description", content: "Support case details." },
     ],
   }),
-  component: CaseDetail,
+  component: CaseDetailPage,
 });
+/**
+ * Record pages hold per-record form state (drafts, pre-filled emails,
+ * edit forms). Keying the page by its route param forces a remount when
+ * navigating directly from one record to another on the same route, so
+ * state from the previous record can never be submitted for the next.
+ */
+function CaseDetailPage() {
+  const { caseId } = Route.useParams();
+  return <CaseDetail key={caseId} />;
+}
 
 const STATUSES: CaseStatus[] = [
   "Open",
@@ -153,12 +163,12 @@ function CaseDetail() {
       />
       <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
         <div className="space-y-6">
-          <Panel title="Customer message">
+          <Panel title="Case description">
             <div className="flex gap-3">
               <Avatar name={fullName(c)} size="md" />
               <div>
                 <div className="text-[13px] text-muted-foreground">
-                  {fullName(c)} · submitted via in-app Help
+                  {fullName(c)} · internal work order · opened {fmtDateTime(sc.createdAt)}
                 </div>
                 <p className="mt-1 whitespace-pre-wrap text-[14px]">{sc.message}</p>
               </div>
@@ -401,7 +411,7 @@ function CaseDetail() {
                   <span className="absolute -left-[21px] top-1.5 size-2 rounded-full border-2 border-card bg-foreground/40" />
                   <div className="text-[14px]">{t.text}</div>
                   <div className="text-[12px] text-muted-foreground">
-                    {t.by ? L.empName(t.by) : "Customer"} · {fmtDateTime(t.at)}
+                    {t.by ? L.empName(t.by) : "System"} · {fmtDateTime(t.at)}
                   </div>
                 </li>
               ))}

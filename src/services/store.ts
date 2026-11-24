@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from "react";
 import type { DB } from "@/types/models";
 import type { OperationsRepository } from "./contracts/operations";
-import { buildSeed } from "@/data/demo/seed";
+import { buildSeed, DATASET_VERSION } from "@/data/demo/seed";
 
 const KEY = "renda-ops-demo-v1";
 
@@ -14,7 +14,7 @@ export const localStorageRepository: OperationsRepository = {
       const raw = window.localStorage.getItem(KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as DB;
-        if (parsed.version === 8) return parsed;
+        if (parsed.version === DATASET_VERSION) return parsed;
       }
     } catch {
       /* fall through to seed */
