@@ -54,7 +54,6 @@ function Customers() {
   const allowed = usePermission("customers.view");
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
-  const [closure, setClosure] = useState("all");
   const [onb, setOnb] = useState("all");
   const [kyc, setKyc] = useState("all");
   const [plan, setPlan] = useState("all");
@@ -73,14 +72,6 @@ function Customers() {
       if (t && ![fullName(c), c.userId, c.email, c.phone].some((v) => v.toLowerCase().includes(t)))
         return false;
       if (status !== "all" && c.customerStatus !== status) return false;
-      if (closure === "Pending request" && c.closureRequest?.status !== "Pending") return false;
-      if (
-        closure === "Open request" &&
-        !["Pending", "In Progress"].includes(c.closureRequest?.status ?? "")
-      )
-        return false;
-      if (closure === "Any request" && !c.closureRequest) return false;
-      if (closure === "No request" && c.closureRequest) return false;
       if (onb !== "all" && c.onboardingStatus !== onb) return false;
       if (kyc !== "all" && c.kycStatus !== kyc) return false;
       if (plan !== "all" && (planOf(c.id) ?? "None") !== plan) return false;
@@ -92,7 +83,7 @@ function Customers() {
         return false;
       return true;
     });
-  }, [db, q, status, closure, onb, kyc, plan, bank, reg]);
+  }, [db, q, status, onb, kyc, plan, bank, reg]);
 
   if (!allowed) return <NoAccess what="customer records" />;
 
@@ -237,12 +228,6 @@ function Customers() {
               placeholder="Search name, user ID, email, phone"
             />
             <FilterSelect label="Status" value={status} onChange={setStatus} options={STATUSES} />
-            <FilterSelect
-              label="Closure"
-              value={closure}
-              onChange={setClosure}
-              options={["Pending request", "Open request", "Any request", "No request"]}
-            />
             <FilterSelect
               label="Onboarding"
               value={onb}

@@ -105,6 +105,13 @@ const SPECS: Spec[] = [
     occupation: "Electrician",
     industry: "Construction",
     income: 88000,
+    // Asked to close before ever funding anything: his balance is
+    // zero, so his request demos the no-payout closure path.
+    leaving: {
+      reason: "Not using it enough",
+      feedback: "Signed up to look around; not for me right now.",
+      daysAgo: 1,
+    },
   },
   {
     first: "Sofia",
@@ -2000,7 +2007,7 @@ export function buildSeed(): DB {
   activity.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   return {
-    version: 7,
+    version: 8,
     customers,
     accounts,
     transactions,

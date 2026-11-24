@@ -61,9 +61,10 @@ export interface ClosureRequest {
   assignedAt: string | null;
   assignedBy: string | null;
   /** How the payout was made when the request was processed: sent by
-   * the system (Automated) or sent outside the admin by the assignee
-   * and recorded here (Manual). */
-  processingMethod: "Automated" | "Manual" | null;
+   * the system (Automated), sent outside the admin by the assignee and
+   * recorded here (Manual), or None when the balance was zero and no
+   * payout was needed at all. */
+  processingMethod: "Automated" | "Manual" | "None" | null;
   /** Interac reference of the payout: generated for automated payouts,
    * recorded by the employee for a manual one. */
   payoutReference: string | null;

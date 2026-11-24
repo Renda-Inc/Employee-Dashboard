@@ -96,11 +96,17 @@ export interface OperationsService {
    * app. Automated: the system sends the Interac payout as part of the
    * closure. Manual: the assignee already sent it outside the admin and
    * records its Interac reference, which the closure adopts instead of
-   * creating a second payout. One-time: rejects unless the request is
-   * still open, so a payout can never be duplicated. */
+   * creating a second payout. None: the balance is zero, so there is no
+   * payout and the step only confirms the closure; rejected when a
+   * balance remains. One-time: rejects unless the request is still
+   * open, so a payout can never be duplicated. */
   processClosureRequest(
     customerId: string,
-    input: { method: "Automated" | "Manual"; payoutReference?: string; payoutEmail?: string },
+    input: {
+      method: "Automated" | "Manual" | "None";
+      payoutReference?: string;
+      payoutEmail?: string;
+    },
   ): Promise<void>;
   /** Cancels an open app closure request without closing the account. */
   cancelClosureRequest(customerId: string, note: string): Promise<void>;

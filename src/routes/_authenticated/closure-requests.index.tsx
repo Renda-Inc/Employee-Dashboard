@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useDB } from "@/services/store";
-import { CustomerCell, NoAccess, PageHeader, usePermission } from "@/components/common";
+import { Avatar, NoAccess, PageHeader, usePermission } from "@/components/common";
+import { Button } from "@/components/ui/button";
 import { DataTable, FilterSelect, SearchInput, type Column } from "@/components/tables/DataTable";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { fmtDate, fmtMoney, fullName, lookup } from "@/lib/format";
@@ -72,7 +73,20 @@ function ClosureRequests() {
     {
       key: "name",
       header: "Customer",
-      cell: (c) => <CustomerCell customer={c} sub={c.customerStatus} />,
+      // Plain text, no profile link: selecting anywhere on the row opens
+      // the closure request itself. The profile is one explicit click
+      // away in the last column instead.
+      cell: (c) => (
+        <span className="flex min-w-0 items-center gap-2">
+          <Avatar name={fullName(c)} />
+          <span className="min-w-0">
+            <span className="block truncate font-medium">{fullName(c)}</span>
+            <span className="block truncate text-[12px] text-muted-foreground">
+              {c.customerStatus}
+            </span>
+          </span>
+        </span>
+      ),
       sort: (c) => fullName(c),
     },
     {
@@ -126,13 +140,29 @@ function ClosureRequests() {
           <span className="text-muted-foreground">Unassigned</span>
         ),
     },
+    {
+      key: "profile",
+      header: "",
+      cell: (c) => (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate({ to: "/customers/$customerId", params: { customerId: c.id } });
+          }}
+        >
+          Open full profile
+        </Button>
+      ),
+    },
   ];
 
   return (
     <>
       <PageHeader
         title="Closure Requests"
-        subtitle="Customers who asked to close their account from the app. Open a request to review it, assign it and process the payout in steps."
+        subtitle="Customers who asked to close their account from the app. Select a request to review it, assign it and process it in steps. Open full profile takes you to the customer record instead."
       />
       <div className="mb-4 flex flex-wrap gap-2 text-[13px]">
         <span className="rounded-full bg-warning-soft px-3 py-1 font-medium text-warning">

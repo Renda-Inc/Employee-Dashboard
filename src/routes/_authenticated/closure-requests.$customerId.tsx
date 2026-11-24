@@ -92,6 +92,9 @@ function ClosureRequestDetail() {
   const open = req.status === "Pending" || req.status === "In Progress";
   const step = req.status === "Pending" ? 1 : req.status === "In Progress" ? 2 : 3;
   const employees = db.employees.filter((e) => e.status === "Active");
+  // A zero balance needs no Interac payout at all: the payout step
+  // becomes a simple confirmation that nothing will be sent.
+  const zeroBalance = live.total < 0.01;
   const balancesMoved =
     Math.abs(live.total - req.balances.total) > 0.009 ||
     Math.abs(live.smartSpend - req.balances.smartSpend) > 0.009 ||
@@ -132,15 +135,22 @@ function ClosureRequestDetail() {
       {req.status === "Processed" && (
         <div className="mb-4 rounded-md bg-success-soft px-4 py-3 text-[13px]">
           <strong>Processed{req.resolvedAt ? ` on ${fmtDate(req.resolvedAt)}` : ""}</strong>
-          {req.resolvedBy ? ` by ${L.empName(req.resolvedBy)}` : ""}. Method:{" "}
-          {req.processingMethod ?? "Automated"}.{" "}
-          {c.closure && c.closure.payoutAmount > 0 ? (
-            <>
-              {fmtMoney(c.closure.payoutAmount)} was paid out by Interac to {c.closure.payoutEmail}
-              {req.payoutReference ? ` (reference ${req.payoutReference})` : ""}.{" "}
-            </>
+          {req.resolvedBy ? ` by ${L.empName(req.resolvedBy)}` : ""}.{" "}
+          {req.processingMethod === "None" ? (
+            <>No payout was needed: the balance was zero. </>
           ) : (
-            <>There was no balance to pay out. </>
+            <>
+              Method: {req.processingMethod ?? "Automated"}.{" "}
+              {c.closure && c.closure.payoutAmount > 0 ? (
+                <>
+                  {fmtMoney(c.closure.payoutAmount)} was paid out by Interac to{" "}
+                  {c.closure.payoutEmail}
+                  {req.payoutReference ? ` (reference ${req.payoutReference})` : ""}.{" "}
+                </>
+              ) : (
+                <>There was no balance to pay out. </>
+              )}
+            </>
           )}
           The account is closed; this request cannot be processed again.
         </div>
@@ -154,20 +164,15 @@ function ClosureRequestDetail() {
       )}
 
       <div className="space-y-6">
-        <Panel
-          title={
-            <StepHeading n={1} title="Review and assign" state={step > 1 ? "done" : "current"} />
-          }
-        >
-          <div className="grid gap-6 lg:grid-cols-2">
+        <Panel title="Request summary">
+          <div className="grid gap-6 lg:grid-cols-3">
             <KV
               cols={1}
               items={[
                 ["Requested", fmtDateTime(req.requestedAt)],
                 ["Reason for leaving", req.reason],
                 ["Feedback", req.feedback || "None given"],
-                ["Customer status", <StatusBadge key="s" status={c.customerStatus} />],
-                ["Plan", sub ? `${sub.plan} (${sub.subscriptionStatus})` : "None"],
+                ["Payout email chosen by customer", req.payoutEmail],
               ]}
             />
             <KV
@@ -177,23 +182,40 @@ function ClosureRequestDetail() {
                 ["Sense Save, when requested", fmtMoney(req.balances.senseSave)],
                 ["Of which in savings goals", fmtMoney(req.balances.goals)],
                 ["Total, when requested", fmtMoney(req.balances.total)],
-                ["Payout email chosen by customer", req.payoutEmail],
+                ["Total balance now", fmtMoney(live.total)],
+              ]}
+            />
+            <KV
+              cols={1}
+              items={[
+                ["Request status", <StatusBadge key="rs" status={req.status} />],
+                ["Customer status", <StatusBadge key="cs" status={c.customerStatus} />],
+                ["Plan", sub ? `${sub.plan} (${sub.subscriptionStatus})` : "None"],
+                [
+                  "Assigned to",
+                  req.assignedTo
+                    ? `${L.empName(req.assignedTo)}${req.assignedAt ? ` since ${fmtDate(req.assignedAt)}` : ""}${req.assignedBy ? `, by ${L.empName(req.assignedBy)}` : ""}`
+                    : "Unassigned",
+                ],
               ]}
             />
           </div>
-          {open && canLifecycle && (
-            <div className="mt-5 border-t pt-4">
+        </Panel>
+
+        <Panel title={<StepHeading n={1} title="Assign" state={step > 1 ? "done" : "current"} />}>
+          {open && canLifecycle ? (
+            <div>
               {req.status === "In Progress" && req.assignedTo ? (
                 <p className="mb-3 text-[13px]">
                   <strong>In progress.</strong> Assigned to {L.empName(req.assignedTo)}
                   {req.assignedAt ? ` on ${fmtDate(req.assignedAt)}` : ""}
                   {req.assignedBy ? ` by ${L.empName(req.assignedBy)}` : ""}. You can reassign it
-                  below, or continue to the payout.
+                  below, or continue to step 2.
                 </p>
               ) : (
                 <p className="mb-3 text-[13px]">
                   Nobody is working this request yet. Assign it to yourself to start processing, or
-                  hand it to the employee who will handle the payout.
+                  hand it to the employee who will handle it.
                 </p>
               )}
               <div className="flex flex-wrap items-end gap-2">
@@ -256,12 +278,15 @@ function ClosureRequestDetail() {
                 />
               </div>
             </div>
-          )}
-          {open && !canLifecycle && (
-            <p className="mt-5 border-t pt-4 text-[13px] text-muted-foreground">
+          ) : open ? (
+            <p className="text-[13px] text-muted-foreground">
               {req.assignedTo
                 ? `Assigned to ${L.empName(req.assignedTo)}. Your role can view this request but not process it.`
                 : "Your role can view this request but not process it."}
+            </p>
+          ) : (
+            <p className="text-[13px] text-muted-foreground">
+              This request is {req.status.toLowerCase()}, so there is nothing left to assign.
             </p>
           )}
         </Panel>
@@ -270,7 +295,7 @@ function ClosureRequestDetail() {
           title={
             <StepHeading
               n={2}
-              title="Prepare the payout"
+              title={zeroBalance && open ? "Payout: none needed" : "Prepare the payout"}
               state={step > 2 ? "done" : step === 2 ? "current" : "upcoming"}
             />
           }
@@ -281,6 +306,19 @@ function ClosureRequestDetail() {
             </p>
           ) : req.status !== "In Progress" ? (
             <p className="text-[13px] text-muted-foreground">This request is already resolved.</p>
+          ) : zeroBalance ? (
+            <div className="space-y-3">
+              <p className="text-[13px]">
+                The balance is <strong>$0.00</strong>, so there is no Interac payout for this
+                closure and nothing to prepare here. Step 3 just confirms the closure.
+              </p>
+              {req.balances.total > 0 && (
+                <p className="text-[13px] text-warning">
+                  The customer had {fmtMoney(req.balances.total)} when they asked; the balance has
+                  since gone to zero, so no payout is due.
+                </p>
+              )}
+            </div>
           ) : (
             <div className="space-y-5">
               <KV
@@ -365,8 +403,27 @@ function ClosureRequestDetail() {
             </p>
           ) : req.status === "Pending" ? (
             <p className="text-[13px] text-muted-foreground">
-              Available once the request is assigned and the payout is prepared.
+              Available once the request is assigned in step 1.
             </p>
+          ) : zeroBalance ? (
+            <div className="space-y-4">
+              <p className="text-[13px]">
+                There is no balance to pay out. Confirming closes the savings goals, cancels the{" "}
+                {sub?.plan ?? "current"} subscription with no refund, inactivates every card and
+                closes the account. This runs once and cannot be repeated.
+              </p>
+              {canLifecycle && (
+                <ActionDialog
+                  trigger={<Button variant="destructive">Confirm closure</Button>}
+                  title="Confirm the closure"
+                  description="No Interac payout will be sent, because the balance is zero. The account closes in this step, and the request cannot be processed again."
+                  confirmLabel="Confirm closure"
+                  destructive
+                  onConfirm={() => operations.processClosureRequest(c.id, { method: "None" })}
+                  success="Closure processed: account closed"
+                />
+              )}
+            </div>
           ) : (
             <div className="space-y-4">
               <p className="text-[13px]">

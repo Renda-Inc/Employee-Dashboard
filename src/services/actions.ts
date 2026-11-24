@@ -303,7 +303,7 @@ function closeCustomer(
   customerId: string,
   input: { reason: string; note: string; payoutEmail: string },
   source: "Admin" | "Customer app request" = "Admin",
-  opts?: { payoutReference?: string; processingMethod?: "Automated" | "Manual" },
+  opts?: { payoutReference?: string; processingMethod?: "Automated" | "Manual" | "None" },
 ) {
   const c = getCustomer(customerId);
   authorize("customers.lifecycle", "Close customer", "Customers", "Customer", customerId, name(c));
@@ -459,7 +459,9 @@ function closeCustomer(
         payoutReference,
         resolutionNote:
           source === "Customer app request"
-            ? "Processed from the admin panel: balance paid out by Interac and account closed."
+            ? total > 0
+              ? "Processed from the admin panel: balance paid out by Interac and account closed."
+              : "Processed from the admin panel: no balance to pay out, account closed."
             : "Fulfilled by a direct admin closure.",
       };
     }
@@ -548,13 +550,19 @@ function assignClosureRequest(customerId: string, employeeId: string, note: stri
  * either Automated (the system sends the Interac when this runs) or
  * Manual (the assignee sent it outside the admin and records its
  * reference here; the closure then records that payout and does not
- * create a second one). One-time by construction: the request must be
- * Pending or In Progress, processing marks it Processed inside the
- * closure itself, and a closed customer cannot be closed again, so no
- * path can produce a duplicate payout. */
+ * create a second one). When the balance is zero there is no payout:
+ * the None method just confirms the closure, and it is rejected while
+ * any balance remains payable. One-time by construction: the request
+ * must be Pending or In Progress, processing marks it Processed inside
+ * the closure itself, and a closed customer cannot be closed again, so
+ * no path can produce a duplicate payout. */
 function processClosureRequest(
   customerId: string,
-  input: { method: "Automated" | "Manual"; payoutReference?: string; payoutEmail?: string },
+  input: {
+    method: "Automated" | "Manual" | "None";
+    payoutReference?: string;
+    payoutEmail?: string;
+  },
 ) {
   const c = getCustomer(customerId);
   authorize(
@@ -579,15 +587,33 @@ function processClosureRequest(
     throw new RuleError(
       "Enter the Interac reference of the manual payout, so the closure can be matched to it and never paid twice.",
     );
+  // Zero-balance closures have no payout at all (product rule, user,
+  // 2026-11-24): the None method skips Interac entirely and only
+  // confirms the closure. It is only valid while nothing is payable,
+  // computed the same way closeCustomer computes it.
+  const livePayable = getState()
+    .accounts.filter(
+      (a) =>
+        a.customerId === customerId &&
+        (a.accountStatus === "Active" || a.accountStatus === "Restricted") &&
+        (a.availableBalance ?? 0) > 0,
+    )
+    .reduce((sum, a) => sum + (a.availableBalance ?? 0), 0);
+  if (input.method === "None" && livePayable > 0.009)
+    throw new RuleError(
+      "This customer still has a balance to pay out, so the closure needs a payout method (Automated or Manual).",
+    );
   const payoutEmail = input.payoutEmail?.trim() || req.payoutEmail;
   const note =
     `Processed the closure requested in the app on ${fmtDay(req.requestedAt)}. ` +
     `Reason given: ${req.reason}.` +
     (req.feedback ? ` Feedback: "${req.feedback}"` : "") +
-    (input.method === "Manual"
-      ? ` Payout sent manually outside the admin; Interac reference ${manualRef}.`
-      : " Payout sent automatically by Interac.") +
-    (payoutEmail !== req.payoutEmail
+    (input.method === "None"
+      ? " No payout was needed: the balance was zero when the closure was processed."
+      : input.method === "Manual"
+        ? ` Payout sent manually outside the admin; Interac reference ${manualRef}.`
+        : " Payout sent automatically by Interac.") +
+    (input.method !== "None" && payoutEmail !== req.payoutEmail
       ? ` Payout email corrected from ${req.payoutEmail} to ${payoutEmail}.`
       : "");
   closeCustomer(
