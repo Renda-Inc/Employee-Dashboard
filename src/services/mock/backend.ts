@@ -19,7 +19,7 @@ export interface MfaFactor {
 }
 
 export interface MockTables {
-  version: 1;
+  version: 2;
   roles: RoleRecord[];
   employees: EmployeeRow[];
   assignments: RoleAssignment[];
@@ -160,7 +160,7 @@ function seed(): MockTables {
     updated_at: at,
   }));
   return {
-    version: 1,
+    version: 2,
     roles,
     employees: [],
     assignments: [],
@@ -171,14 +171,53 @@ function seed(): MockTables {
   };
 }
 
+/** One-time migration from table version 1: system roles were seeded
+ * once from the code defaults and then persisted, so permissions added
+ * in code later (alfie.manage, customers.restrict, customers.hold) never
+ * reached existing browsers and the directory replaced the live
+ * permission registry with the stale lists. Refreshing the system
+ * roles from the current code defaults fixes that; custom roles,
+ * employees, assignments and audit history are preserved, and any
+ * permission edits made after this migration persist as usual. */
+function migrateV1(t: MockTables & { version: number }): MockTables {
+  const at = nowIso();
+  for (const def of SYSTEM_ROLES) {
+    const existing = t.roles.find((r) => r.is_system && r.name === def.name);
+    if (existing) {
+      existing.permissions = [...ROLE_PERMISSIONS[def.name]];
+      existing.updated_at = at;
+    } else {
+      t.roles.push({
+        id: newId(),
+        name: def.name,
+        description: def.description,
+        department: def.department,
+        landing_page: def.landing,
+        permissions: [...ROLE_PERMISSIONS[def.name]],
+        is_system: true,
+        created_at: at,
+        updated_at: at,
+      });
+    }
+  }
+  const migrated = { ...t, version: 2 as const };
+  try {
+    window.localStorage.setItem(TABLES_KEY, JSON.stringify(forPersistence(migrated)));
+  } catch {
+    // Storage unavailable: the in-memory copy is still migrated.
+  }
+  return migrated;
+}
+
 let cache: MockTables | null = null;
 
 export function readTables(): MockTables {
   if (cache) return cache;
   try {
     const raw = window.localStorage.getItem(TABLES_KEY);
-    const parsed = raw ? (JSON.parse(raw) as MockTables) : null;
-    cache = parsed?.version === 1 ? parsed : seed();
+    const parsed = raw ? (JSON.parse(raw) as MockTables & { version: number }) : null;
+    cache =
+      parsed?.version === 2 ? parsed : parsed?.version === 1 ? migrateV1(parsed) : seed();
   } catch {
     cache = seed();
   }
