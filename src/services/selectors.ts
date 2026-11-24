@@ -1,7 +1,12 @@
 // Derived views over the shared dataset (queues, notifications, search).
 import type { DB } from "@/types/models";
 import { fmtDate, fullName } from "@/lib/format";
-import { ACTIVATION_FOLLOWUP_DAYS, activationOverdue, billingDowngradeDue } from "./rules";
+import {
+  ACTIVATION_FOLLOWUP_DAYS,
+  activationOverdue,
+  billingDowngradeDue,
+  setupIncomplete,
+} from "./rules";
 
 export interface QueueItem {
   id: string;
@@ -47,6 +52,19 @@ export function attentionQueue(db: DB): QueueItem[] {
         to: "/onboarding/$customerId",
         params: { customerId: c.id },
         tone: "danger",
+      });
+    if (setupIncomplete(c))
+      items.push({
+        id: `q_setup_${c.id}`,
+        type: "Setup incomplete",
+        record: fullName(c),
+        detail:
+          "Accounts issued and active, but the customer has not finished app setup (plan choice, biometrics, card design), so they are not fully live yet",
+        at: c.updatedAt,
+        action: "Open",
+        to: "/customers/$customerId",
+        params: { customerId: c.id },
+        tone: "warning",
       });
     if (
       c.onboardingStatus === "Blocked" ||

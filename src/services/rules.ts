@@ -13,6 +13,16 @@ export function nextFriday(from: Date = new Date()): Date {
 }
 
 /** Returns null when the customer can be activated, otherwise the blocking reason. */
+/** Days a customer can sit in Setup In Progress (accounts issued, app
+ * setup unfinished: plan choice, biometrics, card design) before the
+ * attention queue flags them as not fully live yet. */
+export const SETUP_FOLLOWUP_DAYS = 2;
+
+export function setupIncomplete(c: Customer, now: number = Date.now()): boolean {
+  if (c.customerStatus !== "Setup In Progress") return false;
+  return now - new Date(c.updatedAt).getTime() >= SETUP_FOLLOWUP_DAYS * 864e5;
+}
+
 export function activationBlocker(c: Customer, accounts: Account[]): string | null {
   if (!c.emailVerified)
     return "This customer cannot be activated because the email address has not been verified.";

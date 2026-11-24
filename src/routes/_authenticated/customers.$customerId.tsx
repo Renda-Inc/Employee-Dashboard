@@ -86,12 +86,15 @@ const LIFECYCLE = [
   "Active",
 ];
 function lifecycleIndex(c: Customer) {
+  // Terminal states have completed every step, including Active itself:
+  // return one past the last index so the stepper renders all steps done
+  // rather than leaving Active looking permanently in progress.
   if (
     c.customerStatus === "Active" ||
     c.customerStatus === "Restricted" ||
     c.customerStatus === "Closed"
   )
-    return 6;
+    return LIFECYCLE.length;
   if (c.customerStatus === "Setup In Progress") return 5;
   if (c.accountIssuanceStatus === "Issued") return 4;
   if (c.kycStatus === "Approved") return 3;

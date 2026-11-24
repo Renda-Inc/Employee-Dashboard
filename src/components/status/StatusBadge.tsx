@@ -22,7 +22,7 @@ const TONE: Record<string, Tone> = {
   "Email Verification Pending": "warning",
   "Onboarding In Progress": "warning",
   "Account Issuance Pending": "warning",
-  "Setup In Progress": "info",
+  "Setup In Progress": "warning",
   "KYC Approved": "info",
   "Email Verified": "info",
   Registered: "neutral",
