@@ -89,12 +89,20 @@ export interface OperationsService {
     customerId: string,
     input: { reason: string; note: string; payoutEmail: string },
   ): Promise<void>;
-  /** Processes a closure the customer requested in the app: pays the
-   * balance out to the Interac email on the request and closes the
-   * account in one step. One-time: rejects unless the request is still
-   * Pending, so a payout can never be duplicated. */
-  processClosureRequest(customerId: string): Promise<void>;
-  /** Cancels a pending app closure request without closing the account. */
+  /** Step 1 of processing: assigns an app closure request to an
+   * employee and moves it to In Progress. Pays out nothing. */
+  assignClosureRequest(customerId: string, employeeId: string, note: string): Promise<void>;
+  /** Final step of processing a closure the customer requested in the
+   * app. Automated: the system sends the Interac payout as part of the
+   * closure. Manual: the assignee already sent it outside the admin and
+   * records its Interac reference, which the closure adopts instead of
+   * creating a second payout. One-time: rejects unless the request is
+   * still open, so a payout can never be duplicated. */
+  processClosureRequest(
+    customerId: string,
+    input: { method: "Automated" | "Manual"; payoutReference?: string; payoutEmail?: string },
+  ): Promise<void>;
+  /** Cancels an open app closure request without closing the account. */
   cancelClosureRequest(customerId: string, note: string): Promise<void>;
   reactivateCustomer(customerId: string, note: string): Promise<void>;
   requestTransferReturn(transferId: string, note: string): Promise<void>;

@@ -56,8 +56,9 @@ type Spec = {
   income: number;
   phoneVerified?: boolean;
   /** Set when this customer has asked to close their account from the
-   * app and the request is waiting for the admin to process it. */
-  leaving?: { reason: string; feedback: string; daysAgo: number };
+   * app and the request is waiting for the admin to process it. With
+   * `assignedTo`, the request is already In Progress with that employee. */
+  leaving?: { reason: string; feedback: string; daysAgo: number; assignedTo?: string };
 };
 
 const SPECS: Spec[] = [
@@ -270,7 +271,12 @@ const SPECS: Spec[] = [
     occupation: "Physiotherapist",
     industry: "Healthcare",
     income: 84000,
-    leaving: { reason: "Moving to another bank", feedback: "", daysAgo: 2 },
+    leaving: {
+      reason: "Moving to another bank",
+      feedback: "",
+      daysAgo: 2,
+      assignedTo: "emp_02",
+    },
   },
   // Active Everyday
   {
@@ -1973,7 +1979,12 @@ export function buildSeed(): DB {
       feedback: s.leaving.feedback,
       payoutEmail: c.email,
       balances: closureBalanceSnapshot(accounts, goals, c.id),
-      status: "Pending",
+      status: s.leaving.assignedTo ? "In Progress" : "Pending",
+      assignedTo: s.leaving.assignedTo ?? null,
+      assignedAt: s.leaving.assignedTo ? ago(Math.max(0, s.leaving.daysAgo - 1)) : null,
+      assignedBy: s.leaving.assignedTo ? "emp_01" : null,
+      processingMethod: null,
+      payoutReference: null,
       resolvedAt: null,
       resolvedBy: null,
       resolutionNote: null,
@@ -1989,7 +2000,7 @@ export function buildSeed(): DB {
   activity.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   return {
-    version: 6,
+    version: 7,
     customers,
     accounts,
     transactions,

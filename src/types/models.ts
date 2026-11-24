@@ -54,7 +54,19 @@ export interface ClosureRequest {
   /** Balances when the request was made. `goals` is the amount held in
    * savings goals; it is part of the Sense Save balance, not extra. */
   balances: { smartSpend: number; senseSave: number; goals: number; total: number };
-  status: "Pending" | "Processed" | "Cancelled";
+  status: "Pending" | "In Progress" | "Processed" | "Cancelled";
+  /** Employee working the request once processing has started (step 1
+   * of processing assigns it, to themselves or to someone else). */
+  assignedTo: string | null;
+  assignedAt: string | null;
+  assignedBy: string | null;
+  /** How the payout was made when the request was processed: sent by
+   * the system (Automated) or sent outside the admin by the assignee
+   * and recorded here (Manual). */
+  processingMethod: "Automated" | "Manual" | null;
+  /** Interac reference of the payout: generated for automated payouts,
+   * recorded by the employee for a manual one. */
+  payoutReference: string | null;
   resolvedAt: string | null;
   resolvedBy: string | null;
   /** For a cancelled request, why it was closed without closing the

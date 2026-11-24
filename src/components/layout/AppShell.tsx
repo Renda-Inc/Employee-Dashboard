@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   LayoutDashboard,
   Users,
+  UserX,
   ShieldCheck,
   Landmark,
   ArrowLeftRight,
@@ -66,6 +67,7 @@ type NavItem = { title: string; to: string; icon: typeof Users; perm?: Permissio
 const MAIN: NavItem[] = [
   { title: "Overview", to: "/", icon: LayoutDashboard },
   { title: "Customers", to: "/customers", icon: Users, perm: "customers.view" },
+  { title: "Closure Requests", to: "/closure-requests", icon: UserX, perm: "customers.view" },
   { title: "Onboarding & KYC", to: "/onboarding", icon: ShieldCheck, perm: "kyc.view" },
   { title: "Banking & Accounts", to: "/accounts", icon: Landmark, perm: "accounts.view" },
   { title: "Transactions", to: "/transactions", icon: ArrowLeftRight, perm: "transactions.view" },

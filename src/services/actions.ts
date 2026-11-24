@@ -303,6 +303,7 @@ function closeCustomer(
   customerId: string,
   input: { reason: string; note: string; payoutEmail: string },
   source: "Admin" | "Customer app request" = "Admin",
+  opts?: { payoutReference?: string; processingMethod?: "Automated" | "Manual" },
 ) {
   const c = getCustomer(customerId);
   authorize("customers.lifecycle", "Close customer", "Customers", "Customer", customerId, name(c));
@@ -329,8 +330,13 @@ function closeCustomer(
   setState((d) => {
     const x = d.customers.find((y) => y.id === customerId)!;
     let payoutTransferId: string | null = null;
+    // For a manual payout the employee records the reference of the
+    // Interac they sent outside the admin; otherwise one is generated.
+    let payoutReference: string | null = null;
     if (total > 0) {
       payoutTransferId = uid("trf");
+      payoutReference =
+        opts?.payoutReference ?? `INT-${Math.floor(10000000 + Math.random() * 89999999)}`;
       const ref = `TR-${Math.floor(510000 + Math.random() * 389999)}`;
       d.transfers.unshift({
         id: payoutTransferId,
@@ -344,7 +350,7 @@ function closeCustomer(
         currency: "CAD",
         status: "Completed",
         createdAt: now(),
-        providerReference: `INT-${Math.floor(10000000 + Math.random() * 89999999)}`,
+        providerReference: payoutReference,
         transactionReference: ref,
         returnRequest: null,
       });
@@ -364,7 +370,7 @@ function closeCustomer(
           status: "Completed",
           timestamp: now(),
           completedAt: now(),
-          providerReference: `INT-${Math.floor(10000000 + Math.random() * 89999999)}`,
+          providerReference: payoutReference,
           paymentRail: "Interac",
           transferId: payoutTransferId,
           notes: [],
@@ -441,14 +447,16 @@ function closeCustomer(
       payoutAmount: Math.round(total * 100) / 100,
       source,
     };
-    // A direct admin close also fulfils a pending app closure request,
+    // A direct admin close also fulfils an open app closure request,
     // so the request can never be processed a second time afterwards.
-    if (x.closureRequest?.status === "Pending") {
+    if (x.closureRequest?.status === "Pending" || x.closureRequest?.status === "In Progress") {
       x.closureRequest = {
         ...x.closureRequest,
         status: "Processed",
         resolvedAt: now(),
         resolvedBy: d.currentEmployeeId,
+        processingMethod: opts?.processingMethod ?? "Automated",
+        payoutReference,
         resolutionNote:
           source === "Customer app request"
             ? "Processed from the admin panel: balance paid out by Interac and account closed."
@@ -483,14 +491,71 @@ function closeCustomer(
   });
 }
 
-/** Processes a closure the customer requested in the app (product rule,
- * user, 2026-11-23). This is the one automated processing step: it pays
- * the remaining balance out by Interac to the email the customer chose
- * in the app and closes the account in the same action. It is one-time
- * by construction: the request must be Pending, processing marks it
- * Processed inside the closure itself, and a closed customer cannot be
- * closed again, so no path can produce a second payout. */
-function processClosureRequest(customerId: string) {
+/** Step 1 of processing a closure request (product rule, user,
+ * 2026-11-24): the request is picked up by an employee, either the one
+ * clicking or someone they assign it to, and moves to In Progress.
+ * Nothing is paid out at this step. */
+function assignClosureRequest(customerId: string, employeeId: string, note: string) {
+  const c = getCustomer(customerId);
+  authorize(
+    "customers.lifecycle",
+    "Assign closure request",
+    "Customers",
+    "Customer",
+    customerId,
+    name(c),
+  );
+  const req = c.closureRequest;
+  if (!req) throw new RuleError("This customer has no closure request.");
+  if (req.status === "Processed" || req.status === "Cancelled")
+    throw new RuleError(`This closure request is already ${req.status.toLowerCase()}.`);
+  const assignee = getState().employees.find((e) => e.id === employeeId);
+  if (!assignee || assignee.status !== "Active")
+    throw new RuleError("The assignee must be an active employee.");
+  setState((d) => {
+    const x = d.customers.find((y) => y.id === customerId)!;
+    const was = x.closureRequest!;
+    x.closureRequest = {
+      ...was,
+      status: "In Progress",
+      assignedTo: employeeId,
+      assignedAt: now(),
+      assignedBy: d.currentEmployeeId,
+    };
+    x.updatedAt = now();
+    pushAudit(d, {
+      action: was.assignedTo ? "Closure request reassigned" : "Closure request assigned",
+      module: "Customers",
+      entityType: "Customer",
+      entityId: customerId,
+      entityLabel: name(x),
+      outcome: "Success",
+      details: `Closure request assigned to ${assignee.name} for processing.${note.trim() ? ` ${note.trim()}` : ""}`,
+      before: { closureRequestStatus: was.status, assignedTo: was.assignedTo },
+      after: { closureRequestStatus: "In Progress", assignedTo: employeeId },
+    });
+    activity(
+      d,
+      customerId,
+      "Profile",
+      `Closure request assigned to ${assignee.name} for processing`,
+    );
+  });
+}
+
+/** Final step of processing a closure the customer requested in the app
+ * (product rule, user, 2026-11-23, stepped 2026-11-24). The payout is
+ * either Automated (the system sends the Interac when this runs) or
+ * Manual (the assignee sent it outside the admin and records its
+ * reference here; the closure then records that payout and does not
+ * create a second one). One-time by construction: the request must be
+ * Pending or In Progress, processing marks it Processed inside the
+ * closure itself, and a closed customer cannot be closed again, so no
+ * path can produce a duplicate payout. */
+function processClosureRequest(
+  customerId: string,
+  input: { method: "Automated" | "Manual"; payoutReference?: string; payoutEmail?: string },
+) {
   const c = getCustomer(customerId);
   authorize(
     "customers.lifecycle",
@@ -509,14 +574,30 @@ function processClosureRequest(customerId: string) {
   if (req.status === "Cancelled")
     throw new RuleError("This closure request was cancelled and can no longer be processed.");
   if (c.customerStatus === "Closed") throw new RuleError("This customer is already closed.");
+  const manualRef = input.payoutReference?.trim() ?? "";
+  if (input.method === "Manual" && manualRef.length < 4)
+    throw new RuleError(
+      "Enter the Interac reference of the manual payout, so the closure can be matched to it and never paid twice.",
+    );
+  const payoutEmail = input.payoutEmail?.trim() || req.payoutEmail;
   const note =
     `Processed the closure requested in the app on ${fmtDay(req.requestedAt)}. ` +
     `Reason given: ${req.reason}.` +
-    (req.feedback ? ` Feedback: "${req.feedback}"` : "");
+    (req.feedback ? ` Feedback: "${req.feedback}"` : "") +
+    (input.method === "Manual"
+      ? ` Payout sent manually outside the admin; Interac reference ${manualRef}.`
+      : " Payout sent automatically by Interac.") +
+    (payoutEmail !== req.payoutEmail
+      ? ` Payout email corrected from ${req.payoutEmail} to ${payoutEmail}.`
+      : "");
   closeCustomer(
     customerId,
-    { reason: "Customer request", note, payoutEmail: req.payoutEmail },
+    { reason: "Customer request", note, payoutEmail },
     "Customer app request",
+    {
+      processingMethod: input.method,
+      payoutReference: input.method === "Manual" ? manualRef : undefined,
+    },
   );
 }
 
@@ -535,8 +616,8 @@ function cancelClosureRequest(customerId: string, note: string) {
   );
   const req = c.closureRequest;
   if (!req) throw new RuleError("This customer has no closure request.");
-  if (req.status !== "Pending")
-    throw new RuleError("Only a pending closure request can be cancelled.");
+  if (req.status !== "Pending" && req.status !== "In Progress")
+    throw new RuleError("Only an open closure request can be cancelled.");
   if (note.trim().length < 5)
     throw new RuleError("Say why the request is being cancelled (at least 5 characters).");
   setState((d) => {
@@ -557,7 +638,7 @@ function cancelClosureRequest(customerId: string, note: string) {
       entityLabel: name(x),
       outcome: "Success",
       details: `The customer asked to close their account in the app on ${fmtDay(req.requestedAt)} (reason: ${req.reason}); the request was cancelled without closing. ${note.trim()}`,
-      before: { closureRequestStatus: "Pending" },
+      before: { closureRequestStatus: req.status },
       after: { closureRequestStatus: "Cancelled" },
     });
     activity(d, customerId, "Profile", `Closure request cancelled: ${note.trim()}`);
@@ -2429,6 +2510,7 @@ export const localOperations: OperationsService = {
   restrictCustomer: asAsync(restrictCustomer),
   liftRestriction: asAsync(liftRestriction),
   closeCustomer: asAsync(closeCustomer),
+  assignClosureRequest: asAsync(assignClosureRequest),
   processClosureRequest: asAsync(processClosureRequest),
   cancelClosureRequest: asAsync(cancelClosureRequest),
   reactivateCustomer: asAsync(reactivateCustomer),

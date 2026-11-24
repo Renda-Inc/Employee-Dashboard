@@ -16,6 +16,8 @@ const TONE: Record<string, Tone> = {
   Verified: "success",
   Pending: "warning",
   "In Progress": "warning",
+  Processed: "success",
+  Cancelled: "neutral",
   "Under Review": "warning",
   "KYC Pending": "warning",
   "KYC Under Review": "warning",

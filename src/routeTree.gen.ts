@@ -23,6 +23,8 @@ import { Route as AuthenticatedAccountsIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedAccountsAccountIdRouteImport } from './routes/_authenticated/accounts.$accountId'
 import { Route as AuthenticatedCardsIndexRouteImport } from './routes/_authenticated/cards.index'
 import { Route as AuthenticatedCardsCardIdRouteImport } from './routes/_authenticated/cards.$cardId'
+import { Route as AuthenticatedClosureRequestsIndexRouteImport } from './routes/_authenticated/closure-requests.index'
+import { Route as AuthenticatedClosureRequestsCustomerIdRouteImport } from './routes/_authenticated/closure-requests.$customerId'
 import { Route as AuthenticatedCustomersIndexRouteImport } from './routes/_authenticated/customers.index'
 import { Route as AuthenticatedCustomersCustomerIdRouteImport } from './routes/_authenticated/customers.$customerId'
 import { Route as AuthenticatedEmployeesIndexRouteImport } from './routes/_authenticated/employees.index'
@@ -108,6 +110,18 @@ const AuthenticatedCardsCardIdRoute =
   AuthenticatedCardsCardIdRouteImport.update({
     id: '/cards/$cardId',
     path: '/cards/$cardId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedClosureRequestsIndexRoute =
+  AuthenticatedClosureRequestsIndexRouteImport.update({
+    id: '/closure-requests/',
+    path: '/closure-requests/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedClosureRequestsCustomerIdRoute =
+  AuthenticatedClosureRequestsCustomerIdRouteImport.update({
+    id: '/closure-requests/$customerId',
+    path: '/closure-requests/$customerId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedCustomersIndexRoute =
@@ -201,6 +215,7 @@ export interface FileRoutesByFullPath {
   '/transfers': typeof AuthenticatedTransfersRoute
   '/accounts/$accountId': typeof AuthenticatedAccountsAccountIdRoute
   '/cards/$cardId': typeof AuthenticatedCardsCardIdRoute
+  '/closure-requests/$customerId': typeof AuthenticatedClosureRequestsCustomerIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/employees/$employeeId': typeof AuthenticatedEmployeesEmployeeIdRoute
   '/employees/roles': typeof AuthenticatedEmployeesRolesRoute
@@ -209,6 +224,7 @@ export interface FileRoutesByFullPath {
   '/transactions/$transactionId': typeof AuthenticatedTransactionsTransactionIdRoute
   '/accounts/': typeof AuthenticatedAccountsIndexRoute
   '/cards/': typeof AuthenticatedCardsIndexRoute
+  '/closure-requests/': typeof AuthenticatedClosureRequestsIndexRoute
   '/customers/': typeof AuthenticatedCustomersIndexRoute
   '/employees/': typeof AuthenticatedEmployeesIndexRoute
   '/onboarding/': typeof AuthenticatedOnboardingIndexRoute
@@ -229,6 +245,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/accounts/$accountId': typeof AuthenticatedAccountsAccountIdRoute
   '/cards/$cardId': typeof AuthenticatedCardsCardIdRoute
+  '/closure-requests/$customerId': typeof AuthenticatedClosureRequestsCustomerIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/employees/$employeeId': typeof AuthenticatedEmployeesEmployeeIdRoute
   '/employees/roles': typeof AuthenticatedEmployeesRolesRoute
@@ -237,6 +254,7 @@ export interface FileRoutesByTo {
   '/transactions/$transactionId': typeof AuthenticatedTransactionsTransactionIdRoute
   '/accounts': typeof AuthenticatedAccountsIndexRoute
   '/cards': typeof AuthenticatedCardsIndexRoute
+  '/closure-requests': typeof AuthenticatedClosureRequestsIndexRoute
   '/customers': typeof AuthenticatedCustomersIndexRoute
   '/employees': typeof AuthenticatedEmployeesIndexRoute
   '/onboarding': typeof AuthenticatedOnboardingIndexRoute
@@ -259,6 +277,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/accounts/$accountId': typeof AuthenticatedAccountsAccountIdRoute
   '/_authenticated/cards/$cardId': typeof AuthenticatedCardsCardIdRoute
+  '/_authenticated/closure-requests/$customerId': typeof AuthenticatedClosureRequestsCustomerIdRoute
   '/_authenticated/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/_authenticated/employees/$employeeId': typeof AuthenticatedEmployeesEmployeeIdRoute
   '/_authenticated/employees/roles': typeof AuthenticatedEmployeesRolesRoute
@@ -267,6 +286,7 @@ export interface FileRoutesById {
   '/_authenticated/transactions/$transactionId': typeof AuthenticatedTransactionsTransactionIdRoute
   '/_authenticated/accounts/': typeof AuthenticatedAccountsIndexRoute
   '/_authenticated/cards/': typeof AuthenticatedCardsIndexRoute
+  '/_authenticated/closure-requests/': typeof AuthenticatedClosureRequestsIndexRoute
   '/_authenticated/customers/': typeof AuthenticatedCustomersIndexRoute
   '/_authenticated/employees/': typeof AuthenticatedEmployeesIndexRoute
   '/_authenticated/onboarding/': typeof AuthenticatedOnboardingIndexRoute
@@ -289,6 +309,7 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/accounts/$accountId'
     | '/cards/$cardId'
+    | '/closure-requests/$customerId'
     | '/customers/$customerId'
     | '/employees/$employeeId'
     | '/employees/roles'
@@ -297,6 +318,7 @@ export interface FileRouteTypes {
     | '/transactions/$transactionId'
     | '/accounts/'
     | '/cards/'
+    | '/closure-requests/'
     | '/customers/'
     | '/employees/'
     | '/onboarding/'
@@ -317,6 +339,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accounts/$accountId'
     | '/cards/$cardId'
+    | '/closure-requests/$customerId'
     | '/customers/$customerId'
     | '/employees/$employeeId'
     | '/employees/roles'
@@ -325,6 +348,7 @@ export interface FileRouteTypes {
     | '/transactions/$transactionId'
     | '/accounts'
     | '/cards'
+    | '/closure-requests'
     | '/customers'
     | '/employees'
     | '/onboarding'
@@ -346,6 +370,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/accounts/$accountId'
     | '/_authenticated/cards/$cardId'
+    | '/_authenticated/closure-requests/$customerId'
     | '/_authenticated/customers/$customerId'
     | '/_authenticated/employees/$employeeId'
     | '/_authenticated/employees/roles'
@@ -354,6 +379,7 @@ export interface FileRouteTypes {
     | '/_authenticated/transactions/$transactionId'
     | '/_authenticated/accounts/'
     | '/_authenticated/cards/'
+    | '/_authenticated/closure-requests/'
     | '/_authenticated/customers/'
     | '/_authenticated/employees/'
     | '/_authenticated/onboarding/'
@@ -469,6 +495,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCardsCardIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/closure-requests/': {
+      id: '/_authenticated/closure-requests/'
+      path: '/closure-requests'
+      fullPath: '/closure-requests/'
+      preLoaderRoute: typeof AuthenticatedClosureRequestsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/closure-requests/$customerId': {
+      id: '/_authenticated/closure-requests/$customerId'
+      path: '/closure-requests/$customerId'
+      fullPath: '/closure-requests/$customerId'
+      preLoaderRoute: typeof AuthenticatedClosureRequestsCustomerIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/customers/': {
       id: '/_authenticated/customers/'
       path: '/customers'
@@ -573,6 +613,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedAccountsAccountIdRoute: typeof AuthenticatedAccountsAccountIdRoute
   AuthenticatedCardsCardIdRoute: typeof AuthenticatedCardsCardIdRoute
+  AuthenticatedClosureRequestsCustomerIdRoute: typeof AuthenticatedClosureRequestsCustomerIdRoute
   AuthenticatedCustomersCustomerIdRoute: typeof AuthenticatedCustomersCustomerIdRoute
   AuthenticatedEmployeesEmployeeIdRoute: typeof AuthenticatedEmployeesEmployeeIdRoute
   AuthenticatedEmployeesRolesRoute: typeof AuthenticatedEmployeesRolesRoute
@@ -581,6 +622,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTransactionsTransactionIdRoute: typeof AuthenticatedTransactionsTransactionIdRoute
   AuthenticatedAccountsIndexRoute: typeof AuthenticatedAccountsIndexRoute
   AuthenticatedCardsIndexRoute: typeof AuthenticatedCardsIndexRoute
+  AuthenticatedClosureRequestsIndexRoute: typeof AuthenticatedClosureRequestsIndexRoute
   AuthenticatedCustomersIndexRoute: typeof AuthenticatedCustomersIndexRoute
   AuthenticatedEmployeesIndexRoute: typeof AuthenticatedEmployeesIndexRoute
   AuthenticatedOnboardingIndexRoute: typeof AuthenticatedOnboardingIndexRoute
@@ -600,6 +642,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedAccountsAccountIdRoute: AuthenticatedAccountsAccountIdRoute,
   AuthenticatedCardsCardIdRoute: AuthenticatedCardsCardIdRoute,
+  AuthenticatedClosureRequestsCustomerIdRoute:
+    AuthenticatedClosureRequestsCustomerIdRoute,
   AuthenticatedCustomersCustomerIdRoute: AuthenticatedCustomersCustomerIdRoute,
   AuthenticatedEmployeesEmployeeIdRoute: AuthenticatedEmployeesEmployeeIdRoute,
   AuthenticatedEmployeesRolesRoute: AuthenticatedEmployeesRolesRoute,
@@ -610,6 +654,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedTransactionsTransactionIdRoute,
   AuthenticatedAccountsIndexRoute: AuthenticatedAccountsIndexRoute,
   AuthenticatedCardsIndexRoute: AuthenticatedCardsIndexRoute,
+  AuthenticatedClosureRequestsIndexRoute:
+    AuthenticatedClosureRequestsIndexRoute,
   AuthenticatedCustomersIndexRoute: AuthenticatedCustomersIndexRoute,
   AuthenticatedEmployeesIndexRoute: AuthenticatedEmployeesIndexRoute,
   AuthenticatedOnboardingIndexRoute: AuthenticatedOnboardingIndexRoute,

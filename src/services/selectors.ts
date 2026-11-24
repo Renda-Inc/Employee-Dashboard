@@ -66,18 +66,25 @@ export function attentionQueue(db: DB): QueueItem[] {
         params: { customerId: c.id },
         tone: "warning",
       });
-    if (c.closureRequest?.status === "Pending")
+    if (c.closureRequest?.status === "Pending" || c.closureRequest?.status === "In Progress") {
+      const assignee = c.closureRequest.assignedTo
+        ? db.employees.find((e) => e.id === c.closureRequest!.assignedTo)
+        : undefined;
       items.push({
         id: `q_close_${c.id}`,
-        type: "Closure requested",
+        type:
+          c.closureRequest.status === "In Progress"
+            ? "Closure being processed"
+            : "Closure requested",
         record: fullName(c),
-        detail: `Asked to close from the app · reason: ${c.closureRequest.reason} · ${c.closureRequest.balances.total > 0 ? `$${c.closureRequest.balances.total.toFixed(2)} to pay out to ${c.closureRequest.payoutEmail}` : "no balance to pay out"}`,
+        detail: `Asked to close from the app · reason: ${c.closureRequest.reason} · ${c.closureRequest.balances.total > 0 ? `$${c.closureRequest.balances.total.toFixed(2)} to pay out to ${c.closureRequest.payoutEmail}` : "no balance to pay out"}${assignee ? ` · assigned to ${assignee.name}` : ""}`,
         at: c.closureRequest.requestedAt,
         action: "Review",
-        to: "/customers/$customerId",
+        to: "/closure-requests/$customerId",
         params: { customerId: c.id },
         tone: "warning",
       });
+    }
     if (
       c.onboardingStatus === "Blocked" ||
       (c.customerStatus === "Onboarding In Progress" && !c.phoneVerified)

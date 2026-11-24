@@ -368,7 +368,7 @@ function CustomerProfile() {
           </div>
         </div>
       </div>
-      {c.closureRequest?.status === "Pending" && (
+      {(c.closureRequest?.status === "Pending" || c.closureRequest?.status === "In Progress") && (
         <div className="mb-4 rounded-md bg-warning-soft px-4 py-3 text-[13px]">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1">
@@ -386,39 +386,31 @@ function CustomerProfile() {
                 {fmtMoney(c.closureRequest.balances.goals)} in savings goals) · Total{" "}
                 {fmtMoney(c.closureRequest.balances.total)}.
               </p>
+              {c.closureRequest.status === "In Progress" && c.closureRequest.assignedTo && (
+                <p>
+                  Being processed by {L.empName(c.closureRequest.assignedTo)}
+                  {c.closureRequest.assignedAt
+                    ? ` since ${fmtDate(c.closureRequest.assignedAt)}`
+                    : ""}
+                  .
+                </p>
+              )}
               <p>
-                Processing pays the balance as it stands now out by Interac to{" "}
-                {c.closureRequest.payoutEmail} and closes the account. It is a one-time step and
-                cannot be repeated.
+                Processing happens in steps on the Closure Requests page: review, assign, prepare
+                the payout, then complete it once.
               </p>
             </div>
-            {canLifecycle && (
-              <div className="flex flex-wrap gap-2">
-                <ActionDialog
-                  trigger={<Button size="sm">Process closure</Button>}
-                  title="Process closure request"
-                  description={`This pays any remaining balance out by Interac to ${c.closureRequest.payoutEmail}, closes the customer's goals, cancels their subscription with no refund, inactivates their cards and closes the account. It runs once: after processing, the request cannot be processed again.`}
-                  confirmLabel="Process closure"
-                  destructive
-                  onConfirm={() => operations.processClosureRequest(c.id)}
-                  success="Closure processed: account closed"
-                />
-                <ActionDialog
-                  trigger={
-                    <Button size="sm" variant="outline">
-                      Cancel request
-                    </Button>
-                  }
-                  title="Cancel closure request"
-                  description="Cancels the request without closing the account, for example when the customer changes their mind. The request stays on the record as cancelled."
-                  reasonLabel="Reason (required)"
-                  minReason={5}
-                  confirmLabel="Cancel request"
-                  onConfirm={(note) => operations.cancelClosureRequest(c.id, note)}
-                  success="Closure request cancelled"
-                />
-              </div>
-            )}
+            <Button
+              size="sm"
+              onClick={() =>
+                navigate({
+                  to: "/closure-requests/$customerId",
+                  params: { customerId: c.id },
+                })
+              }
+            >
+              Open closure request
+            </Button>
           </div>
         </div>
       )}
