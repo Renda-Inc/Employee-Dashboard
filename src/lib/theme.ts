@@ -1,6 +1,8 @@
 /** Employee theme preference (light/dark). Stored per browser in
  * localStorage and applied as a `dark` class on <html>; the palette lives
- * in the `.dark` token block in styles.css. */
+ * in the `.dark` token block in styles.css. The preference applies only
+ * to the signed-in admin: the root strips the class on /auth and
+ * /set-password, which are always bright. */
 export type ThemePref = "light" | "dark";
 
 const KEY = "renda-admin-theme";
