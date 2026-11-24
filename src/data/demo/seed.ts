@@ -20,7 +20,7 @@ import type {
   Transfer,
   TxnStatus,
 } from "@/types/models";
-import { PLAN_PRICES } from "@/services/rules";
+import { closureBalanceSnapshot, PLAN_PRICES } from "@/services/rules";
 
 export const DEMO_NOW = new Date("2026-10-28T16:00:00Z").getTime();
 const H = 3600_000;
@@ -55,6 +55,9 @@ type Spec = {
   industry: string;
   income: number;
   phoneVerified?: boolean;
+  /** Set when this customer has asked to close their account from the
+   * app and the request is waiting for the admin to process it. */
+  leaving?: { reason: string; feedback: string; daysAgo: number };
 };
 
 const SPECS: Spec[] = [
@@ -267,6 +270,7 @@ const SPECS: Spec[] = [
     occupation: "Physiotherapist",
     industry: "Healthcare",
     income: 84000,
+    leaving: { reason: "Moving to another bank", feedback: "", daysAgo: 2 },
   },
   // Active Everyday
   {
@@ -413,6 +417,11 @@ const SPECS: Spec[] = [
     occupation: "Agronomist",
     industry: "Agriculture",
     income: 87000,
+    leaving: {
+      reason: "Moving abroad",
+      feedback: "Relocating for work. The app was great, sad to leave.",
+      daysAgo: 1,
+    },
   },
   {
     first: "Valentina",
@@ -643,6 +652,7 @@ export function buildSeed(): DB {
                 note: "Freeze placed after unusual sign-in and transfer activity; review in progress.",
                 setBy: "emp_01",
                 setAt: ago(4),
+                previousStatus: "Active" as const,
               }
             : {
                 kind: "Compliance Hold" as const,
@@ -650,6 +660,7 @@ export function buildSeed(): DB {
                 note: "Enhanced due diligence in progress; source-of-funds documents requested.",
                 setBy: "emp_01",
                 setAt: ago(6),
+                previousStatus: "Active" as const,
               }
           : null,
       closure:
@@ -661,8 +672,10 @@ export function buildSeed(): DB {
               closedAt: ago(n % 2 === 0 ? 30 : 120),
               payoutEmail: signupEmail,
               payoutAmount: 0,
+              source: "Admin" as const,
             }
           : null,
+      closureRequest: null,
       createdAt: iso(regMs),
       updatedAt: iso(Math.min(DEMO_NOW, regMs + Math.max(1, s.regDays * 0.6) * D)),
     };
@@ -1948,10 +1961,35 @@ export function buildSeed(): DB {
     },
   ].sort((a, b) => b.timestamp.localeCompare(a.timestamp)) as AuditEvent[];
 
+  // Customers who asked to close their account from the app and are
+  // waiting on the admin. The balance snapshot is what the customer saw
+  // when they asked; processing pays out the live balances at the time.
+  SPECS.forEach((s, i) => {
+    if (!s.leaving) return;
+    const c = customers[i];
+    c.closureRequest = {
+      requestedAt: ago(s.leaving.daysAgo),
+      reason: s.leaving.reason,
+      feedback: s.leaving.feedback,
+      payoutEmail: c.email,
+      balances: closureBalanceSnapshot(accounts, goals, c.id),
+      status: "Pending",
+      resolvedAt: null,
+      resolvedBy: null,
+      resolutionNote: null,
+    };
+    act(
+      c.id,
+      "Profile",
+      `Requested account closure from the app (${s.leaving.reason})`,
+      ago(s.leaving.daysAgo),
+    );
+  });
+
   activity.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   return {
-    version: 5,
+    version: 6,
     customers,
     accounts,
     transactions,

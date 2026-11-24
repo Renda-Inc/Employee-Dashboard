@@ -24,6 +24,8 @@ export function setupIncomplete(c: Customer, now: number = Date.now()): boolean 
 }
 
 export function activationBlocker(c: Customer, accounts: Account[]): string | null {
+  if (c.restriction)
+    return "This customer is restricted. The restriction must be lifted before setup can be completed.";
   if (!c.emailVerified)
     return "This customer cannot be activated because the email address has not been verified.";
   if (!c.phoneVerified)
@@ -103,6 +105,47 @@ export const CLOSURE_REASONS = [
   "AML review",
   "Deceased",
 ] as const;
+
+/** Exit reasons offered to the customer in the app when they ask to
+ * close their account. Their pick, plus any feedback, lands on the
+ * customer record as a closure request for the admin to process. */
+export const CLOSURE_REQUEST_REASONS = [
+  "Moving to another bank",
+  "Fees and pricing",
+  "Not using it enough",
+  "Missing a feature I need",
+  "Moving abroad",
+  "Customer service experience",
+  "Other",
+] as const;
+
+/** Balance snapshot for a closure request or closure preview: what sits
+ * in each account, how much of Sense Save is held in savings goals, and
+ * the payable total. Goal funds are part of the Sense Save balance, so
+ * the total is Smart Spend + Sense Save, never plus goals again. */
+export function closureBalanceSnapshot(
+  accounts: Pick<Account, "customerId" | "accountType" | "availableBalance">[],
+  goals: { customerId: string; currentAmount: number | null; status: string }[],
+  customerId: string,
+): { smartSpend: number; senseSave: number; goals: number; total: number } {
+  const mine = accounts.filter((a) => a.customerId === customerId);
+  const smartSpend = mine
+    .filter((a) => a.accountType === "Smart Spend")
+    .reduce((s, a) => s + (a.availableBalance ?? 0), 0);
+  const senseSave = mine
+    .filter((a) => a.accountType === "Sense Save")
+    .reduce((s, a) => s + (a.availableBalance ?? 0), 0);
+  const goalsTotal = goals
+    .filter((g) => g.customerId === customerId && (g.status === "Active" || g.status === "Paused"))
+    .reduce((s, g) => s + (g.currentAmount ?? 0), 0);
+  const round = (n: number) => Math.round(n * 100) / 100;
+  return {
+    smartSpend: round(smartSpend),
+    senseSave: round(senseSave),
+    goals: round(goalsTotal),
+    total: round(smartSpend + senseSave),
+  };
+}
 
 /** Days after closure during which a customer can appeal and, if they
  * pass the reactivation policy checks, have the same account reactivated.

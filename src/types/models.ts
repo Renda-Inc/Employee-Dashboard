@@ -32,6 +32,34 @@ export interface CustomerRestriction {
   note: string;
   setBy: string;
   setAt: string;
+  /** The lifecycle status to restore when the restriction is lifted. A
+   * customer frozen during setup goes back to Setup In Progress, not
+   * Active. Absent on records created before this field existed. */
+  previousStatus?: CustomerStatus;
+}
+
+/** A closure the customer requested themselves in the app (exit survey).
+ * The admin sees why they are leaving, what they said, the balances as
+ * they stood when they asked, and the Interac email they chose for the
+ * payout. Processing is a single one-time step: once a request leaves
+ * Pending it can never be processed again, so a payout cannot duplicate. */
+export interface ClosureRequest {
+  requestedAt: string;
+  /** Exit reason the customer picked in the app. */
+  reason: string;
+  /** Free-text feedback from the exit survey; may be empty. */
+  feedback: string;
+  /** Interac email the customer chose in the app for the balance payout. */
+  payoutEmail: string;
+  /** Balances when the request was made. `goals` is the amount held in
+   * savings goals; it is part of the Sense Save balance, not extra. */
+  balances: { smartSpend: number; senseSave: number; goals: number; total: number };
+  status: "Pending" | "Processed" | "Cancelled";
+  resolvedAt: string | null;
+  resolvedBy: string | null;
+  /** For a cancelled request, why it was closed without closing the
+   * account (for example, the customer changed their mind). */
+  resolutionNote: string | null;
 }
 
 /** Closure record. Balances are paid out by Interac before closing;
@@ -44,6 +72,9 @@ export interface CustomerClosure {
   closedAt: string;
   payoutEmail: string | null;
   payoutAmount: number;
+  /** Whether the closure was an admin action or the processing of a
+   * closure the customer requested in the app. */
+  source: "Admin" | "Customer app request";
 }
 
 export interface Customer {
@@ -76,6 +107,8 @@ export interface Customer {
   customerStatus: CustomerStatus;
   restriction: CustomerRestriction | null;
   closure: CustomerClosure | null;
+  /** Set when the customer asks to close their account from the app. */
+  closureRequest: ClosureRequest | null;
   createdAt: string;
   updatedAt: string;
 }

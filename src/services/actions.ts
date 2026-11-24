@@ -192,14 +192,19 @@ function restrictCustomer(customerId: string, kind: RestrictionKind, reason: str
     c.customerStatus === "Restricted" &&
     c.restriction?.kind === "Operational Freeze" &&
     kind === "Compliance Hold";
-  if (c.customerStatus !== "Active" && !escalating)
+  // A customer can be restricted from Active or from Setup In Progress:
+  // accounts are issued and live in both states, and a stolen phone or a
+  // fraud concern does not wait for setup to finish. Earlier stages have
+  // no accounts and nothing outbound to block.
+  if (c.customerStatus !== "Active" && c.customerStatus !== "Setup In Progress" && !escalating)
     throw new RuleError(
       c.customerStatus === "Restricted"
         ? "This customer is already restricted. Only an operational freeze can be escalated to a compliance hold."
-        : `Only an active customer can be restricted (current: ${c.customerStatus}).`,
+        : `A customer can only be restricted once their accounts are issued (current: ${c.customerStatus}).`,
     );
   setState((d) => {
     const x = d.customers.find((y) => y.id === customerId)!;
+    const previousStatus = escalating ? x.restriction?.previousStatus : x.customerStatus;
     x.customerStatus = "Restricted";
     x.restriction = {
       kind,
@@ -207,6 +212,7 @@ function restrictCustomer(customerId: string, kind: RestrictionKind, reason: str
       note: note.trim(),
       setBy: d.currentEmployeeId,
       setAt: now(),
+      previousStatus,
     };
     x.updatedAt = now();
     for (const a of d.accounts) {
@@ -223,7 +229,7 @@ function restrictCustomer(customerId: string, kind: RestrictionKind, reason: str
       entityLabel: name(x),
       outcome: "Success",
       details: `${kind} · ${reason}. Outbound activity blocked; inbound and login unaffected. ${note.trim()}`,
-      before: { customerStatus: escalating ? "Restricted" : "Active" },
+      before: { customerStatus: escalating ? "Restricted" : c.customerStatus },
       after: { customerStatus: "Restricted", restrictionKind: kind, reason },
     });
     activity(d, customerId, "Profile", `${kind} placed (${reason}): outbound activity blocked`);
@@ -248,7 +254,12 @@ function liftRestriction(customerId: string, note: string) {
   setState((d) => {
     const x = d.customers.find((y) => y.id === customerId)!;
     const was = x.restriction;
-    x.customerStatus = "Active";
+    // Restore the status the customer had when the restriction was
+    // placed: a customer frozen during setup returns to Setup In
+    // Progress, not Active. Records from before previousStatus existed
+    // were all placed on Active customers.
+    const restored = was?.previousStatus ?? "Active";
+    x.customerStatus = restored;
     x.restriction = null;
     x.updatedAt = now();
     for (const a of d.accounts) {
@@ -265,12 +276,19 @@ function liftRestriction(customerId: string, note: string) {
       entityLabel: name(x),
       outcome: "Success",
       details: was
-        ? `Lifted the ${was.kind.toLowerCase()} (${was.reason}, placed ${fmtDay(was.setAt)}). ${note.trim()}`
+        ? `Lifted the ${was.kind.toLowerCase()} (${was.reason}, placed ${fmtDay(was.setAt)}). Customer returns to ${restored}. ${note.trim()}`
         : `Lifted a restriction placed before restriction records existed. ${note.trim()}`,
       before: { customerStatus: "Restricted" },
-      after: { customerStatus: "Active" },
+      after: { customerStatus: restored },
     });
-    activity(d, customerId, "Profile", "Restriction lifted by Compliance: full access restored");
+    activity(
+      d,
+      customerId,
+      "Profile",
+      restored === "Active"
+        ? "Restriction lifted by Compliance: full access restored"
+        : "Restriction lifted by Compliance: customer returns to finishing setup",
+    );
   });
 }
 
@@ -284,14 +302,15 @@ function liftRestriction(customerId: string, note: string) {
 function closeCustomer(
   customerId: string,
   input: { reason: string; note: string; payoutEmail: string },
+  source: "Admin" | "Customer app request" = "Admin",
 ) {
   const c = getCustomer(customerId);
   authorize("customers.lifecycle", "Close customer", "Customers", "Customer", customerId, name(c));
   if (c.customerStatus === "Closed") throw new RuleError("This customer is already closed.");
-  if (c.customerStatus !== "Active" && c.customerStatus !== "Restricted")
-    throw new RuleError(
-      `Only an active or restricted customer can be closed (current: ${c.customerStatus}).`,
-    );
+  // Closure deactivates the customer's Renda account itself, not just
+  // their banking accounts, so it is available at every lifecycle stage,
+  // including a customer who only just registered and has no accounts or
+  // balance yet (product rule, user, 2026-11-23).
   if (input.note.trim().length < 5)
     throw new RuleError("A note is required (at least 5 characters).");
   const db = getState();
@@ -355,10 +374,7 @@ function closeCustomer(
       }
     }
     for (const a of d.accounts) {
-      if (
-        a.customerId === customerId &&
-        (a.accountStatus === "Active" || a.accountStatus === "Restricted")
-      ) {
+      if (a.customerId === customerId && a.accountStatus !== "Closed") {
         a.accountStatus = "Closed";
         a.restrictions = a.restrictions.filter((r) => r !== RESTRICTION_MARKER);
         if (!a.restrictions.includes("Account closed")) a.restrictions.push("Account closed");
@@ -423,7 +439,22 @@ function closeCustomer(
       closedAt: now(),
       payoutEmail: total > 0 ? payoutEmail : null,
       payoutAmount: Math.round(total * 100) / 100,
+      source,
     };
+    // A direct admin close also fulfils a pending app closure request,
+    // so the request can never be processed a second time afterwards.
+    if (x.closureRequest?.status === "Pending") {
+      x.closureRequest = {
+        ...x.closureRequest,
+        status: "Processed",
+        resolvedAt: now(),
+        resolvedBy: d.currentEmployeeId,
+        resolutionNote:
+          source === "Customer app request"
+            ? "Processed from the admin panel: balance paid out by Interac and account closed."
+            : "Fulfilled by a direct admin closure.",
+      };
+    }
     x.updatedAt = now();
     pushAudit(d, {
       action: "Customer closed",
@@ -449,6 +480,87 @@ function closeCustomer(
         ? `Account closed (${input.reason}); $${total.toFixed(2)} paid out by Interac to ${payoutEmail}`
         : `Account closed (${input.reason})`,
     );
+  });
+}
+
+/** Processes a closure the customer requested in the app (product rule,
+ * user, 2026-11-23). This is the one automated processing step: it pays
+ * the remaining balance out by Interac to the email the customer chose
+ * in the app and closes the account in the same action. It is one-time
+ * by construction: the request must be Pending, processing marks it
+ * Processed inside the closure itself, and a closed customer cannot be
+ * closed again, so no path can produce a second payout. */
+function processClosureRequest(customerId: string) {
+  const c = getCustomer(customerId);
+  authorize(
+    "customers.lifecycle",
+    "Process closure request",
+    "Customers",
+    "Customer",
+    customerId,
+    name(c),
+  );
+  const req = c.closureRequest;
+  if (!req) throw new RuleError("This customer has no closure request.");
+  if (req.status === "Processed")
+    throw new RuleError(
+      `This closure request was already processed${req.resolvedAt ? ` on ${fmtDay(req.resolvedAt)}` : ""}. A closure payout can only be made once.`,
+    );
+  if (req.status === "Cancelled")
+    throw new RuleError("This closure request was cancelled and can no longer be processed.");
+  if (c.customerStatus === "Closed") throw new RuleError("This customer is already closed.");
+  const note =
+    `Processed the closure requested in the app on ${fmtDay(req.requestedAt)}. ` +
+    `Reason given: ${req.reason}.` +
+    (req.feedback ? ` Feedback: "${req.feedback}"` : "");
+  closeCustomer(
+    customerId,
+    { reason: "Customer request", note, payoutEmail: req.payoutEmail },
+    "Customer app request",
+  );
+}
+
+/** Cancels a pending app closure request without closing the account,
+ * for example when the customer changes their mind after talking to
+ * support. The request stays on the record as Cancelled. */
+function cancelClosureRequest(customerId: string, note: string) {
+  const c = getCustomer(customerId);
+  authorize(
+    "customers.lifecycle",
+    "Cancel closure request",
+    "Customers",
+    "Customer",
+    customerId,
+    name(c),
+  );
+  const req = c.closureRequest;
+  if (!req) throw new RuleError("This customer has no closure request.");
+  if (req.status !== "Pending")
+    throw new RuleError("Only a pending closure request can be cancelled.");
+  if (note.trim().length < 5)
+    throw new RuleError("Say why the request is being cancelled (at least 5 characters).");
+  setState((d) => {
+    const x = d.customers.find((y) => y.id === customerId)!;
+    x.closureRequest = {
+      ...req,
+      status: "Cancelled",
+      resolvedAt: now(),
+      resolvedBy: d.currentEmployeeId,
+      resolutionNote: note.trim(),
+    };
+    x.updatedAt = now();
+    pushAudit(d, {
+      action: "Closure request cancelled",
+      module: "Customers",
+      entityType: "Customer",
+      entityId: customerId,
+      entityLabel: name(x),
+      outcome: "Success",
+      details: `The customer asked to close their account in the app on ${fmtDay(req.requestedAt)} (reason: ${req.reason}); the request was cancelled without closing. ${note.trim()}`,
+      before: { closureRequestStatus: "Pending" },
+      after: { closureRequestStatus: "Cancelled" },
+    });
+    activity(d, customerId, "Profile", `Closure request cancelled: ${note.trim()}`);
   });
 }
 
@@ -2317,6 +2429,8 @@ export const localOperations: OperationsService = {
   restrictCustomer: asAsync(restrictCustomer),
   liftRestriction: asAsync(liftRestriction),
   closeCustomer: asAsync(closeCustomer),
+  processClosureRequest: asAsync(processClosureRequest),
+  cancelClosureRequest: asAsync(cancelClosureRequest),
   reactivateCustomer: asAsync(reactivateCustomer),
   escalateKyc: asAsync(escalateKyc),
   recordKycDecision: asAsync(recordKycDecision),

@@ -89,6 +89,13 @@ export interface OperationsService {
     customerId: string,
     input: { reason: string; note: string; payoutEmail: string },
   ): Promise<void>;
+  /** Processes a closure the customer requested in the app: pays the
+   * balance out to the Interac email on the request and closes the
+   * account in one step. One-time: rejects unless the request is still
+   * Pending, so a payout can never be duplicated. */
+  processClosureRequest(customerId: string): Promise<void>;
+  /** Cancels a pending app closure request without closing the account. */
+  cancelClosureRequest(customerId: string, note: string): Promise<void>;
   reactivateCustomer(customerId: string, note: string): Promise<void>;
   requestTransferReturn(transferId: string, note: string): Promise<void>;
   recordReturnOutcome(

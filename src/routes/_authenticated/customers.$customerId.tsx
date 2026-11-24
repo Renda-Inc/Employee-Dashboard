@@ -176,39 +176,41 @@ function CustomerProfile() {
                 success="Customer is now Active"
               />
             )}
-            {c.customerStatus === "Active" && canRestrict && (
-              <ActionDialog
-                trigger={
-                  <Button size="sm" variant="outline">
-                    Place operational freeze
-                  </Button>
-                }
-                title="Place operational freeze"
-                description="Blocks outbound activity only: the customer can still log in and receive money, but cannot send, spend or withdraw. Cards stop working because spending is outbound; their own status does not change. Only Compliance can lift a restriction."
-                reasonLabel="Note (required)"
-                minReason={5}
-                onConfirm={(note) =>
-                  operations.restrictCustomer(c.id, "Operational Freeze", freezeReason, note)
-                }
-                success="Operational freeze placed"
-                confirmLabel="Place freeze"
-              >
-                <div className="space-y-1">
-                  <Label htmlFor="freeze-reason">Reason</Label>
-                  <SelectField
-                    id="freeze-reason"
-                    value={freezeReason}
-                    onChange={(e) => setFreezeReason(e.target.value)}
-                    className="h-9 w-full rounded-md border bg-card px-2"
-                  >
-                    {RESTRICTION_REASONS.map((r) => (
-                      <option key={r}>{r}</option>
-                    ))}
-                  </SelectField>
-                </div>
-              </ActionDialog>
-            )}
-            {((c.customerStatus === "Active" && canHold) ||
+            {(c.customerStatus === "Active" || c.customerStatus === "Setup In Progress") &&
+              canRestrict && (
+                <ActionDialog
+                  trigger={
+                    <Button size="sm" variant="outline">
+                      Place operational freeze
+                    </Button>
+                  }
+                  title="Place operational freeze"
+                  description="Blocks outbound activity only: the customer can still log in and receive money, but cannot send, spend or withdraw. Cards stop working because spending is outbound; their own status does not change. Only Compliance can lift a restriction."
+                  reasonLabel="Note (required)"
+                  minReason={5}
+                  onConfirm={(note) =>
+                    operations.restrictCustomer(c.id, "Operational Freeze", freezeReason, note)
+                  }
+                  success="Operational freeze placed"
+                  confirmLabel="Place freeze"
+                >
+                  <div className="space-y-1">
+                    <Label htmlFor="freeze-reason">Reason</Label>
+                    <SelectField
+                      id="freeze-reason"
+                      value={freezeReason}
+                      onChange={(e) => setFreezeReason(e.target.value)}
+                      className="h-9 w-full rounded-md border bg-card px-2"
+                    >
+                      {RESTRICTION_REASONS.map((r) => (
+                        <option key={r}>{r}</option>
+                      ))}
+                    </SelectField>
+                  </div>
+                </ActionDialog>
+              )}
+            {(((c.customerStatus === "Active" || c.customerStatus === "Setup In Progress") &&
+              canHold) ||
               (c.customerStatus === "Restricted" &&
                 c.restriction?.kind === "Operational Freeze" &&
                 canHold)) && (
@@ -257,58 +259,57 @@ function CustomerProfile() {
                 confirmLabel="Lift restriction"
               />
             )}
-            {(c.customerStatus === "Active" || c.customerStatus === "Restricted") &&
-              canLifecycle && (
-                <ActionDialog
-                  trigger={
-                    <Button size="sm" variant="destructive">
-                      Close customer
-                    </Button>
-                  }
-                  title="Close customer"
-                  description="Any remaining balance is sent to the customer by Interac e-Transfer (savings goal funds are included through Sense Save), goals are closed, the Plus subscription is cancelled with no refund, and every card becomes inactive. Closure can be undone on appeal only within the reactivation window."
-                  reasonLabel="Note (required)"
-                  minReason={5}
-                  onConfirm={(note) =>
-                    operations.closeCustomer(c.id, {
-                      reason: closureReason,
-                      note,
-                      payoutEmail: payoutEmail || c.email,
-                    })
-                  }
-                  success="Customer closed"
-                  confirmLabel="Close customer"
-                  destructive
-                >
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="closure-reason">Reason</Label>
-                      <SelectField
-                        id="closure-reason"
-                        value={closureReason}
-                        onChange={(e) => setClosureReason(e.target.value)}
-                        className="h-9 w-full rounded-md border bg-card px-2"
-                      >
-                        {CLOSURE_REASONS.map((r) => (
-                          <option key={r}>{r}</option>
-                        ))}
-                      </SelectField>
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="payout-email">Interac payout email</Label>
-                      <Input
-                        id="payout-email"
-                        value={payoutEmail || c.email}
-                        onChange={(e) => setPayoutEmail(e.target.value)}
-                      />
-                      <p className="text-[12px] text-muted-foreground">
-                        The Interac email the customer chose, or the one on their account. Used only
-                        if a balance remains.
-                      </p>
-                    </div>
+            {c.customerStatus !== "Closed" && canLifecycle && (
+              <ActionDialog
+                trigger={
+                  <Button size="sm" variant="destructive">
+                    Close customer
+                  </Button>
+                }
+                title="Close customer"
+                description="This deactivates the customer's Renda account itself, at whatever stage they are in, not just their banking accounts. Any remaining balance is sent to the customer by Interac e-Transfer (savings goal funds are included through Sense Save), goals are closed, the Plus subscription is cancelled with no refund, and every card becomes inactive. Closure can be undone on appeal only within the reactivation window."
+                reasonLabel="Note (required)"
+                minReason={5}
+                onConfirm={(note) =>
+                  operations.closeCustomer(c.id, {
+                    reason: closureReason,
+                    note,
+                    payoutEmail: payoutEmail || c.email,
+                  })
+                }
+                success="Customer closed"
+                confirmLabel="Close customer"
+                destructive
+              >
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="closure-reason">Reason</Label>
+                    <SelectField
+                      id="closure-reason"
+                      value={closureReason}
+                      onChange={(e) => setClosureReason(e.target.value)}
+                      className="h-9 w-full rounded-md border bg-card px-2"
+                    >
+                      {CLOSURE_REASONS.map((r) => (
+                        <option key={r}>{r}</option>
+                      ))}
+                    </SelectField>
                   </div>
-                </ActionDialog>
-              )}
+                  <div className="space-y-1">
+                    <Label htmlFor="payout-email">Interac payout email</Label>
+                    <Input
+                      id="payout-email"
+                      value={payoutEmail || c.email}
+                      onChange={(e) => setPayoutEmail(e.target.value)}
+                    />
+                    <p className="text-[12px] text-muted-foreground">
+                      The Interac email the customer chose, or the one on their account. Used only
+                      if a balance remains.
+                    </p>
+                  </div>
+                </div>
+              </ActionDialog>
+            )}
             {c.customerStatus === "Closed" &&
               c.closure &&
               canHold &&
@@ -367,6 +368,70 @@ function CustomerProfile() {
           </div>
         </div>
       </div>
+      {c.closureRequest?.status === "Pending" && (
+        <div className="mb-4 rounded-md bg-warning-soft px-4 py-3 text-[13px]">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <p>
+                <strong>
+                  Closure requested from the app on {fmtDate(c.closureRequest.requestedAt)}.
+                </strong>{" "}
+                Reason: {c.closureRequest.reason}.
+              </p>
+              {c.closureRequest.feedback && <p>Feedback: “{c.closureRequest.feedback}”</p>}
+              <p>
+                Balances when requested: Smart Spend{" "}
+                {fmtMoney(c.closureRequest.balances.smartSpend)} · Sense Save{" "}
+                {fmtMoney(c.closureRequest.balances.senseSave)} (including{" "}
+                {fmtMoney(c.closureRequest.balances.goals)} in savings goals) · Total{" "}
+                {fmtMoney(c.closureRequest.balances.total)}.
+              </p>
+              <p>
+                Processing pays the balance as it stands now out by Interac to{" "}
+                {c.closureRequest.payoutEmail} and closes the account. It is a one-time step and
+                cannot be repeated.
+              </p>
+            </div>
+            {canLifecycle && (
+              <div className="flex flex-wrap gap-2">
+                <ActionDialog
+                  trigger={<Button size="sm">Process closure</Button>}
+                  title="Process closure request"
+                  description={`This pays any remaining balance out by Interac to ${c.closureRequest.payoutEmail}, closes the customer's goals, cancels their subscription with no refund, inactivates their cards and closes the account. It runs once: after processing, the request cannot be processed again.`}
+                  confirmLabel="Process closure"
+                  destructive
+                  onConfirm={() => operations.processClosureRequest(c.id)}
+                  success="Closure processed: account closed"
+                />
+                <ActionDialog
+                  trigger={
+                    <Button size="sm" variant="outline">
+                      Cancel request
+                    </Button>
+                  }
+                  title="Cancel closure request"
+                  description="Cancels the request without closing the account, for example when the customer changes their mind. The request stays on the record as cancelled."
+                  reasonLabel="Reason (required)"
+                  minReason={5}
+                  confirmLabel="Cancel request"
+                  onConfirm={(note) => operations.cancelClosureRequest(c.id, note)}
+                  success="Closure request cancelled"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {c.closureRequest?.status === "Cancelled" && (
+        <div className="mb-4 rounded-md bg-muted px-4 py-3 text-[13px]">
+          <strong>
+            Closure request cancelled
+            {c.closureRequest.resolvedAt ? ` on ${fmtDate(c.closureRequest.resolvedAt)}` : ""}.
+          </strong>{" "}
+          The customer asked to close from the app on {fmtDate(c.closureRequest.requestedAt)} (
+          {c.closureRequest.reason}). {c.closureRequest.resolutionNote}
+        </div>
+      )}
       {c.customerStatus === "Restricted" && (
         <div className="mb-4 rounded-md bg-warning-soft px-4 py-3 text-[13px]">
           <strong>Restricted: outbound activity blocked.</strong>{" "}
@@ -385,6 +450,9 @@ function CustomerProfile() {
       {c.customerStatus === "Closed" && c.closure && (
         <div className="mb-4 rounded-md bg-danger-soft px-4 py-3 text-[13px]">
           <strong>Closed on {fmtDate(c.closure.closedAt)}.</strong> Reason: {c.closure.reason}.{" "}
+          {c.closure.source === "Customer app request" && c.closureRequest && (
+            <>Requested by the customer from the app on {fmtDate(c.closureRequest.requestedAt)}. </>
+          )}
           {c.closure.payoutAmount > 0 ? (
             <>
               Remaining balance of {fmtMoney(c.closure.payoutAmount)} was paid out by Interac to{" "}

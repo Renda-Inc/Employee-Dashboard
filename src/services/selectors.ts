@@ -66,6 +66,18 @@ export function attentionQueue(db: DB): QueueItem[] {
         params: { customerId: c.id },
         tone: "warning",
       });
+    if (c.closureRequest?.status === "Pending")
+      items.push({
+        id: `q_close_${c.id}`,
+        type: "Closure requested",
+        record: fullName(c),
+        detail: `Asked to close from the app · reason: ${c.closureRequest.reason} · ${c.closureRequest.balances.total > 0 ? `$${c.closureRequest.balances.total.toFixed(2)} to pay out to ${c.closureRequest.payoutEmail}` : "no balance to pay out"}`,
+        at: c.closureRequest.requestedAt,
+        action: "Review",
+        to: "/customers/$customerId",
+        params: { customerId: c.id },
+        tone: "warning",
+      });
     if (
       c.onboardingStatus === "Blocked" ||
       (c.customerStatus === "Onboarding In Progress" && !c.phoneVerified)
