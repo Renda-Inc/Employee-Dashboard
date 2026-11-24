@@ -216,8 +216,7 @@ export function readTables(): MockTables {
   try {
     const raw = window.localStorage.getItem(TABLES_KEY);
     const parsed = raw ? (JSON.parse(raw) as MockTables & { version: number }) : null;
-    cache =
-      parsed?.version === 2 ? parsed : parsed?.version === 1 ? migrateV1(parsed) : seed();
+    cache = parsed?.version === 2 ? parsed : parsed?.version === 1 ? migrateV1(parsed) : seed();
   } catch {
     cache = seed();
   }
